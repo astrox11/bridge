@@ -14,65 +14,43 @@ git clone https://github.com/astrox11/AstroBridge
 cd AstroBridge
 ```
 
-Make sure you have the **latest version of Go** installed (Go 1.22+ recommended).
+Make sure you have the **latest version of Go**.
 
+## **Windows (PowerShell)**
 
-## **Windows**
+Install Go and run the project:
 
-1. Download and install the latest Go release from the official website:
-   [https://go.dev/dl](https://go.dev/dl)
-2. Open **PowerShell** and verify installation:
+```powershell
+winget install Go.Go && go version
+cd AstroBridge && go run .
+```
 
-   ```
-   go version
-   ```
-3. Navigate to the cloned project directory:
+---
 
-   ```
-   cd AstroBridge
-   ```
-4. Run the project:
+## **Linux**
 
-   ```
-   go run .
-   ```
+### **Ubuntu / Debian**
 
-## **Linux & macOS**
+```bash
+sudo apt update && sudo apt install -y golang && go version
+cd AstroBridge && go run .
+```
 
-1. Install the latest Go version:
+### **Fedora**
 
-   **Linux (Debian/Ubuntu example)**
+```bash
+sudo dnf install -y golang && go version
+cd AstroBridge && go run .
+```
 
-   ```
-   sudo apt update
-   sudo apt install golang
-   ```
+---
 
-   *Or manually download Go from [https://go.dev/dl](https://go.dev/dl) for the newest version.*
+## **macOS (Homebrew)**
 
-   **macOS (Homebrew)**
-
-   ```
-   brew install go
-   ```
-
-2. Verify installation:
-
-   ```
-   go version
-   ```
-
-3. Move into the project directory:
-
-   ```
-   cd AstroBridge
-   ```
-
-4. Run the project:
-
-   ```
-   go run .
-   ```
+```bash
+brew install go && go version
+cd AstroBridge && go run .
+```
 
 # Contributing
 
@@ -95,9 +73,3 @@ Before submitting, please:
 * Ensure code is formatted (`go fmt ./...`)
 * Run basic tests or manual checks
 * Keep changes focused and well-documented
-
-If you want, I can also add:
-✔ issue templates
-✔ PR guidelines
-✔ coding style rules
-✔ architecture overview for contributors
