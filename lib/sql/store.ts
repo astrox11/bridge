@@ -18,7 +18,7 @@ export const bridge_store = {
         const stmtDelete = sqlite.prepare('DELETE FROM user_session WHERE name = ?')
 
 
-        const fixFileName = (file?: string) => file?.replace(/\//g, '__')?.replace(/:/g, '-')
+        const fixFileName = (name?: string) => name?.replace(/\//g, '__')?.replace(/:/g, '-')
 
         const readData = async (file: string) => {
             try {
@@ -43,7 +43,7 @@ export const bridge_store = {
             await Promise.resolve(stmtDelete.run(name))
         }
 
-        const creds: AuthenticationCreds = (await readData('creds.json')) || initAuthCreds()
+        const creds: AuthenticationCreds = (await readData('creds')) || initAuthCreds()
 
         return {
             state: {
@@ -54,7 +54,7 @@ export const bridge_store = {
                         const data: { [_: string]: SignalDataTypeMap[typeof type] } = {}
                         await Promise.all(
                             ids.map(async id => {
-                                let value = await readData(`${type}-${id}.json`)
+                                let value = await readData(`${type}-${id}`)
                                 if (type === 'app-state-sync-key' && value) {
                                     value = proto.Message.AppStateSyncKeyData.fromObject(value)
                                 }
@@ -68,7 +68,7 @@ export const bridge_store = {
                         for (const category in data) {
                             for (const id in data[category as keyof SignalDataTypeMap]) {
                                 const value = data[category as keyof SignalDataTypeMap]![id]
-                                const file = `${category}-${id}.json`
+                                const file = `${category}-${id}`
                                 tasks.push(value ? writeData(value, file) : removeData(file))
                             }
                         }
@@ -77,7 +77,7 @@ export const bridge_store = {
                 }
             },
             saveCreds: async () => {
-                return writeData(creds, 'creds.json')
+                return writeData(creds, 'creds')
             }
         }
     },

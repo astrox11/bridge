@@ -3,7 +3,9 @@ import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
 import makeWASocket, { delay, DisconnectReason, fetchLatestBaileysVersion, jidNormalizedUser, makeCacheableSignalKeyStore, } from 'baileys'
 import type { AnyMessageContent, CacheStore } from 'baileys'
-import { log, bridge_store, defaultWelcomeMessage, findEnvFile, parseEnv, version } from './lib'
+import { log, bridge_store, defaultWelcomeMessage, findEnvFile, parseEnv, version, } from './lib'
+import { readdir, unlink } from 'fs/promises'
+import { join } from 'path'
 
 log.info(`Activating Client ::: ${version}`)
 
@@ -38,9 +40,11 @@ const startSock = async () => {
     })
 
     if (!sock.authState.creds.registered) {
-        let phoneNumber
+        let phoneNumber;
+
         if (config) {
             phoneNumber = parseEnv(config || '').PHONE_NUMBER || null
+            log.debug(`Loaded phone number from config: ${phoneNumber}`);
         }
 
         if (!phoneNumber) {
@@ -92,16 +96,6 @@ const startSock = async () => {
                 await saveCreds()
             }
 
-
-            // if (events['messaging-history.set']) {
-            //     const { chats, contacts, messages, isLatest, progress, syncType } = events['messaging-history.set']
-            //     if (syncType === proto.HistorySync.HistorySyncType.ON_DEMAND) {
-            //         console.log('received on-demand history sync, messages=', messages)
-            //     }
-            //     console.log(`recv ${chats.length} chats, ${contacts.length} contacts, ${messages.length} msgs (is latest: ${isLatest}, progress: ${progress}%), type: ${syncType}`)
-            // }
-
-            // received a new message
             if (events['messages.upsert']) {
                 const upsert = events['messages.upsert']
                 log.info('recv messages ', JSON.stringify(upsert, undefined, 2))
@@ -111,5 +105,30 @@ const startSock = async () => {
 
     return sock
 }
+
+const cleanup = async () => {
+    try {
+        const cwd = process.cwd()
+        const files = await readdir(cwd)
+        const targets = files.filter(f => f.endsWith('.db-shm') || f.endsWith('.db-wal'))
+        await Promise.all(targets.map(f => unlink(join(cwd, f)).catch(() => undefined)))
+        if (targets.length) log.info('Closed Client...')
+    } catch (e) {
+        log.warn('Failed to remove shm/wal files: ' + String(e))
+    }
+}
+
+const exit = async (signal?: string) => {
+    try {
+        try { rl.close() } catch { }
+        await cleanup()
+    } finally {
+        setTimeout(() => process.exit(0), 200)
+    }
+}
+
+process.once('SIGINT', () => exit('SIGINT'))
+process.once('SIGTERM', () => exit('SIGTERM'))
+process.once('SIGQUIT', () => exit('SIGQUIT'))
 
 startSock()
