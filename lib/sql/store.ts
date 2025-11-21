@@ -87,13 +87,29 @@ export const bridge_store = {
     getMessage: async (key: WAMessageKey) => {
         return proto.Message.create({ conversation: 'test' })
     },
-    save_contact: async (msg: WAMessage) => {
-        //
+    save_contact: async (pn: string, lid: string) => {
+        sqlite.run(`
+  CREATE TABLE IF NOT EXISTS user_contacts (
+    pn TEXT PRIMARY KEY,
+    lid TEXT NOT NULL
+  );
+`)
+        const stmtSet = sqlite.prepare(`
+  INSERT INTO user_contacts (pn, lid) VALUES (?, ?)
+  ON CONFLICT(pn) DO UPDATE SET lid = excluded.lid
+`)
+        await Promise.resolve(stmtSet.run(pn, lid))
     },
     get_contact: async (id: string) => {
-        return {
-            jid: jidEncode(null, 's.whatsapp.net',),
-            lid: jidEncode(null, 'lid')
-        }
+        sqlite.run(`
+  CREATE TABLE IF NOT EXISTS user_contacts (
+    pn TEXT PRIMARY KEY,
+    lid TEXT NOT NULL
+  );
+`)
+        const stmtGet = sqlite.prepare('SELECT lid FROM user_contacts WHERE pn = ?')
+        const row = stmtGet.get(id) as { lid: string } | null
+        if (!row) return null
+        return row.lid
     }
 }

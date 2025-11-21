@@ -44,6 +44,7 @@ const startSock = async () => {
 
         if (config) {
             phoneNumber = parseEnv(config || '').PHONE_NUMBER || null
+            await delay(5000)
             log.debug(`Loaded phone number from config: ${phoneNumber}`);
         }
 
@@ -99,6 +100,11 @@ const startSock = async () => {
             if (events['messages.upsert']) {
                 const upsert = events['messages.upsert']
                 log.info('recv messages ', JSON.stringify(upsert, undefined, 2))
+            }
+
+            if (events['lid-mapping.update']) {
+                const { pn, lid } = events['lid-mapping.update']
+                await bridge_store.save_contact(pn, lid)
             }
         }
     )

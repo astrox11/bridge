@@ -11,7 +11,7 @@
     "typescript": "^5"
   },
   "scripts": {
-    "start": "bun run index.ts"
+    "start": "bun run index.ts --silent"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "WhiskeySockets/Baileys#feat-libsignal-wasm",
