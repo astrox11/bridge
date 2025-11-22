@@ -1,3 +1,3 @@
-export class Newsletter { 
-    /** TODO: Implement */
+export class Newsletter {
+  /** TODO: Implement */
 }

@@ -1,3 +1,3 @@
-export class Plugins {
+export class Group {
   /** TODO: Implement */
 }

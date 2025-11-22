@@ -1,115 +1,197 @@
-import { BufferJSON, initAuthCreds, jidEncode, proto, type AuthenticationCreds, type SignalDataTypeMap, type WAMessage, type WAMessageKey } from "baileys";
+import {
+  BufferJSON,
+  initAuthCreds,
+  proto,
+  type AuthenticationCreds,
+  type KeyPair,
+  type LTHashState,
+  type SignalDataSet,
+  type SignalDataTypeMap,
+  type WAMessage,
+  type WAMessageKey,
+} from "baileys";
 import sqlite from "./main";
 
-export const bridge_store = {
-    authstate: async () => {
-        sqlite.run(`
+type WriteAbleAuthStore =
+  | string
+  | Uint8Array<ArrayBufferLike>
+  | string[]
+  | KeyPair
+  | {
+      [jid: string]: boolean;
+    }
+  | proto.Message.IAppStateSyncKeyData
+  | LTHashState
+  | AuthenticationCreds
+  | {
+      token: Buffer;
+      timestamp?: string;
+    };
+
+export const store = {
+  authstate: async () => {
+    sqlite.run(`
   CREATE TABLE IF NOT EXISTS user_session (
     name TEXT PRIMARY KEY,
     data TEXT NOT NULL
   );
-`)
+`);
 
-        const stmtGet = sqlite.prepare('SELECT data FROM user_session WHERE name = ?')
-        const stmtSet = sqlite.prepare(`
+    const stmtGet = sqlite.prepare(
+      "SELECT data FROM user_session WHERE name = ?",
+    );
+    const stmtSet = sqlite.prepare(`
   INSERT INTO user_session (name, data) VALUES (?, ?)
   ON CONFLICT(name) DO UPDATE SET data = excluded.data
-`)
-        const stmtDelete = sqlite.prepare('DELETE FROM user_session WHERE name = ?')
+`);
+    const stmtDelete = sqlite.prepare(
+      "DELETE FROM user_session WHERE name = ?",
+    );
 
+    const fixFileName = (name?: string) =>
+      name?.replace(/\//g, "__")?.replace(/:/g, "-");
 
-        const fixFileName = (name?: string) => name?.replace(/\//g, '__')?.replace(/:/g, '-')
+    const readData = async (file: string) => {
+      try {
+        const name = fixFileName(file)!;
+        const row = stmtGet.get(name) as { data: string } | null;
+        if (!row) return null;
+        return JSON.parse(row.data, BufferJSON.reviver);
+      } catch {
+        return null;
+      }
+    };
 
-        const readData = async (file: string) => {
-            try {
-                const name = fixFileName(file)!
-                const row = stmtGet.get(name) as { data: string } | null
-                if (!row) return null
-                return JSON.parse(row.data, BufferJSON.reviver)
-            } catch (err) {
-                return null
-            }
-        }
+    const writeData = async (data: WriteAbleAuthStore, file: string) => {
+      const name = fixFileName(file)!;
+      const json = JSON.stringify(data, BufferJSON.replacer);
+      await Promise.resolve(stmtSet.run(name, json));
+    };
 
+    const removeData = async (file: string) => {
+      const name = fixFileName(file)!;
+      await Promise.resolve(stmtDelete.run(name));
+    };
 
-        const writeData = async (data: any, file: string) => {
-            const name = fixFileName(file)!
-            const json = JSON.stringify(data, BufferJSON.replacer)
-            await Promise.resolve(stmtSet.run(name, json))
-        }
+    const creds: AuthenticationCreds =
+      (await readData("creds")) || initAuthCreds();
 
-        const removeData = async (file: string) => {
-            const name = fixFileName(file)!
-            await Promise.resolve(stmtDelete.run(name))
-        }
-
-        const creds: AuthenticationCreds = (await readData('creds')) || initAuthCreds()
-
-        return {
-            state: {
-                creds,
-                keys: {
-                    get: async (type: any, ids: any[]) => {
-                        //@ts-ignore
-                        const data: { [_: string]: SignalDataTypeMap[typeof type] } = {}
-                        await Promise.all(
-                            ids.map(async id => {
-                                let value = await readData(`${type}-${id}`)
-                                if (type === 'app-state-sync-key' && value) {
-                                    value = proto.Message.AppStateSyncKeyData.fromObject(value)
-                                }
-                                data[id] = value
-                            })
-                        )
-                        return data
-                    },
-                    set: async (data: any) => {
-                        const tasks: Promise<void>[] = []
-                        for (const category in data) {
-                            for (const id in data[category as keyof SignalDataTypeMap]) {
-                                const value = data[category as keyof SignalDataTypeMap]![id]
-                                const file = `${category}-${id}`
-                                tasks.push(value ? writeData(value, file) : removeData(file))
-                            }
-                        }
-                        await Promise.all(tasks)
-                    }
+    return {
+      state: {
+        creds,
+        keys: {
+          get: async <T extends keyof SignalDataTypeMap>(
+            type: T,
+            ids: string[],
+          ): Promise<{ [_: string]: SignalDataTypeMap[T] }> => {
+            const data: { [_: string]: SignalDataTypeMap[T] } = {};
+            await Promise.all(
+              ids.map(async (id) => {
+                let value = await readData(`${type}-${id}`);
+                if (type === "app-state-sync-key" && value) {
+                  value = proto.Message.AppStateSyncKeyData.fromObject(value);
                 }
-            },
-            saveCreds: async () => {
-                return writeData(creds, 'creds')
+                data[id] = value as SignalDataTypeMap[T];
+              }),
+            );
+            return data;
+          },
+          set: async (data: SignalDataSet) => {
+            const tasks: Promise<void>[] = [];
+            for (const category in data) {
+              for (const id in data[category as keyof SignalDataTypeMap]) {
+                const value = data[category as keyof SignalDataTypeMap]![id];
+                const file = `${category}-${id}`;
+                tasks.push(value ? writeData(value, file) : removeData(file));
+              }
             }
-        }
-    },
-    save_wa_messages: async (msg: WAMessage) => {
-        //
-    },
-    getMessage: async (key: WAMessageKey) => {
-        return proto.Message.create({ conversation: 'test' })
-    },
-    save_contact: async (pn: string, lid: string) => {
-        sqlite.run(`
+            await Promise.all(tasks);
+          },
+        },
+      },
+      saveCreds: async () => {
+        return writeData(creds, "creds");
+      },
+    };
+  },
+  save_wa_messages: async (msg: WAMessage) => {
+    sqlite.run(`
+  CREATE TABLE IF NOT EXISTS user_messages (
+    id TEXT PRIMARY KEY,
+    message TEXT NOT NULL
+  );
+`);
+
+    const stmtSet = sqlite.prepare(`
+  INSERT INTO user_messages (id, message) VALUES (?, ?)
+  ON CONFLICT(id) DO UPDATE SET message = excluded.message
+`);
+
+    const id = msg?.key?.id;
+    if (typeof id != "string") return;
+    const json = JSON.stringify(msg, null, 2);
+    await Promise.resolve(stmtSet.run(id, json));
+  },
+  getMessage: async (key: WAMessageKey) => {
+    const id = key?.id;
+    if (typeof id !== "string") return undefined;
+
+    const stmtGet = sqlite.prepare(
+      "SELECT message FROM user_messages WHERE id = ?",
+    );
+    const row = stmtGet.get(id) as { message: string } | undefined;
+    if (!row) return undefined;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(row.message, BufferJSON.reviver);
+    } catch {
+      return undefined;
+    }
+
+    // normalize to the inner proto message object if wrapped
+    const protoObj = parsed?.message ?? parsed;
+
+    // if there's a `rec` field stored as a JSON string, try to parse it
+    if (protoObj && typeof protoObj.rec === "string") {
+      try {
+        protoObj.rec = JSON.parse(protoObj.rec, BufferJSON.reviver);
+      } catch {
+        // ignore parse errors and keep original string
+      }
+    }
+
+    try {
+      return proto.Message.create(protoObj);
+    } catch {
+      return proto.Message.create({ conversation: "test" });
+    }
+  },
+  save_contact: async (pn: string, lid: string) => {
+    sqlite.run(`
   CREATE TABLE IF NOT EXISTS user_contacts (
     pn TEXT PRIMARY KEY,
     lid TEXT NOT NULL
   );
-`)
-        const stmtSet = sqlite.prepare(`
+`);
+    const stmtSet = sqlite.prepare(`
   INSERT INTO user_contacts (pn, lid) VALUES (?, ?)
   ON CONFLICT(pn) DO UPDATE SET lid = excluded.lid
-`)
-        await Promise.resolve(stmtSet.run(pn, lid))
-    },
-    get_contact: async (id: string) => {
-        sqlite.run(`
+`);
+    await Promise.resolve(stmtSet.run(pn, lid));
+  },
+  get_contact: async (id: string) => {
+    sqlite.run(`
   CREATE TABLE IF NOT EXISTS user_contacts (
     pn TEXT PRIMARY KEY,
     lid TEXT NOT NULL
   );
-`)
-        const stmtGet = sqlite.prepare('SELECT lid FROM user_contacts WHERE pn = ?')
-        const row = stmtGet.get(id) as { lid: string } | null
-        if (!row) return null
-        return row.lid
-    }
-}
+`);
+    const stmtGet = sqlite.prepare(
+      "SELECT lid FROM user_contacts WHERE pn = ?",
+    );
+    const row = stmtGet.get(id) as { lid: string } | null;
+    if (!row) return null;
+    return row.lid;
+  },
+};

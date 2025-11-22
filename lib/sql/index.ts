@@ -1,2 +1,2 @@
 export { default } from "./main";
-export * from './store'
+export * from "./store";

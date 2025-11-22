@@ -14,6 +14,7 @@ If you’d like to contribute:
    ```
    git checkout -b feature-name
    ```
+
 3. **Commit** your changes with clear messages
 4. **Push** to your fork
 5. Open a **Pull Request** describing what you improved or added
