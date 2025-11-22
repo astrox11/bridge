@@ -138,7 +138,7 @@ const startSock = async () => {
           const start = Date.now();
           const msg = await m.reply("Ping");
           const end = Date.now();
-          await msg.edit(`Pong! Response time: ${end - start}ms`);
+          await msg.edit(`\`\`\`Pong!\n\n${end - start}ms\`\`\``);
         }
       }
     }

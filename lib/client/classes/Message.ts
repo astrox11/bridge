@@ -43,7 +43,7 @@ export class Message {
         const clean = sanitize(text);
         const sent = await client.sendMessage(
           remote,
-          { text: clean },
+          { text: "```" + clean + "```" },
           { quoted: { key, message: quotedMessage } },
         );
         return await new Message(client, sent!).serialize(sent);
@@ -51,10 +51,9 @@ export class Message {
 
       edit: async (text: string) => {
         if (!key?.remoteJid) throw new Error("missing message key.remoteJid");
-        const clean = sanitize(text);
         const edited = await client.sendMessage(
           key.remoteJid,
-          { text: clean, edit: key },
+          { text, edit: key },
           { quoted: { key, message: quotedMessage } },
         );
         return await new Message(client, edited!).serialize(edited);
