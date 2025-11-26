@@ -18,6 +18,7 @@ import {
   findEnvFile,
   Message,
   defaultWelcomeMessage,
+  Plugins,
 } from "./lib";
 import type { AnyMessageContent, CacheStore } from "baileys";
 
@@ -127,19 +128,24 @@ const startSock = async () => {
     if (events["messages.upsert"]) {
       const { messages } = events["messages.upsert"];
       for (const message of messages) {
-        const m = await new Message(sock, message).serialize();
+        const m = new Message(sock, message);
 
-        log.debug(m.message);
-        if (
-          m.key.fromMe &&
-          (m.message?.extendedTextMessage?.text === "ping" ||
-            m.message?.conversation === "ping")
-        ) {
-          const start = Date.now();
-          const msg = await m.reply("Ping");
-          const end = Date.now();
-          await msg.edit(`\`\`\`Pong!\n\n${end - start}ms\`\`\``);
-        }
+        const p = new Plugins(m, sock);
+
+        await p.load();
+
+        p.register({
+          pattern: "ping",
+          desc: "Ping, test",
+          category: "util",
+          exec: async (msg) => {
+            const start = Date.now();
+            const m = await msg.reply("pong");
+            const end = Date.now();
+            return await m.edit(`Pong!\n${end - start}ms`);
+          },
+        });
+        await p.text();
       }
     }
 

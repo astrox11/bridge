@@ -11,7 +11,9 @@ export default defineConfig([
     extends: ["js/recommended"],
     languageOptions: { globals: globals.nodeBuiltin },
     rules: {
+      "no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
+      "no-explicit-any": "off",
     },
   },
 ]);
