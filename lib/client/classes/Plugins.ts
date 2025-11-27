@@ -238,6 +238,10 @@ export class Plugins {
 
     return null;
   }
+
+  findAll() {
+    return Array.from(this.nameIndex.values());
+  }
 }
 
 export interface CommandProperty {

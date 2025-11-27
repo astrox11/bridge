@@ -146,6 +146,35 @@ const startSock = async () => {
 
         await p.load();
 
+        p.register({
+          pattern: "menu",
+          alias: ["help"],
+          category: "util",
+          async exec(msg) {
+            const commands = p.findAll();
+            const categories: Record<string, Set<string>> = {};
+
+            for (const cmd of commands) {
+              const cat = cmd.category;
+              if (!categories[cat]) categories[cat] = new Set();
+              categories[cat].add(cmd.pattern);
+            }
+
+            let reply = `ᗰIᗪᗪᒪᗴᗯᗩᖇᗴ ᗰᗴᑎᑌ\n\n`;
+
+            for (const category in categories) {
+              reply += `${category.toUpperCase()}\n`;
+
+              for (const pattern of categories[category]) {
+                reply += `. ${pattern}\n`;
+              }
+
+              reply += `\n`;
+            }
+
+            await msg.reply(`\`\`\`${reply.trim()}\`\`\``);
+          },
+        });
         await p.text();
       }
     }
