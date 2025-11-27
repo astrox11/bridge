@@ -1,6 +1,7 @@
 import {
   BufferJSON,
   initAuthCreds,
+  jidEncode,
   proto,
   type AuthenticationCreds,
   type KeyPair,
@@ -134,7 +135,7 @@ export const store = {
                   const map = file.split("-");
 
                   if (map.length == 2) {
-                    pn = map[2];
+                    pn = jidEncode(map[2], "s.whatsapp.net");
 
                     await Promise.resolve(
                       stmtContactsSet.run(
@@ -143,15 +144,16 @@ export const store = {
                       ),
                     );
                   } else {
-                    await Promise.resolve(
-                      stmtContactsSet.run(
-                        JSON.stringify(value, BufferJSON.replacer).replace(
-                          /\D/g,
-                          "",
+                    if (file.includes("reverse"))
+                      await Promise.resolve(
+                        stmtContactsSet.run(
+                          JSON.stringify(value, BufferJSON.replacer).replace(
+                            /\D/g,
+                            "",
+                          ),
+                          map[2].split("_")[0],
                         ),
-                        map[2].split("_")[0],
-                      ),
-                    );
+                      );
                   }
                 }
                 tasks.push(value ? writeData(value, file) : removeData(file));
@@ -166,13 +168,10 @@ export const store = {
       },
     };
   },
-  save_wa_messages: function (msg: WAMessage) {
-    console.log('Message',msg.key.id)
-    const id = msg?.key?.id;
-    if (typeof id != "string") return;
+  save_wa_message: function (msg: WAMessage) {
+    if (typeof msg?.key?.id != "string") return;
     const json = JSON.stringify(msg, null, 2);
-    console.log("Json:", json)
-    stmtMessagesSet.run(id, json);
+    stmtMessagesSet.run(msg.key.id, json);
   },
   getMessage: async (key: WAMessageKey) => {
     const id = key?.id;

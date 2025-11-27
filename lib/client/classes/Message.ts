@@ -68,7 +68,7 @@ export class Message {
         configurable: true,
       },
     });
-    store.save_wa_messages(message);
+    store.save_wa_message(message);
   }
 
   async reply(text: string) {
