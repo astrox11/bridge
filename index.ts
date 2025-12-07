@@ -145,7 +145,7 @@ export const startSock = async () => {
 
         const p = new Plugins(m, sock);
 
-        await p.load();
+        await p.load("./lib/plugin");
 
         await p.text();
       }

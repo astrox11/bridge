@@ -7,16 +7,19 @@ export default [
     pattern: "ping",
     alias: ["speed"],
     category: "util",
+    desc: "Check bot response time",
     async exec(msg) {
       const start = Date.now();
       const m = await msg.reply("```pong```");
-      const end = Date.now();      await m.edit(`\`\`\`Pong ${start - end}\`\`\``);
+      const end = Date.now();
+      await m.edit(`\`\`\`Pong ${end - start}ms\`\`\``);
     },
   },
   {
     pattern: "menu",
     alias: ["help"],
     category: "util",
+    desc: "Display all available commands",
     async exec(msg, sock) {
       const p = new Plugins(msg, sock);
       const commands = p.findAll();
@@ -25,7 +28,14 @@ export default [
       for (const cmd of commands) {
         const cat = cmd.category;
         if (!categories[cat]) categories[cat] = new Set();
-        categories[cat].add(cmd.pattern);
+
+        // Add pattern with aliases
+        const cmdText =
+          cmd.alias && cmd.alias.length > 0
+            ? `${cmd.pattern} (${cmd.alias.join(", ")})`
+            : cmd.pattern;
+
+        categories[cat].add(cmdText);
       }
 
       let reply = `ᗰIᗪᗪᒪᗴᗯᗩᖇᗴ ᗰᗴᑎᑌ\n\n`;
@@ -47,6 +57,7 @@ export default [
     pattern: "restart",
     alias: ["reboot"],
     category: "util",
+    desc: "Restart the bot",
     async exec(msg) {
       await msg.reply("_Restarting_");
       await delay(300);
@@ -57,6 +68,7 @@ export default [
     pattern: "shutdown",
     alias: ["off"],
     category: "util",
+    desc: "Shutdown the bot",
     async exec(msg) {
       await msg.reply("_Shutting down_");
       await delay(300);
