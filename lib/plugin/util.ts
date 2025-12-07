@@ -23,13 +23,18 @@ export default [
     async exec(msg, sock) {
       const p = new Plugins(msg, sock);
       const commands = p.findAll();
+
+      if (commands.length === 0) {
+        await msg.reply("```No commands available```");
+        return;
+      }
+
       const categories: Record<string, Set<string>> = {};
 
       for (const cmd of commands) {
         const cat = cmd.category;
         if (!categories[cat]) categories[cat] = new Set();
 
-        // Add pattern with aliases
         const cmdText =
           cmd.alias && cmd.alias.length > 0
             ? `${cmd.pattern} (${cmd.alias.join(", ")})`

@@ -1,14 +1,15 @@
-import { type WASocket } from "baileys";
-import type { Message } from "./Message";
 import { readdirSync } from "fs";
 import { join, resolve } from "path";
 import { log } from "../debug";
 import { pathToFileURL } from "url";
+import type { WASocket } from "baileys";
+import type { Message } from "./Message";
 
 export class Plugins {
   message: Message;
   client: WASocket;
   private static commands: Map<string, CommandProperty> = new Map();
+  private static eventCommands: CommandProperty[] = [];
 
   constructor(message: Message, client: WASocket) {
     this.message = message;
@@ -31,6 +32,18 @@ export class Plugins {
 
   async sticker() {
     // Implement for sticker based trigger
+  }
+
+  async event() {
+    if (this.message && this.message?.text) {
+      for (const cmd of Plugins.eventCommands) {
+        try {
+          return await cmd.exec(this.message, this.client);
+        } catch (error) {
+          log.error("[event] CMD ERROR:", error);
+        }
+      }
+    }
   }
 
   async load(pluginsFolder: string) {
@@ -59,13 +72,18 @@ export class Plugins {
   }
 
   private registerCommand(cmd: CommandProperty) {
-    // Register by pattern
-    Plugins.commands.set(cmd.pattern.toLowerCase(), cmd);
+    if (cmd.event) {
+      Plugins.eventCommands.push(cmd);
+      return;
+    }
 
-    // Register by aliases
-    if (cmd.alias) {
-      for (const alias of cmd.alias) {
-        Plugins.commands.set(alias.toLowerCase(), cmd);
+    if (cmd.pattern) {
+      Plugins.commands.set(cmd.pattern.toLowerCase(), cmd);
+
+      if (cmd.alias) {
+        for (const alias of cmd.alias) {
+          Plugins.commands.set(alias.toLowerCase(), cmd);
+        }
       }
     }
   }
@@ -78,7 +96,15 @@ export class Plugins {
     const unique = new Map<string, CommandProperty>();
 
     for (const cmd of Plugins.commands.values()) {
-      unique.set(cmd.pattern, cmd);
+      if (cmd.pattern) {
+        unique.set(cmd.pattern, cmd);
+      }
+    }
+
+    for (const cmd of Plugins.eventCommands) {
+      if (cmd.pattern) {
+        unique.set(cmd.pattern, cmd);
+      }
     }
 
     return Array.from(unique.values());
@@ -86,10 +112,12 @@ export class Plugins {
 }
 
 export interface CommandProperty {
-  pattern: string;
+  pattern?: string;
   alias?: Array<string>;
   desc?: string;
   category: CommandCategories;
+  event?: boolean;
+  dontAddToCommandList?: boolean;
   exec: (msg: Message, sock?: WASocket) => Promise<any>;
 }
 

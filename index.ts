@@ -147,7 +147,9 @@ export const startSock = async () => {
 
         await p.load("./lib/plugin");
 
-        await p.text();
+        p.text();
+        p.sticker();
+        p.event()
       }
     }
   });
