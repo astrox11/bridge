@@ -11,7 +11,7 @@ import {
   type WAMessage,
   type WAMessageKey,
 } from "baileys";
-import sqlite from "./main";
+import sqlite from "./sql";
 
 type WriteAbleAuthStore =
   | string
@@ -47,6 +47,11 @@ sqlite.run(`
     lid TEXT NOT NULL
   );
 `);
+sqlite.run(`
+  CREATE TABLE IF NOT EXISTS user_language (
+    lang TEXT PRIMARY KEY
+  );
+`);
 
 const stmtSessionGet = sqlite.prepare(
   "SELECT data FROM user_session WHERE name = ?",
@@ -72,8 +77,19 @@ const stmtContactsSet = sqlite.prepare(`
   INSERT INTO user_contacts (pn, lid) VALUES (?, ?)
   ON CONFLICT(pn) DO UPDATE SET lid = excluded.lid
 `);
+const stmtLangGet = sqlite.prepare(`
+  SELECT lang
+  FROM user_language
+  WHERE lang = ?
+`);
 
-export const store = {
+const stmtLangSet = sqlite.prepare(`
+  INSERT INTO user_language (lang)
+  VALUES (?)
+  ON CONFLICT(lang) DO UPDATE SET lang = excluded.lang
+`);
+
+export default {
   authstate: async () => {
     const fixFileName = (name?: string) =>
       name?.replace(/\//g, "__")?.replace(/:/g, "-");
@@ -209,5 +225,12 @@ export const store = {
     const row = stmtContactsGet.get(id) as { lid: string } | null;
     if (!row) return null;
     return row.lid;
+  },
+  set_language: async (lang: string) => {
+    await Promise.resolve(stmtLangSet.run(lang));
+  },
+  get_language: async () => {
+    const row = stmtLangGet.get() as { lang: string } | null;
+    return row?.lang ?? "en";
   },
 };

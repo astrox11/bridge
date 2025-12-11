@@ -1,2 +1,5 @@
-export { default } from "./main";
-export * from "./store";
+export { default } from "./sql";
+
+import sql from "./store";
+
+export { sql as store };

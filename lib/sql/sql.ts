@@ -1,6 +1,6 @@
 import Database from "bun:sqlite";
 
-const sqlite = new Database("astrobridge.db");
+const sqlite = new Database("database.db");
 
 sqlite.run(`
     PRAGMA journal_mode = WAL;

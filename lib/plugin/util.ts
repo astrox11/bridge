@@ -1,6 +1,4 @@
-import { delay } from "baileys";
 import { Plugins, type CommandProperty } from "../";
-import { exit, startSock } from "../..";
 
 export default [
   {
@@ -12,7 +10,7 @@ export default [
       const start = Date.now();
       const m = await msg.reply("```pong```");
       const end = Date.now();
-      await m.edit(`\`\`\`Pong ${end - start}ms\`\`\``);
+      await m.edit(`${end - start}ms`);
     },
   },
   {
@@ -43,7 +41,7 @@ export default [
         categories[cat].add(cmdText);
       }
 
-      let reply = `ᗰIᗪᗪᒪᗴᗯᗩᖇᗴ ᗰᗴᑎᑌ\n\n`;
+      let reply = `αѕтяσ мєиυ\n\n`;
 
       for (const category in categories) {
         reply += `${category.toUpperCase()}\n`;
@@ -58,26 +56,4 @@ export default [
       await msg.reply(`\`\`\`${reply.trim()}\`\`\``);
     },
   },
-  {
-    pattern: "restart",
-    alias: ["reboot"],
-    category: "util",
-    desc: "Restart the bot",
-    async exec(msg) {
-      await msg.reply("_Restarting_");
-      await delay(300);
-      startSock();
-    },
-  },
-  {
-    pattern: "shutdown",
-    alias: ["off"],
-    category: "util",
-    desc: "Shutdown the bot",
-    async exec(msg) {
-      await msg.reply("_Shutting down_");
-      await delay(300);
-      exit();
-    },
-  },
-] satisfies CommandProperty[];
+] satisfies Array<CommandProperty>;

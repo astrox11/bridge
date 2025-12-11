@@ -8,11 +8,10 @@ import makeWASocket, {
   delay,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  jidNormalizedUser,
   makeCacheableSignalKeyStore,
 } from "baileys";
-import { log, parseEnv, store, findEnvFile, Message, Plugins } from "./lib";
-import type { AnyMessageContent, CacheStore } from "baileys";
+import { log, parseEnv, findEnvFile, Message, Plugins, store } from "./lib";
+import type { CacheStore } from "baileys";
 
 const config = findEnvFile("./");
 
@@ -20,7 +19,6 @@ if (!config) {
   log.warn("Please create a .env file to configure the middleware.");
 }
 
-const { getMessage, authstate } = store;
 const logger = MAIN_LOGGER({ level: "silent" });
 const msgRetryCounterCache = new NodeCache() as CacheStore;
 const rl = readline.createInterface({
@@ -42,9 +40,14 @@ const question = (text: string) =>
 
 export const startSock = async () => {
   log.info("Starting Client...");
-  if (!(await hasInternet()))
-    return log.warn("You are not connected to Internet");
-  const { state, saveCreds } = await authstate();
+  if (!(await hasInternet())) {
+    log.warn("You are not connected to Internet");
+    log.info("Retrying in 5secs");
+    await delay(5000);
+    startSock();
+  }
+
+  const { state, saveCreds } = await store.authstate();
   const { version, isLatest } = await fetchLatestBaileysVersion();
   log.info(`using WA v${version.join(".")}, isLatest: ${isLatest}`);
 
@@ -57,7 +60,7 @@ export const startSock = async () => {
     },
     msgRetryCounterCache,
     generateHighQualityLinkPreview: true,
-    getMessage,
+    getMessage: store.getMessage,
   });
 
   if (!sock.authState.creds.registered) {
@@ -66,7 +69,6 @@ export const startSock = async () => {
     if (config) {
       phoneNumber = parseEnv(config || "").PHONE_NUMBER || null;
       await delay(5000);
-      log.debug(`Loaded phone number from config: ${phoneNumber}`);
     }
 
     if (!phoneNumber) {
@@ -85,20 +87,6 @@ export const startSock = async () => {
     const code = await sock.requestPairingCode(phoneNumber.replace(/\D+/g, ""));
     log.info(`Pair Code: ${code.slice(0, 4)}-${code.slice(4)}`);
   }
-
-  const sendMessageWTyping = async (msg: AnyMessageContent, jid: string) => {
-    jid = jidNormalizedUser(jid);
-
-    await sock.presenceSubscribe(jid);
-    await delay(500);
-
-    await sock.sendPresenceUpdate("composing", jid);
-    await delay(2000);
-
-    await sock.sendPresenceUpdate("paused", jid);
-
-    await sock.sendMessage(jid, msg);
-  };
 
   sock.ev.process(async (events) => {
     if (events["connection.update"]) {
@@ -131,7 +119,6 @@ export const startSock = async () => {
 
       if (isConnected && sock.user.id) {
         log.info(`Connected to WhatsApp`);
-        await sendMessageWTyping({ text: "```Connected```" }, sock.user.id);
       }
     }
     if (events["creds.update"]) {
@@ -149,7 +136,7 @@ export const startSock = async () => {
 
         p.text();
         p.sticker();
-        p.event()
+        p.event();
       }
     }
   });

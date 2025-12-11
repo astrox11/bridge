@@ -20,9 +20,11 @@ export class Plugins {
     if (this.message && this.message?.text) {
       const text = this.message.text.replace(/^\s+|\s+$/g, "");
       const cmd = this.find(text);
+      const args = text.slice(cmd?.pattern?.length);
+      log.debug("Arguments Value:", args)
       if (cmd) {
         try {
-          await cmd.exec(this.message, this.client);
+          await cmd.exec(this.message, this.client, args);
         } catch (error) {
           log.error("[text] CMD ERROR:", error);
         }
@@ -118,7 +120,7 @@ export interface CommandProperty {
   category: CommandCategories;
   event?: boolean;
   dontAddToCommandList?: boolean;
-  exec: (msg: Message, sock?: WASocket) => Promise<any>;
+  exec: (msg: Message, sock?: WASocket, args?: string) => Promise<any>;
 }
 
-type CommandCategories = "p2p" | "groups" | "newsletter" | "status" | "util";
+type CommandCategories = "p2p" | "groups" | "newsletter" | "status" | "util" | "system";

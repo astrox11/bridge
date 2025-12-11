@@ -1,14 +1,3 @@
-import { findEnvFile, parseEnv } from "../utils";
-
-const config = findEnvFile(process.cwd());
-const envConfig = parseEnv(config || "");
-const logLevel = envConfig.LOGS;
-
-const debug = logLevel === "debug";
-const warn = logLevel === "warn";
-const info = logLevel === "info";
-const error = logLevel === "error";
-
 const COLORS = {
   reset: "\x1b[0m",
   info: "\x1b[32m",
@@ -30,22 +19,18 @@ function timestamp(): string {
 
 export const log = {
   info(...args: any[]) {
-    if (!info) return;
     const prefix = `\x1b[1m${COLORS.info}${timestamp()} [INFO]`;
     console.log(prefix, ...args.map(formatArg), COLORS.reset);
   },
   warn(...args: any[]) {
-    if (!warn) return;
     const prefix = `\x1b[1m${COLORS.warn}${timestamp()} [WARN]`;
     console.warn(prefix, ...args.map(formatArg), COLORS.reset);
   },
   error(...args: any[]) {
-    if (!error) return;
     const prefix = `\x1b[1m${COLORS.error}${timestamp()} [ERROR]`;
     console.error(prefix, ...args.map(formatArg), COLORS.reset);
   },
   debug(...args: any[]) {
-    if (!debug) return;
     const prefix = `\x1b[1m${COLORS.debug}${timestamp()} [DEBUG]`;
     console.log(prefix, ...args.map(formatArg), COLORS.reset);
   },
