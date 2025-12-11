@@ -17,7 +17,7 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-    "start": "bun run ./index.ts"
+    "start": "bun hook.js && bun run ./index.ts"
   },
   "dependencies": {
     "@google-cloud/translate": "^9.3.0",

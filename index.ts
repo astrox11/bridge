@@ -12,6 +12,30 @@ import makeWASocket, {
 } from "baileys";
 import { log, parseEnv, findEnvFile, Message, Plugins, store } from "./lib";
 import type { CacheStore } from "baileys";
+import { start } from "repl";
+
+const filterSessionEntry = (text: string): string => {
+  return text
+    .replace(/Closing session: SessionEntry \{[\s\S]*?^}/gm, "")
+    .trim();
+};
+
+const originalConsoleInfo = console.info;
+console.info = (...args: any[]) => {
+  const filtered = args
+    .map((arg) => {
+      if (typeof arg === "string") {
+        const result = filterSessionEntry(arg);
+        return result === "" ? null : result;
+      }
+      return arg;
+    })
+    .filter((arg) => arg !== null);
+
+  if (filtered.length > 0) {
+    originalConsoleInfo(...filtered);
+  }
+};
 
 const config = findEnvFile("./");
 
@@ -156,6 +180,8 @@ const cleanup = async (reset?: boolean) => {
     );
     if (reset) await unlink(join(cwd, "astrobridge.db")).catch(() => undefined);
     if (targets.length) log.info("Closed Client...");
+    await delay(15000);
+    startSock();
   } catch (e) {
     log.warn("Failed to remove shm/wal files: " + String(e));
   }
