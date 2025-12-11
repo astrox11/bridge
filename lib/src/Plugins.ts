@@ -21,7 +21,6 @@ export class Plugins {
       const text = this.message.text.replace(/^\s+|\s+$/g, "");
       const cmd = this.find(text);
       const args = text.slice(cmd?.pattern?.length);
-      log.debug("Arguments Value:", args)
       if (cmd) {
         try {
           await cmd.exec(this.message, this.client, args);
@@ -123,4 +122,10 @@ export interface CommandProperty {
   exec: (msg: Message, sock?: WASocket, args?: string) => Promise<any>;
 }
 
-type CommandCategories = "p2p" | "groups" | "newsletter" | "status" | "util" | "system";
+type CommandCategories =
+  | "p2p"
+  | "groups"
+  | "newsletter"
+  | "status"
+  | "util"
+  | "system";

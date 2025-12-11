@@ -76,3 +76,33 @@ export function findEnvFile(dir: string): string | null {
 
   return null;
 }
+
+export function formatRuntime(uptimeSeconds) {
+  let seconds = Math.floor(uptimeSeconds);
+
+  const MONTH = 30 * 24 * 3600;
+  const DAY = 24 * 3600;
+  const HOUR = 3600;
+  const MIN = 60;
+
+  const months = Math.floor(seconds / MONTH);
+  seconds %= MONTH;
+
+  const days = Math.floor(seconds / DAY);
+  seconds %= DAY;
+
+  const hours = Math.floor(seconds / HOUR);
+  seconds %= HOUR;
+
+  const mins = Math.floor(seconds / MIN);
+  const secs = seconds % MIN;
+
+  const parts = [];
+  if (months > 0) parts.push(months + "mo");
+  if (days > 0) parts.push(days + "d");
+  if (hours > 0) parts.push(hours + "h");
+  if (mins > 0) parts.push(mins + "m");
+  if (secs > 0) parts.push(secs + "s");
+
+  return parts.join(" ");
+}

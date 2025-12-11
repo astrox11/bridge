@@ -186,7 +186,7 @@ export default {
   },
   save_wa_message: function (msg: WAMessage) {
     if (typeof msg?.key?.id != "string") return;
-    const json = JSON.stringify(msg, null, 2);
+    const json = JSON.stringify(msg);
     stmtMessagesSet.run(msg.key.id, json);
   },
   getMessage: async (key: WAMessageKey) => {

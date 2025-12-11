@@ -12,7 +12,6 @@ import makeWASocket, {
 } from "baileys";
 import { log, parseEnv, findEnvFile, Message, Plugins, store } from "./lib";
 import type { CacheStore } from "baileys";
-import { start } from "repl";
 
 const filterSessionEntry = (text: string): string => {
   return text

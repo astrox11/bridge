@@ -1,6 +1,6 @@
 import { delay } from "baileys";
-import type { CommandProperty } from "../src";
 import { exit, startSock } from "../..";
+import { formatRuntime, type CommandProperty } from "../";
 
 export default [
   {
@@ -23,6 +23,16 @@ export default [
       await msg.reply("_Shutting down_");
       await delay(300);
       exit();
+    },
+  },
+  {
+    pattern: "runtime",
+    alias: ["uptime"],
+    category: "system",
+    desc: "Check process uptime",
+    async exec(msg) {
+      const time = formatRuntime(process.uptime());
+      return await msg.reply("```" + time + "```");
     },
   },
 ] satisfies Array<CommandProperty>;
