@@ -18,9 +18,7 @@ import {
   useBunqlAuth,
   cachedGroupMetadata,
 } from "./lib";
-import parsePhoneNumberFromString, {
-  isValidPhoneNumber,
-} from "libphonenumber-js";
+import { isValidPhoneNumber as vaildate } from "libphonenumber-js";
 
 const msgRetryCounterCache = new NodeCache() as CacheStore;
 const logger = MAIN_LOGGER({ level: "silent" });
@@ -28,11 +26,9 @@ const config = findEnvFile("./");
 const phone = parseEnv(config || "").PHONE_NUMBER?.replace(/\D+/g, "");
 
 const start = async () => {
-  if (!isValidPhoneNumber(`+${phone}`)) {
+  if (!vaildate(`+${phone}`)) {
     return log.error("Invalid PHONE_NUMBER in .env file");
   }
-
-  const country = parsePhoneNumberFromString(`+${phone}`)?.country;
   const { state, saveCreds } = await useBunqlAuth();
   const { version } = await fetchLatestBaileysVersion();
 
@@ -50,9 +46,6 @@ const start = async () => {
   });
 
   if (!sock.authState.creds.registered) {
-    log.info(
-      `${country} Phone number not registered. Requesting pairing code...`,
-    );
     await delay(10000);
     const code = await sock.requestPairingCode(phone);
     log.info(`Code: ${code.slice(0, 4)}-${code.slice(4)}`);
@@ -72,6 +65,7 @@ const start = async () => {
           log.error("Connection closed. You are logged out.");
         }
       }
+      if (connection === "open") log.info("Connected to WhatsApp");
     }
 
     if (events["creds.update"]) {

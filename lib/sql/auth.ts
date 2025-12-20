@@ -7,38 +7,38 @@ import {
   type SignalDataSet,
   type SignalDataTypeMap,
 } from "baileys";
+import { Mutex } from "async-mutex";
+
+const mutex = new Mutex();
 
 export const Auth = bunql.define("auth", {
   name: { type: "TEXT", primary: true },
-  data: { type: "TEXT" },
+  data: { type: "TEXT", notNull: true },
 });
 
 export const useBunqlAuth = async () => {
-  const writeData = async (data: any, name: string) => {
-    const findResult = Auth.find({ name }).run();
+  const writeData = async (data: any, name: string) =>
+    mutex.runExclusive(() => {
+      const row = Auth.find({ name }).run()[0];
+      const payload = JSON.stringify(data, BufferJSON.replacer);
 
-    const existing = findResult[0];
+      if (row) {
+        Auth.update({ data: payload }).where("name", "=", name).run();
+      } else {
+        Auth.insert({ name, data: payload });
+      }
+    });
 
-    if (existing) {
-      Auth.update({ data: JSON.stringify(data) })
-        .where("name", "=", name)
-        .run();
-    } else {
-      Auth.insert({ name, data: JSON.stringify(data) });
-    }
-  };
+  const readData = async (name: string) =>
+    mutex.runExclusive(() => {
+      const row = Auth.find({ name }).run()[0];
+      return row ? JSON.parse(row.data, BufferJSON.reviver) : null;
+    });
 
-  const readData = async (name: string) => {
-    const findResult = Auth.find({ name }).run();
-    const existing = findResult[0];
-
-    if (existing) return JSON.parse(existing.data, BufferJSON.reviver);
-    return null;
-  };
-
-  const removeData = async (name: string) => {
-    Auth.delete().where("name", "=", name).run();
-  };
+  const removeData = async (name: string) =>
+    mutex.runExclusive(() => {
+      Auth.delete().where("name", "=", name).run();
+    });
 
   const creds: AuthenticationCreds =
     (await readData("creds")) || initAuthCreds();
@@ -51,7 +51,7 @@ export const useBunqlAuth = async () => {
           type: T,
           ids: string[],
         ) => {
-          const data: { [_: string]: SignalDataTypeMap[T] } = {};
+          const out: { [id: string]: SignalDataTypeMap[T] } = {};
 
           await Promise.all(
             ids.map(async (id) => {
@@ -61,33 +61,32 @@ export const useBunqlAuth = async () => {
                 value = proto.Message.AppStateSyncKeyData.fromObject(value);
               }
 
-              data[id] = value;
+              out[id] = value;
             }),
           );
 
-          return data;
+          return out;
         },
+
         set: async (data: SignalDataSet) => {
           const tasks: Promise<void>[] = [];
 
           for (const category in data) {
             for (const id in data[category as keyof SignalDataTypeMap]) {
               const value = data[category as keyof SignalDataTypeMap]![id];
-              const name = `${category}-${id}`;
 
-              if (value) {
-                tasks.push(writeData(value, name));
-              } else {
-                tasks.push(removeData(name));
-              }
+              const key = `${category}-${id}`;
+              tasks.push(value ? writeData(value, key) : removeData(key));
             }
           }
+
           await Promise.all(tasks);
         },
       },
     },
+
     saveCreds: async () => {
-      return await writeData(creds, "creds");
+      await writeData(creds, "creds");
     },
   };
 };
