@@ -4,7 +4,6 @@ import { inspect } from "util";
 export default {
   event: true,
   category: "util",
-  desc: "Evaluate JavaScript code",
   dontAddToCommandList: true,
   async exec(msg) {
     if (!msg.text?.startsWith("$")) return;

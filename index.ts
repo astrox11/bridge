@@ -17,6 +17,8 @@ import {
   Plugins,
   useBunqlAuth,
   cachedGroupMetadata,
+  saveMessage,
+  addContact,
 } from "./lib";
 import { isValidPhoneNumber as vaildate } from "libphonenumber-js";
 
@@ -75,6 +77,7 @@ const start = async () => {
     if (events["messages.upsert"]) {
       const { messages } = events["messages.upsert"];
       for (const msg of messages) {
+        saveMessage(msg.key, msg);
         const m = new Message(sock, msg);
         const p = new Plugins(m, sock);
         await p.load("./lib/modules");
@@ -82,6 +85,11 @@ const start = async () => {
         p.sticker();
         p.event();
       }
+    }
+
+    if (events["lid-mapping.update"]) {
+      const { pn, lid } = events["lid-mapping.update"];
+      addContact(pn, lid);
     }
   });
 };

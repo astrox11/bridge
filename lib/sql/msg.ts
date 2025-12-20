@@ -1,5 +1,6 @@
 import { proto, type WAMessageKey } from "baileys";
 import { bunql } from "./_sql";
+import type { WAMessage } from "baileys/src";
 
 const Message = bunql.define("msg_users", {
   id: { type: "TEXT", primary: true },
@@ -15,7 +16,7 @@ export const getMessage = async (key: WAMessageKey) => {
   return undefined;
 };
 
-export const saveMessage = (key: WAMessageKey, msg: proto.Message) => {
+export const saveMessage = (key: WAMessageKey, msg: WAMessage) => {
   const id = key.id;
   if (id) {
     Message.insert({ id, msg: JSON.stringify(msg) });

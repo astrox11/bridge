@@ -136,8 +136,7 @@ export class Plugins {
 export interface CommandProperty {
   pattern?: string;
   alias?: Array<string>;
-  desc?: string;
-  category: CommandCategories;
+  category?: CommandCategories;
   event?: boolean;
   dontAddToCommandList?: boolean;
   isGroup?: boolean;

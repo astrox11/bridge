@@ -8,6 +8,7 @@ import {
   type SignalDataTypeMap,
 } from "baileys";
 import { Mutex } from "async-mutex";
+import { addContact } from "./contact";
 
 const mutex = new Mutex();
 
@@ -76,6 +77,9 @@ export const useBunqlAuth = async () => {
               const value = data[category as keyof SignalDataTypeMap]![id];
 
               const key = `${category}-${id}`;
+              if (key.includes("lid-mapping")) {
+                handleLidMapping(key, value as string);
+              }
               tasks.push(value ? writeData(value, key) : removeData(key));
             }
           }
@@ -90,3 +94,20 @@ export const useBunqlAuth = async () => {
     },
   };
 };
+
+function handleLidMapping(key: string, value: string) {
+  console.log(key, value);
+  const isPn = !key.includes("reverse");
+
+  if (isPn) {
+    key = key.split("-")[2];
+    value = value.replace(/^"|"$/g, "");
+
+    addContact(key, value);
+  } else {
+    key = key.split("-")[2].split("_")[0];
+    value = value.replace(/^"|"$/g, "");
+
+    addContact(value, key);
+  }
+}

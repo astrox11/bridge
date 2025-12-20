@@ -19,7 +19,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@realastrox11/bunql": "^1.0.0",
+    "@realastrox11/bunql": "^1.1.0",
     "baileys": "https://github.com/WhiskeySockets/Baileys",
     "libphonenumber-js": "^1.12.33"
   }

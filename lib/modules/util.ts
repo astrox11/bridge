@@ -5,7 +5,6 @@ export default [
     pattern: "ping",
     alias: ["speed"],
     category: "util",
-    desc: "Check bot response time",
     async exec(msg) {
       const start = Date.now();
       const m = await msg.reply("```pong```");
@@ -17,7 +16,6 @@ export default [
     pattern: "runtime",
     alias: ["uptime"],
     category: "util",
-    desc: "Check process uptime",
     async exec(msg) {
       const time = formatRuntime(process.uptime());
       return await msg.reply("```" + time + "```");

@@ -3,8 +3,7 @@ import { Plugins, type CommandProperty } from "..";
 export default {
   pattern: "menu",
   alias: ["help"],
-  category: "util",
-  desc: "Display all available commands",
+  dontAddToCommandList: true,
   async exec(msg, sock) {
     const p = new Plugins(msg, sock);
     const commands = p.findAll();
