@@ -7,6 +7,7 @@
       "dependencies": {
         "@realastrox11/bunql": "^1.0.0",
         "baileys": "https://github.com/WhiskeySockets/Baileys",
+        "libphonenumber-js": "^1.12.33",
       },
       "devDependencies": {
         "@eslint/js": "^9.39.2",
@@ -320,6 +321,8 @@
     "keyv": ["keyv@5.5.5", "", { "dependencies": { "@keyv/serialize": "^1.1.1" } }, "sha512-FA5LmZVF1VziNc0bIdCSA1IoSVnDCqE8HJIZZv2/W8YmoAM50+tnUgJR/gQZwEeIMleuIOnRnHA/UaZRNeV4iQ=="],
 
     "levn": ["levn@0.4.1", "", { "dependencies": { "prelude-ls": "^1.2.1", "type-check": "~0.4.0" } }, "sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ=="],
+
+    "libphonenumber-js": ["libphonenumber-js@1.12.33", "", {}, "sha512-r9kw4OA6oDO4dPXkOrXTkArQAafIKAU71hChInV4FxZ69dxCfbwQGDPzqR5/vea94wU705/3AZroEbSoeVWrQw=="],
 
     "libsignal": ["@whiskeysockets/libsignal-node@github:whiskeysockets/libsignal-node#1c30d7d", { "dependencies": { "curve25519-js": "^0.0.4", "protobufjs": "6.8.8" } }, "WhiskeySockets-libsignal-node-1c30d7d"],
 

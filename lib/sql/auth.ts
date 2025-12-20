@@ -1,4 +1,4 @@
-import { bunql } from "./init";
+import { bunql } from "./_sql";
 import {
   BufferJSON,
   initAuthCreds,

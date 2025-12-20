@@ -17,15 +17,23 @@ import {
   Plugins,
   useBunqlAuth,
   cachedGroupMetadata,
-  cacheGroupMetadata,
   Auth,
 } from "./lib";
+import parsePhoneNumberFromString, {
+  isValidPhoneNumber,
+} from "libphonenumber-js";
 
 const msgRetryCounterCache = new NodeCache() as CacheStore;
 const logger = MAIN_LOGGER({ level: "silent" });
 const config = findEnvFile("./");
+const phone = parseEnv(config || "").PHONE_NUMBER?.replace(/\D+/g, "");
 
 const start = async () => {
+  if (!isValidPhoneNumber(`+${phone}`)) {
+    return log.error("Invalid PHONE_NUMBER in .env file");
+  }
+
+  const country = parsePhoneNumberFromString(`+${phone}`)?.country;
   const { state, saveCreds } = await useBunqlAuth();
   const { version } = await fetchLatestBaileysVersion();
 
@@ -43,10 +51,8 @@ const start = async () => {
   });
 
   if (!sock.authState.creds.registered) {
+    log.info(`${country} Phone number not registered. Requesting pairing code...`);
     await delay(10000);
-    const phone = parseEnv(config || "").PHONE_NUMBER?.replace(/\D+/g, "");
-    if (phone.length < 10)
-      return log.error("Invalid PHONE_NUMBER in .env file");
     const code = await sock.requestPairingCode(phone);
     log.info(`Code: ${code.slice(0, 4)}-${code.slice(4)}`);
   }
@@ -76,24 +82,6 @@ const start = async () => {
         log.info("Unexpected disconnect. Reconnecting...");
         setTimeout(() => start(), 3000);
       }
-    }
-  });
-
-  sock.ev.on("groups.update", async ([event]) => {
-    try {
-      const metadata = await sock.groupMetadata(event.id);
-      cacheGroupMetadata(metadata);
-    } catch {
-      /** */
-    }
-  });
-
-  sock.ev.on("group-participants.update", async (event) => {
-    try {
-      const metadata = await sock.groupMetadata(event.id);
-      cacheGroupMetadata(metadata);
-    } catch {
-      /** */
     }
   });
 

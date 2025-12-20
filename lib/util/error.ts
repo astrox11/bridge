@@ -1,11 +1,11 @@
 import path from "node:path";
 
-export class AstroBridgeError extends Error {
+export class BridgeError extends Error {
   file: string;
 
   constructor(message: string, file: string) {
     super(message);
-    this.name = "AstroBridgeError";
+    this.name = "BridgeError";
     this.file = file;
 
     if (this.stack) {

@@ -1,5 +1,5 @@
 import type { GroupMetadata } from "baileys";
-import { bunql } from "./init";
+import { bunql } from "./_sql";
 
 const Group = bunql.define("group", {
   id: { type: "TEXT", primary: true },

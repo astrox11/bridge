@@ -1,4 +1,4 @@
-import { bunql } from "./init";
+import { bunql } from "./_sql";
 
 const Sudo = bunql.define("sudo_users", {
   pn: { type: "TEXT", primary: true },

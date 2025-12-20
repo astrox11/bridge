@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@realastrox11/bunql": "^1.0.0",
-    "baileys": "https://github.com/WhiskeySockets/Baileys"
+    "baileys": "https://github.com/WhiskeySockets/Baileys",
+    "libphonenumber-js": "^1.12.33"
   }
 }

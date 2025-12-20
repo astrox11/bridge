@@ -1,4 +1,4 @@
-import { bunql } from "./init";
+import { bunql } from "./_sql";
 
 const Ban = bunql.define("ban", {
   pn: { type: "TEXT", primary: true },
