@@ -2,7 +2,7 @@ import { proto, type WAMessageKey } from "baileys";
 import { bunql } from "./_sql";
 import type { WAMessage } from "baileys/src";
 
-const Message = bunql.define("msg_users", {
+const Message = bunql.define("messages", {
   id: { type: "TEXT", primary: true },
   msg: { type: "TEXT" },
 });

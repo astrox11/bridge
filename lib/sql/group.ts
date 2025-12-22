@@ -2,7 +2,7 @@ import type { GroupMetadata, WASocket } from "baileys";
 import { bunql } from "./_sql";
 import { log } from "../util";
 
-const Group = bunql.define("group", {
+const Group = bunql.define("groups", {
   id: { type: "TEXT", primary: true },
   data: { type: "TEXT" },
 });

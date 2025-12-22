@@ -1,7 +1,7 @@
 import { jidNormalizedUser } from "baileys/src";
 import { bunql } from "./_sql";
 
-const Sudo = bunql.define("sudo_users", {
+const Sudo = bunql.define("sudo", {
   pn: { type: "TEXT", primary: true },
   lid: { type: "TEXT" },
 });

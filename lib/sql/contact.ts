@@ -1,6 +1,6 @@
 import { bunql } from "./_sql";
 
-const Contact = bunql.define("contact", {
+const Contact = bunql.define("contacts", {
   pn: { type: "TEXT", primary: true },
   lid: { type: "TEXT" },
 });
