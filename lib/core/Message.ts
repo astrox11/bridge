@@ -164,6 +164,24 @@ export class Message {
     return new Message(this.client, msg!);
   }
 
+  async forward(
+    jid: string,
+    msg: WAMessage,
+    opts?: { forceForward?: boolean; forwardScore?: number },
+  ) {
+    return await this.client.sendMessage(
+      jid,
+      {
+        forward: msg,
+        contextInfo: {
+          forwardingScore: opts?.forwardScore,
+          isForwarded: opts?.forceForward,
+        },
+      },
+      { quoted: this },
+    );
+  }
+
   private mimetypeToMediaType(mimetype: string): string {
     if (mimetype.startsWith("image/")) return "image";
     if (mimetype.startsWith("video/")) return "video";

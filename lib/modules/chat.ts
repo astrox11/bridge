@@ -11,17 +11,7 @@ export default [
       }
 
       msg.quoted.message[msg.quoted.type].viewOnce = false;
-      await sock.sendMessage(
-        msg.chat,
-        {
-          forward: msg.quoted,
-          contextInfo: {
-            isForwarded: false,
-            forwardingScore: 0,
-          },
-        },
-        { quoted: msg.quoted },
-      );
+      await msg.forward(msg.chat, msg.quoted);
     },
   },
   {
