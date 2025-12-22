@@ -1,3 +1,11 @@
+import type { NewsletterMetadata } from "baileys";
+
 export class Newsletter {
-  /** TODO: Implement */
+  newsletterJid: string;
+  metadata: NewsletterMetadata;
+
+  constructor(newsletterJid: string, metadata: NewsletterMetadata) {
+    this.newsletterJid = newsletterJid;
+    this.metadata = metadata;
+  }
 }

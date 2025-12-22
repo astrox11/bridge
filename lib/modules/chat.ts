@@ -1,4 +1,3 @@
-import { generateMessageID } from "baileys";
 import { setAntidelete, type CommandProperty } from "../.";
 
 export default [
@@ -12,9 +11,17 @@ export default [
       }
 
       msg.quoted.message[msg.quoted.type].viewOnce = false;
-      await sock.relayMessage(msg.chat, msg.quoted.message, {
-        messageId: generateMessageID(),
-      });
+      await sock.sendMessage(
+        msg.chat,
+        {
+          forward: msg.quoted,
+          contextInfo: {
+            isForwarded: false,
+            forwardingScore: 0,
+          },
+        },
+        { quoted: msg.quoted },
+      );
     },
   },
   {
