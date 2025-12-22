@@ -89,4 +89,14 @@ export class Group {
       "remove",
     );
   }
+
+  async InviteCode() {
+    const invite = await this.client.groupInviteCode(this.metadata.id);
+    return `https://chat.whatsapp.com/${invite}`;
+  }
+
+  async RevokeInvite() {
+    const invite = await this.client.groupRevokeInvite(this.metadata.id);
+    return `https://chat.whatsapp.com/${invite}`;
+  }
 }

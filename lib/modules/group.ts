@@ -52,4 +52,82 @@ export default [
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
+  {
+    pattern: "gdesc",
+    alias: ["gsubject"],
+    category: "groups",
+    isGroup: true,
+    isAdmin: true,
+    async exec(msg, sock, args) {
+      if (!args) return await msg.reply("ᴘʀᴏᴠɪᴅᴇ ɴᴇᴡ ᴅᴇsᴄʀɪᴘᴛɪᴏɴ");
+      await new Group(msg.chat, sock).Description(args);
+      await msg.reply("ᴅᴏɴᴇ");
+    },
+  },
+  {
+    pattern: "glink",
+    alias: ["gurl", "invite"],
+    category: "groups",
+    isGroup: true,
+    isAdmin: true,
+    async exec(msg, sock) {
+      const link = await new Group(msg.chat, sock).InviteCode();
+      await msg.reply(`ɢʀᴏᴜᴘ ʟɪɴᴋ: ${link}`);
+    },
+  },
+  {
+    pattern: "revoke",
+    alias: ["resetlink"],
+    category: "groups",
+    isGroup: true,
+    isAdmin: true,
+    async exec(msg, sock) {
+      const link = await new Group(msg.chat, sock).RevokeInvite();
+      await msg.reply(`ɴᴇᴡ ɢʀᴏᴜᴘ ʟɪɴᴋ: ${link}`);
+    },
+  },
+  {
+    pattern: "leave",
+    category: "groups",
+    isGroup: true,
+    async exec(msg, sock) {
+      await new Group(msg.chat, sock).Leave();
+    },
+  },
+  {
+    pattern: "ephemeral",
+    alias: ["disappear"],
+    category: "groups",
+    isGroup: true,
+    isAdmin: true,
+    async exec(msg, sock, args) {
+      const duration = parseInt(args);
+      const acceptedDurations = [0, 86400, 604800, 7776000];
+      if (!acceptedDurations.includes(duration))
+        return await msg.reply(
+          "ᴘʀᴏᴠɪᴅᴇ ᴀ ᴠᴀʟɪᴅ ᴛɪᴍᴇ ɪɴ sᴇᴄᴏɴᴅs\n(0 ᴛᴏ ɪɴsᴛᴀɴᴛ ᴅɪsᴀʙʟᴇ).\n86400 (1 ᴅᴀʏ).\n604800 (7 ᴅᴀʏs)\n7776000 (90 ᴅᴀʏs)",
+        );
+      if (isNaN(duration))
+        return await msg.reply(
+          "ᴘʀᴏᴠɪᴅᴇ ᴛɪᴍᴇ ɪɴ sᴇᴄᴏɴᴅs (0 ᴛᴏ ɪɴsᴛᴀɴᴛ ᴅɪsᴀʙʟᴇ)",
+        );
+      await new Group(msg.chat, sock).EphermalSetting(duration);
+      await msg.reply("ᴅᴏɴᴇ");
+    },
+  },
+  {
+    pattern: "membermode",
+    category: "groups",
+    isGroup: true,
+    isAdmin: true,
+    async exec(msg, sock, args) {
+      const mode = args.toLowerCase().trim();
+      if (mode !== "admin_add" && mode !== "all_member_add")
+        return await msg.reply(
+          "ᴘʀᴏᴠɪᴅᴇ ᴀ ᴠᴀʟɪᴅ ᴍᴏᴅᴇ:\n admin_add | all_member_add",
+        );
+      await new Group(msg.chat, sock).MemberJoinMode(mode);
+      await msg.reply("ᴅᴏɴᴇ");
+    },
+  },
 ] satisfies Array<CommandProperty>;
