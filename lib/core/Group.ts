@@ -1,5 +1,5 @@
-import type { Contact, GroupMetadata, WASocket } from "baileys";
-import { GetGroupMeta } from "../sql";
+import { jidNormalizedUser, type GroupMetadata, type WASocket } from "baileys";
+import { GetGroupMeta, isParticipant } from "../sql";
 
 export class Group {
   client: WASocket;
@@ -9,9 +9,8 @@ export class Group {
     this.client = client;
   }
 
-  async Promote(participant: Contact["id"]) {
-    const exists = this.metadata.participants.map((id) => id.lid);
-    if (exists.includes(participant)) {
+  async Promote(participant: string) {
+    if (isParticipant(this.metadata.id, participant)) {
       return await this.client.groupParticipantsUpdate(
         this.metadata.id,
         [participant],
@@ -21,9 +20,8 @@ export class Group {
     return null;
   }
 
-  async Demote(participant: Contact["id"]) {
-    const exists = this.metadata.participants.map((id) => id.lid);
-    if (exists.includes(participant)) {
+  async Demote(participant: string) {
+    if (isParticipant(this.metadata.id, participant)) {
       return await this.client.groupParticipantsUpdate(
         this.metadata.id,
         [participant],
@@ -33,9 +31,8 @@ export class Group {
     return null;
   }
 
-  async Remove(participant: Contact["id"]) {
-    const exists = this.metadata.participants.map((id) => id.lid);
-    if (exists.includes(participant)) {
+  async Remove(participant: string) {
+    if (isParticipant(this.metadata.id, participant)) {
       return await this.client.groupParticipantsUpdate(
         this.metadata.id,
         [participant],
@@ -45,7 +42,7 @@ export class Group {
     return null;
   }
 
-  async Add(participant: Contact["id"]) {
+  async Add(participant: string) {
     return await this.client.groupParticipantsUpdate(
       this.metadata.id,
       [participant],
@@ -65,6 +62,31 @@ export class Group {
     return await this.client.groupUpdateDescription(
       this.metadata.id,
       description,
+    );
+  }
+
+  async MemberJoinMode(mode: "admin_add" | "all_member_add") {
+    return await this.client.groupMemberAddMode(this.metadata.id, mode);
+  }
+
+  async EphermalSetting(duration: number) {
+    return await this.client.groupToggleEphemeral(this.metadata.id, duration);
+  }
+
+  async KickAll() {
+    const participants = this.metadata.participants
+      .filter(
+        (p) =>
+          p.admin == null &&
+          p.id !== jidNormalizedUser(this.client.user?.id) &&
+          p.id !== this.metadata.owner,
+      )
+      .map((p) => p.id);
+
+    return await this.client.groupParticipantsUpdate(
+      this.metadata.id,
+      participants,
+      "remove",
     );
   }
 }

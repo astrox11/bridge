@@ -93,7 +93,7 @@ const start = async () => {
         saveMessage(msg.key, msg);
         const m = new Message(sock, msg);
 
-        if (m.message.protocolMessage.type === 0) {
+        if (m?.message?.protocolMessage?.type === 0) {
           sock.ev.emit("messages.delete", { keys: [m.key] });
         }
 
@@ -133,7 +133,7 @@ const start = async () => {
     }
 
     if (events["messages.delete"]) {
-      // TODO: Handle deleted messages
+      log.debug("Message deleted:", events["messages.delete"]);
     }
   });
 };

@@ -15,10 +15,25 @@ export const cachedGroupMetadata = async (id: string) => {
 };
 
 export const GetGroupMeta = (id: string) => {
-  const metadata = Group.select().where("id", "=", id).get() as unknown as
-    | GroupMetadata
-    | undefined;
-  return metadata ? metadata : undefined;
+  const metadata = Group.select().where("id", "=", id).get()[0]
+    ?.data as unknown as GroupMetadata | undefined;
+  return metadata ? JSON.parse(metadata as any as string) : undefined;
+};
+
+export const GetParticipants = (id: string) => {
+  const metadata = Group.select().where("id", "=", id).get()[0]
+    ?.data as unknown as GroupMetadata | undefined;
+
+  return metadata
+    ? [
+        ...metadata.participants.map((p) => p.id),
+        ...metadata.participants.map((p) => p.phoneNumber),
+      ].filter(Boolean)
+    : [];
+};
+
+export const isParticipant = (chat: string, participantId: string) => {
+  return GetParticipants(chat).includes(participantId);
 };
 
 export const cacheGroupMetadata = async (
@@ -54,23 +69,19 @@ export const removeGroupMetadata = async (id: string) => {
 };
 
 export const isAdmin = function (chat: string, participantId: string) {
-  const metadata = Group.select().where("id", "=", chat).get() as unknown as
-    | GroupMetadata
-    | undefined;
-  if (!metadata) return false;
-  const participant = metadata.participants.find((p) => p.id === participantId);
-  if (!participant) return false;
-  return participant.admin !== null;
-};
+  let metadata = Group.select().where("id", "=", chat).get()[0]
+    ?.data as unknown as GroupMetadata | undefined;
 
-export const isSuperAdmin = function (chat: string, participantId: string) {
-  const metadata = Group.select().where("id", "=", chat).get() as unknown as
-    | GroupMetadata
-    | undefined;
-  if (!metadata) return false;
-  const participant = metadata.participants.find((p) => p.id === participantId);
-  if (!participant) return false;
-  return participant.admin === "superadmin";
+  if (metadata) {
+    metadata = JSON.parse(metadata as any as string);
+  }
+
+  const participant = metadata?.participants.filter((p) => p.admin !== null);
+
+  return [
+    ...participant.map((p) => p.id),
+    ...participant.map((p) => p.phoneNumber),
+  ].includes(participantId);
 };
 
 export const getGroupAdmins = function (chat: string) {

@@ -19,7 +19,7 @@ export class Plugins {
   async text() {
     if (this.message && this.message?.text) {
       const text = this.message.text.replace(/^\s+|\s+$/g, "");
-      const cmd = this.find(text);
+      const cmd = this.find(text.split(" ")[0].toLowerCase());
       const args = text.slice(cmd?.pattern?.length);
 
       if (cmd?.isSudo && !isSudo(this.message.sender)) {

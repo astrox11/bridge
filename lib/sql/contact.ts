@@ -19,6 +19,17 @@ export const getPnByLid = (lid: string) => {
   return contact?.pn + "@s.whatsapp.net" || null;
 };
 
+export const getAlternateId = (id: string) => {
+  const contact = Contact.query()
+    .where("pn", "=", id)
+    .orWhere("lid", "=", id)
+    .first();
+  if (!contact) return null;
+  return contact.pn === id
+    ? contact.lid + "@lid"
+    : contact.pn + "@s.whatsapp.net";
+};
+
 export const removeContact = (id: string) => {
   return Contact.delete().where("pn", "=", id).orWhere("lid", "=", id).run();
 };

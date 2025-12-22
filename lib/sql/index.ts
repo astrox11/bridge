@@ -1,3 +1,4 @@
+export * from "./antidelete";
 export * from "./auth";
 export * from "./ban";
 export * from "./contact";

@@ -12,6 +12,7 @@ import type {
   WAMessageKey,
 } from "baileys";
 import { fileTypeFromBuffer } from "file-type";
+import { getAlternateId } from "../sql";
 
 export class Message {
   client: WASocket;
@@ -37,9 +38,7 @@ export class Message {
     this.message = normalizeMessageContent(message.message!);
     this.isGroup = isJidGroup(message.key.remoteJid!);
     this.sender = !this.isGroup ? this.key.remoteJid : this.key.participant;
-    this.sender_alt = !this.isGroup
-      ? this.key.remoteJidAlt
-      : this.key.participantAlt;
+    this.sender_alt = getAlternateId(this.sender);
     this.type = getContentType(this.message);
     this.image = this.type === "imageMessage";
     this.video = this.type === "videoMessage";
@@ -206,6 +205,8 @@ export class Message {
 
 class Quoted {
   key: WAMessageKey;
+  sender: string;
+  sender_alt: string;
   message: WAMessageContent;
   type: string | undefined;
   image: boolean;
@@ -221,8 +222,10 @@ class Quoted {
       remoteJid: quoted.remoteJid,
       id: quoted.stanzaId,
       participant: quoted.participant,
-      participantAlt: undefined,
+      participantAlt: getAlternateId(quoted.participant),
     };
+    this.sender = quoted.participant!;
+    this.sender_alt = this.key.participantAlt;
     this.message = normalizeMessageContent(quoted.quotedMessage!);
     this.type = getContentType(this.message);
     this.image = this.type === "imageMessage";
