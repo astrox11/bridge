@@ -22,8 +22,10 @@ export const GetGroupMeta = (id: string) => {
 };
 
 export const GetParticipants = (id: string) => {
-  const metadata = Group.select().where("id", "=", id).get()[0]
+  let metadata = Group.select().where("id", "=", id).get()[0]
     ?.data as unknown as GroupMetadata | undefined;
+
+  metadata = JSON.parse(metadata as any as string);
 
   return metadata
     ? [

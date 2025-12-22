@@ -1,5 +1,5 @@
 import { jidNormalizedUser, type GroupMetadata, type WASocket } from "baileys";
-import { GetGroupMeta, isParticipant } from "../sql";
+import { GetGroupMeta, isAdmin, isParticipant } from "../sql";
 
 export class Group {
   client: WASocket;
@@ -11,33 +11,38 @@ export class Group {
 
   async Promote(participant: string) {
     if (isParticipant(this.metadata.id, participant)) {
-      return await this.client.groupParticipantsUpdate(
+      if (isAdmin(this.metadata.id, participant)) return null;
+      await this.client.groupParticipantsUpdate(
         this.metadata.id,
         [participant],
         "promote",
       );
+      return true;
     }
     return null;
   }
 
   async Demote(participant: string) {
     if (isParticipant(this.metadata.id, participant)) {
-      return await this.client.groupParticipantsUpdate(
+      if (!isAdmin(this.metadata.id, participant)) return null;
+      await this.client.groupParticipantsUpdate(
         this.metadata.id,
         [participant],
         "demote",
       );
+      return true;
     }
     return null;
   }
 
   async Remove(participant: string) {
     if (isParticipant(this.metadata.id, participant)) {
-      return await this.client.groupParticipantsUpdate(
+      await this.client.groupParticipantsUpdate(
         this.metadata.id,
         [participant],
         "remove",
       );
+      return true;
     }
     return null;
   }
@@ -66,11 +71,16 @@ export class Group {
   }
 
   async MemberJoinMode(mode: "admin_add" | "all_member_add") {
-    return await this.client.groupMemberAddMode(this.metadata.id, mode);
+    if (mode === "admin_add" && !this.metadata.memberAddMode) return null;
+    if (mode === "all_member_add" && this.metadata.memberAddMode) return null;
+    await this.client.groupMemberAddMode(this.metadata.id, mode);
+    return true;
   }
 
   async EphermalSetting(duration: number) {
-    return await this.client.groupToggleEphemeral(this.metadata.id, duration);
+    if (this.metadata.ephemeralDuration === duration) return null;
+    await this.client.groupToggleEphemeral(this.metadata.id, duration);
+    return true;
   }
 
   async KickAll() {
@@ -101,14 +111,23 @@ export class Group {
   }
 
   async GroupJoinMode(mode: "on" | "off") {
-    return await this.client.groupJoinApprovalMode(this.metadata.id, mode);
+    if (mode === "on" && this.metadata.joinApprovalMode) return null;
+    if (mode === "off" && !this.metadata.joinApprovalMode) return null;
+    await this.client.groupJoinApprovalMode(this.metadata.id, mode);
+    return true;
   }
 
   async SetAnnouncementMode(mode: "announcement" | "not_announcement") {
-    return await this.client.groupSettingUpdate(this.metadata.id, mode);
+    if (mode === "announcement" && this.metadata.announce) return null;
+    if (mode === "not_announcement" && !this.metadata.announce) return null;
+    await this.client.groupSettingUpdate(this.metadata.id, mode);
+    return true;
   }
 
   async SetRestrictedMode(mode: "locked" | "unlocked") {
-    return await this.client.groupSettingUpdate(this.metadata.id, mode);
+    if (mode === "locked" && this.metadata.restrict) return null;
+    if (mode === "unlocked" && !this.metadata.restrict) return null;
+    await this.client.groupSettingUpdate(this.metadata.id, mode);
+    return true;
   }
 }

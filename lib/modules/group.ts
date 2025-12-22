@@ -27,7 +27,8 @@ export default [
       const number = args.includes("@s.whatsapp.net")
         ? args
         : args + "@s.whatsapp.net";
-      await new Group(msg.chat, sock).Remove(number);
+      const result = await new Group(msg.chat, sock).Remove(number);
+      if (result === null) return await msg.reply("ғᴀɪʟᴇᴅ: ᴜsᴇʀ ɴᴏᴛ ɪɴ ɢʀᴏᴜᴘ");
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
@@ -38,6 +39,44 @@ export default [
     isAdmin: true,
     async exec(msg, sock) {
       await new Group(msg.chat, sock).KickAll();
+      await msg.reply("ᴅᴏɴᴇ");
+    },
+  },
+  {
+    pattern: "promote",
+    category: "groups",
+    isGroup: true,
+    isAdmin: true,
+    async exec(msg, sock, args) {
+      args = msg?.quoted
+        ? msg.quoted.sender
+        : args?.replace(/[^a-zA-Z0-9]/g, "");
+      if (!args) return await msg.reply("ᴘʀᴏᴠɪᴅᴇ ɴᴜᴍʙᴇʀ");
+      const number = args.includes("@s.whatsapp.net")
+        ? args
+        : args + "@s.whatsapp.net";
+      const result = await new Group(msg.chat, sock).Promote(number);
+      if (result === null)
+        return await msg.reply("ғᴀɪʟᴇᴅ: ᴜsᴇʀ ɴᴏᴛ ɪɴ ɢʀᴏᴜᴘ ᴏʀ ᴀʟʀᴇᴀᴅʏ ᴀᴅᴍɪɴ");
+      await msg.reply("ᴅᴏɴᴇ");
+    },
+  },
+  {
+    pattern: "demote",
+    category: "groups",
+    isGroup: true,
+    isAdmin: true,
+    async exec(msg, sock, args) {
+      args = msg?.quoted
+        ? msg.quoted.sender
+        : args?.replace(/[^a-zA-Z0-9]/g, "");
+      if (!args) return await msg.reply("ᴘʀᴏᴠɪᴅᴇ ɴᴜᴍʙᴇʀ");
+      const number = args.includes("@s.whatsapp.net")
+        ? args
+        : args + "@s.whatsapp.net";
+      const result = await new Group(msg.chat, sock).Demote(number);
+      if (result === null)
+        return await msg.reply("ғᴀɪʟᴇᴅ: ᴜsᴇʀ ɴᴏᴛ ɪɴ ɢʀᴏᴜᴘ ᴏʀ ɴᴏᴛ ᴀᴅᴍɪɴ");
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
@@ -111,7 +150,9 @@ export default [
         return await msg.reply(
           "ᴘʀᴏᴠɪᴅᴇ ᴛɪᴍᴇ ɪɴ sᴇᴄᴏɴᴅs (0 ᴛᴏ ɪɴsᴛᴀɴᴛ ᴅɪsᴀʙʟᴇ)",
         );
-      await new Group(msg.chat, sock).EphermalSetting(duration);
+      const result = await new Group(msg.chat, sock).EphermalSetting(duration);
+      if (result === null)
+        return await msg.reply("ғᴀɪʟᴇᴅ: ᴀʟʀᴇᴀᴅʏ sᴇᴛ ᴛᴏ ᴛʜɪs ᴅᴜʀᴀᴛɪᴏɴ");
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
@@ -125,11 +166,13 @@ export default [
       const mode = args.toLowerCase().trim();
       if (mode !== "admin" && mode !== "member")
         return await msg.reply(
-          "```this command will set who can add new members to the group\n\nUsage: \n.addmode admin\n.addmode members```",
+          "```this command will set who can add new members to the group\n\nUsage: \n.addmode admin\n.addmode member```",
         );
-      await new Group(msg.chat, sock).MemberJoinMode(
+      const result = await new Group(msg.chat, sock).MemberJoinMode(
         mode === "admin" ? "admin_add" : "all_member_add",
       );
+      if (result === null)
+        return await msg.reply("ғᴀɪʟᴇᴅ: ᴀʟʀᴇᴀᴅʏ sᴇᴛ ᴛᴏ ᴛʜɪs ᴍᴏᴅᴇ");
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
@@ -145,9 +188,11 @@ export default [
         return await msg.reply(
           "```this command will set the group join mode\n\nUsage: \n.joinmode approval\n.joinmode open```",
         );
-      await new Group(msg.chat, sock).GroupJoinMode(
+      const result = await new Group(msg.chat, sock).GroupJoinMode(
         mode === "approval" ? "on" : "off",
       );
+      if (result === null)
+        return await msg.reply("ғᴀɪʟᴇᴅ: ᴀʟʀᴇᴀᴅʏ sᴇᴛ ᴛᴏ ᴛʜɪs ᴍᴏᴅᴇ");
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
@@ -158,7 +203,11 @@ export default [
     isGroup: true,
     isAdmin: true,
     async exec(msg, sock) {
-      await new Group(msg.chat, sock).SetAnnouncementMode("announcement");
+      const result = await new Group(msg.chat, sock).SetAnnouncementMode(
+        "announcement",
+      );
+      if (result === null)
+        return await msg.reply("ғᴀɪʟᴇᴅ: ɢʀᴏᴜᴘ ᴀʟʀᴇᴀᴅʏ ᴍᴜᴛᴇᴅ");
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
@@ -169,7 +218,11 @@ export default [
     isGroup: true,
     isAdmin: true,
     async exec(msg, sock) {
-      await new Group(msg.chat, sock).SetAnnouncementMode("not_announcement");
+      const result = await new Group(msg.chat, sock).SetAnnouncementMode(
+        "not_announcement",
+      );
+      if (result === null)
+        return await msg.reply("ғᴀɪʟᴇᴅ: ɢʀᴏᴜᴘ ᴀʟʀᴇᴀᴅʏ ᴜɴᴍᴜᴛᴇᴅ");
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
@@ -180,7 +233,11 @@ export default [
     isGroup: true,
     isAdmin: true,
     async exec(msg, sock) {
-      await new Group(msg.chat, sock).SetRestrictedMode("locked");
+      const result = await new Group(msg.chat, sock).SetRestrictedMode(
+        "locked",
+      );
+      if (result === null)
+        return await msg.reply("ғᴀɪʟᴇᴅ: ɢʀᴏᴜᴘ ᴀʟʀᴇᴀᴅʏ ʟᴏᴄᴋᴇᴅ");
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
@@ -191,7 +248,11 @@ export default [
     isGroup: true,
     isAdmin: true,
     async exec(msg, sock) {
-      await new Group(msg.chat, sock).SetRestrictedMode("unlocked");
+      const result = await new Group(msg.chat, sock).SetRestrictedMode(
+        "unlocked",
+      );
+      if (result === null)
+        return await msg.reply("ғᴀɪʟᴇᴅ: ɢʀᴏᴜᴘ ᴀʟʀᴇᴀᴅʏ ᴜɴʟᴏᴄᴋᴇᴅ");
       await msg.reply("ᴅᴏɴᴇ");
     },
   },
