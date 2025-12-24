@@ -35,7 +35,7 @@ export default {
     for (const category in categories) {
       reply += `${category.toUpperCase()}\n`;
 
-      for (const pattern of categories[category]) reply += `. ${pattern}\n`;
+      for (const pattern of categories[category]) reply += `${pattern}\n`;
 
       reply += `\n`;
     }

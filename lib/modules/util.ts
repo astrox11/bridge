@@ -82,4 +82,36 @@ export default [
       }
     },
   },
+  {
+    pattern: "url",
+    alias: ["shortenurl"],
+    category: "util",
+    async exec(msg, sock, args) {
+      args = msg?.quoted?.text || args;
+      if (!args) {
+        return await msg.reply("Provide a URL!");
+      }
+
+      const urlRegex =
+        /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i;
+
+      const match = args.trim().match(urlRegex);
+      if (!match) {
+        return await msg.reply("Invalid URL");
+      }
+
+      const url = match[0];
+
+      try {
+        const response = await fetch(
+          `https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`,
+        );
+        const shortenedUrl = await response.text();
+
+        return await msg.reply(`Shortened URL: ${shortenedUrl}`);
+      } catch {
+        return await msg.reply("Failed to shorten URL");
+      }
+    },
+  },
 ] satisfies Array<CommandProperty>;
