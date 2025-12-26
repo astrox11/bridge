@@ -5,6 +5,7 @@ import {
   downloadMediaMessage,
   normalizeMessageContent,
   jidNormalizedUser,
+  generateMessageID,
 } from "baileys";
 import type {
   proto,
@@ -15,6 +16,36 @@ import type {
 } from "baileys";
 import { fileTypeFromBuffer } from "file-type";
 import { getAlternateId, getMode, isSudo } from "../sql";
+import { log } from "../util";
+
+type SendType = "text" | "video" | "audio" | "document" | "sticker" | "buttons";
+
+type ButtonParams = {
+  text: string;
+  title?: string;
+  buttons: proto.IMessage["buttonsMessage"]["buttons"];
+};
+
+type SendOptions = {
+  type?: SendType;
+  caption?: string;
+  mimetype?: string;
+  filename?: string;
+  gifPlayback?: boolean;
+  mentions?: string[];
+};
+
+type MediaMessage = {
+  text?: string;
+  video?: Buffer | { url: string };
+  audio?: Buffer | { url: string };
+  document?: Buffer | { url: string };
+  sticker?: Buffer | { url: string };
+  caption?: string;
+  mimetype?: string;
+  fileName?: string;
+  gifPlayback?: boolean;
+};
 
 export class Message {
   client: WASocket;
@@ -35,6 +66,7 @@ export class Message {
   contextInfo: proto.IContextInfo | undefined;
   quoted: Quoted | undefined;
   text: string | undefined;
+  pushName: string;
 
   constructor(client: WASocket, message: WAMessage) {
     this.client = client;
@@ -57,6 +89,7 @@ export class Message {
     this.device = getDevice(this.key.id);
     this.mode = getMode();
     this.sudo = isSudo(this.sender);
+    this.pushName = message.pushName;
 
     const content = this.message?.[this.type!];
     this.contextInfo =
@@ -115,66 +148,108 @@ export class Message {
   }
 
   async send(
-    content: string | Buffer,
-    options: {
-      caption?: string;
-      mimetype?: string;
-      filename?: string;
-      gifPlayback?: boolean;
-      mentions?: string[];
-    } = {},
+    content: string | Buffer | ButtonParams,
+    options: SendOptions = {},
   ) {
+    if (options.type === "buttons") {
+      const payload = content as ButtonParams;
+      log.debug(payload);
+      const msg = await this.client.relayMessage(
+        this.chat,
+        {
+          viewOnceMessage: {
+            message: {
+              buttonsMessage: {
+                headerType: 2,
+                text: payload.title ? payload.title : "αѕтяσχ вσт",
+                contentText: payload.text,
+                footerText: "αѕтяσχ 2026",
+                buttons: payload.buttons,
+              },
+            },
+          },
+        },
+        {
+          messageId: generateMessageID(),
+          additionalNodes: [
+            {
+              tag: "biz",
+              attrs: {},
+              content: [
+                {
+                  tag: "interactive",
+                  attrs: {
+                    type: "native_flow",
+                    v: "1",
+                  },
+                  content: [
+                    {
+                      tag: "native_flow",
+                      attrs: {
+                        v: "9",
+                        name: "mixed",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      );
+      return new Message(this.client, { key: { id: msg } });
+    }
+
     const isBuffer = Buffer.isBuffer(content);
     const isUrl =
       typeof content === "string" && /^\s*https?:\/\/\S+/i.test(content);
     const isText = typeof content === "string" && !isUrl;
 
-    if (isText) {
+    if (options.type === "text" || (isText && !options.type)) {
       const msg = await this.client.sendMessage(
         this.chat,
-        { text: content, ...options },
-        { quoted: this, ...options },
+        { text: String(content) },
+        { quoted: this },
       );
       return new Message(this.client, msg!);
     }
 
-    let mediaType: string;
-    let detectedMimetype: string | undefined = options.mimetype;
+    let mediaType: Exclude<SendType, "text" | "buttons">;
+    let detectedMimetype = options.mimetype;
 
-    if (isBuffer) {
-      try {
-        const fileType = await fileTypeFromBuffer(content);
-        if (fileType) {
-          detectedMimetype = detectedMimetype || fileType.mime;
-          mediaType = this.mimetypeToMediaType(fileType.mime);
-        } else {
-          // Fallback for text-based or unrecognized formats
-          mediaType = "document";
-          detectedMimetype = detectedMimetype || "application/octet-stream";
-        }
-      } catch {
+    if (options.type && options.type !== "text") {
+      mediaType = options.type;
+    } else if (isBuffer) {
+      const fileType = await fileTypeFromBuffer(content);
+      if (fileType) {
+        detectedMimetype ??= fileType.mime;
+        mediaType = this.mimetypeToMediaType(fileType.mime);
+      } else {
         mediaType = "document";
-        detectedMimetype = detectedMimetype || "application/octet-stream";
+        detectedMimetype ??= "application/octet-stream";
       }
     } else {
-      const detection = this.detectFromUrl(content, options.mimetype);
+      const detection = this.detectFromUrl(content as string, options.mimetype);
       mediaType = detection.type;
-      detectedMimetype = detectedMimetype || detection.mimetype;
+      detectedMimetype ??= detection.mimetype;
     }
-    const mediaContent: any = isUrl ? { url: content } : content;
-    const messageData: any = {
+
+    const mediaContent = isUrl
+      ? { url: content as string }
+      : (content as Buffer);
+
+    const messageData: MediaMessage = {
       [mediaType]: mediaContent,
-      ...(options.caption && { caption: options.caption }),
-      ...(detectedMimetype && { mimetype: detectedMimetype }),
-      ...(options.filename &&
-        mediaType === "document" && { fileName: options.filename }),
-      ...(options.gifPlayback &&
-        mediaType === "video" && { gifPlayback: true }),
+      caption: options.caption,
+      mimetype: detectedMimetype,
+      fileName: mediaType === "document" ? options.filename : undefined,
+      gifPlayback: mediaType === "video" ? options.gifPlayback : undefined,
     };
 
     const msg = await this.client.sendMessage(this.chat, messageData, {
       quoted: this,
     });
+
     return new Message(this.client, msg!);
   }
 

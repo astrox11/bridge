@@ -1,3 +1,4 @@
+import { generateMessageID, jidNormalizedUser } from "baileys";
 import { formatRuntime, type CommandProperty } from "..";
 
 export default [
@@ -43,6 +44,7 @@ export default [
   {
     pattern: "ginfo",
     alias: ["groupinfo"],
+    isSudo: true,
     category: "util",
     async exec(msg, sock, args) {
       args = msg?.quoted?.text || args;
@@ -112,6 +114,78 @@ export default [
       } catch {
         return await msg.reply("Failed to shorten URL");
       }
+    },
+  },
+  {
+    pattern: "gstatus",
+    alias: ["groupstatus"],
+    category: "util",
+    isSudo: true,
+    async exec(msg, sock, args) {
+      if (!args)
+        return await msg.reply("```type something to send in the status```");
+      await sock.relayMessage(
+        msg.chat,
+        {
+          groupStatusMessageV2: {
+            message: {
+              interactiveResponseMessage: {
+                body: {
+                  text: args,
+                  format: 1,
+                },
+                nativeFlowResponseMessage: {
+                  name: "galaxy_message",
+                  version: 3,
+                  paramsJson: JSON.stringify({
+                    title: args,
+                    flow_id: generateMessageID(),
+                    flow_name: "offer_sign_up_076588",
+                    flow_creation_source: "FLEXIBLE_CHECKOUT",
+                    response_message: {
+                      version: 2,
+                      screens: [
+                        {
+                          id: "contact_details",
+                          title: sock.user.name,
+                          components: [
+                            {
+                              type: "TextInput",
+                              name: "full_name",
+                              label: "",
+                              value: sock.user.name,
+                              isSensitive: false,
+                            },
+                            {
+                              type: "TextInput",
+                              name: "phone_number",
+                              label: "",
+                              value: jidNormalizedUser(sock.user.id),
+                              isSensitive: false,
+                            },
+                            {
+                              type: "TextInput",
+                              name: "email",
+                              label: "",
+                              value: "devastroworks@gmail.com",
+                              isSensitive: false,
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  }),
+                },
+                contextInfo: {
+                  isGroupStatus: true,
+                },
+              },
+            },
+          },
+        },
+        { messageId: generateMessageID() },
+      );
+      return await msg.reply("```Done```");
     },
   },
 ] satisfies Array<CommandProperty>;

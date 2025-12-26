@@ -102,9 +102,6 @@ const start = async () => {
           try {
             saveMessage(message.key, message);
             const msg = new Message(sock, message);
-
-            log.debug(msg);
-
             if (msg?.message?.protocolMessage?.type === 0) {
               sock.ev.emit("messages.delete", { keys: [msg.key] });
             }
