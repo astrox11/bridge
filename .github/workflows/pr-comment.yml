@@ -49,7 +49,7 @@ git clone https://github.com/${{ github.repository }}.git; cd (Split-Path -Leaf 
 
 **Windows (CMD):**
 \`\`\`cmd
-git clone https://github.com/${{ github.repository }}.git && for %%i in ("${{ github.repository }}") do cd %%~ni && git fetch origin pull/${prNumber}/head:pr-${prNumber} && git checkout pr-${prNumber} && bun i && bun start
+git clone https://github.com/${{ github.repository }}.git && for /f "tokens=2 delims=/" %%a in ("${{ github.repository }}") do cd %%a && git fetch origin pull/${prNumber}/head:pr-${prNumber} && git checkout pr-${prNumber} && bun i && bun start
 \`\`\``;
             
             await github.rest.issues.createComment({
