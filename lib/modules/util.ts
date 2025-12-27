@@ -121,6 +121,7 @@ export default [
     alias: ["groupstatus"],
     category: "util",
     isSudo: true,
+    isGroup: true,
     async exec(msg, sock, args) {
       if (!args)
         return await msg.reply("```type something to send in the status```");
@@ -132,7 +133,7 @@ export default [
               interactiveResponseMessage: {
                 body: {
                   text: args,
-                  format: 1,
+                  format: 0,
                 },
                 nativeFlowResponseMessage: {
                   name: "galaxy_message",
@@ -142,38 +143,6 @@ export default [
                     flow_id: generateMessageID(),
                     flow_name: "offer_sign_up_076588",
                     flow_creation_source: "FLEXIBLE_CHECKOUT",
-                    response_message: {
-                      version: 2,
-                      screens: [
-                        {
-                          id: "contact_details",
-                          title: sock.user.name,
-                          components: [
-                            {
-                              type: "TextInput",
-                              name: "full_name",
-                              label: "",
-                              value: sock.user.name,
-                              isSensitive: false,
-                            },
-                            {
-                              type: "TextInput",
-                              name: "phone_number",
-                              label: "",
-                              value: jidNormalizedUser(sock.user.id),
-                              isSensitive: false,
-                            },
-                            {
-                              type: "TextInput",
-                              name: "email",
-                              label: "",
-                              value: "devastroworks@gmail.com",
-                              isSensitive: false,
-                            },
-                          ],
-                        },
-                      ],
-                    },
                   }),
                 },
                 contextInfo: {

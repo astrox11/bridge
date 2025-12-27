@@ -77,7 +77,7 @@ export function findEnvFile(dir: string): string | null {
   return null;
 }
 
-export function formatRuntime(uptimeSeconds) {
+export function formatRuntime(uptimeSeconds: number) {
   let seconds = Math.floor(uptimeSeconds);
 
   const MONTH = 30 * 24 * 3600;
@@ -105,4 +105,53 @@ export function formatRuntime(uptimeSeconds) {
   if (secs > 0) parts.push(secs + "s");
 
   return parts.join(" ");
+}
+
+export function formatp(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const value = bytes / Math.pow(k, i);
+  return `${value.toFixed(1)} ${sizes[i]}`;
+}
+
+export function toSmallCaps(text: string): string {
+  const smallCaps = [
+    "ᴀ",
+    "ʙ",
+    "ᴄ",
+    "ᴅ",
+    "ᴇ",
+    "ғ",
+    "ɢ",
+    "ʜ",
+    "ɪ",
+    "ᴊ",
+    "ᴋ",
+    "ʟ",
+    "ᴍ",
+    "ɴ",
+    "ᴏ",
+    "ᴘ",
+    "ǫ",
+    "ʀ",
+    "s",
+    "ᴛ",
+    "ᴜ",
+    "ᴠ",
+    "ᴡ",
+    "x",
+    "ʏ",
+    "ᴢ",
+  ];
+  return text
+    .toUpperCase()
+    .split("")
+    .map((c) => {
+      const code = c.charCodeAt(0);
+      if (code >= 65 && code <= 90) return smallCaps[code - 65];
+      return c;
+    })
+    .join("");
 }

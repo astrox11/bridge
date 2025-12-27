@@ -153,7 +153,6 @@ export class Message {
   ) {
     if (options.type === "buttons") {
       const payload = content as ButtonParams;
-      log.debug(payload);
       const msg = await this.client.relayMessage(
         this.chat,
         {

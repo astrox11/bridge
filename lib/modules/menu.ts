@@ -1,54 +1,13 @@
-import { formatRuntime, Plugins, type CommandProperty } from "..";
+import {
+  formatp,
+  toSmallCaps,
+  formatRuntime,
+  Plugins,
+  type CommandProperty,
+} from "..";
 import os from "os";
 
-function formatp(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const value = bytes / Math.pow(k, i);
-  return `${value.toFixed(1)} ${sizes[i]}`;
-}
-
-function toSmallCaps(text: string): string {
-  const smallCaps = [
-    "ᴀ",
-    "ʙ",
-    "ᴄ",
-    "ᴅ",
-    "ᴇ",
-    "ғ",
-    "ɢ",
-    "ʜ",
-    "ɪ",
-    "ᴊ",
-    "ᴋ",
-    "ʟ",
-    "ᴍ",
-    "ɴ",
-    "ᴏ",
-    "ᴘ",
-    "ǫ",
-    "ʀ",
-    "s",
-    "ᴛ",
-    "ᴜ",
-    "ᴠ",
-    "ᴡ",
-    "x",
-    "ʏ",
-    "ᴢ",
-  ];
-  return text
-    .toUpperCase()
-    .split("")
-    .map((c) => {
-      const code = c.charCodeAt(0);
-      if (code >= 65 && code <= 90) return smallCaps[code - 65];
-      return c;
-    })
-    .join("");
-}
+const Reply = new Map<string, string>();
 
 export default [
   {
@@ -99,7 +58,7 @@ export default [
         reply += `╰─────────────\n`;
       }
 
-      await msg.send(
+      const m = await msg.send(
         {
           text: reply.trim(),
           title: "╭━━━〔 αѕтяσχ вσт 〕━━━",
@@ -115,6 +74,8 @@ export default [
         },
         { type: "buttons" },
       );
+
+      Reply.set(msg.chat, m.key.id);
     },
   },
   {
@@ -151,6 +112,22 @@ export default [
         },
         { type: "buttons" },
       );
+    },
+  },
+  {
+    event: true,
+    async exec(msg) {
+      if (msg?.type === "buttonsResponseMessage" && msg?.quoted) {
+        if (msg.quoted.key.id && Reply.has(msg.chat)) {
+          const m = msg?.quoted?.message;
+
+          if (m?.buttonsMessage?.buttons[0]?.buttonId === "0") {
+            await msg.reply("```Contact: devastrowork@gmail.com```");
+            Reply.clear();
+          }
+        }
+      }
+      return;
     },
   },
 ] satisfies CommandProperty[];
