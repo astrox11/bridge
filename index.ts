@@ -19,7 +19,13 @@ import {
   cachedGroupMetadata,
   syncGroupMetadata,
   verify_user_phone_number,
+  sessionManager,
 } from "./lib";
+import {
+  isSessionCommand,
+  getSessionArgs,
+  handleSessionCommand,
+} from "./cli";
 import { rm } from "fs/promises";
 import { Boom } from "@hapi/boom";
 import MAIN_LOGGER from "pino";
@@ -30,9 +36,11 @@ const logger = MAIN_LOGGER({
   level: "silent",
 });
 
-const phone = verify_user_phone_number();
-
-const start = async () => {
+/**
+ * Start the legacy single-session mode using PHONE_NUMBER from config/.env
+ */
+const startLegacySession = async () => {
+  const phone = verify_user_phone_number();
   const { state, saveCreds } = await useBunqlAuth();
   const { version } = await fetchLatestBaileysVersion();
 
@@ -66,7 +74,7 @@ const start = async () => {
           (lastDisconnect?.error as Boom)?.output?.statusCode !==
           DisconnectReason.loggedOut
         ) {
-          start();
+          startLegacySession();
         } else {
           ["database.db", "database.dn-shm", "database.db-wal"].forEach(
             async (file) => await rm(file, { force: true }),
@@ -151,4 +159,48 @@ const start = async () => {
   });
 };
 
-start();
+/**
+ * Main entry point - handles CLI commands or starts sessions
+ */
+const main = async () => {
+  const args = process.argv.slice(2);
+
+  // Handle session CLI commands
+  if (isSessionCommand(args)) {
+    const sessionArgs = getSessionArgs(args);
+    const result = await handleSessionCommand(sessionArgs);
+
+    if (result.success) {
+      log.info(result.message);
+    } else {
+      log.error(result.message);
+      process.exit(1);
+    }
+
+    // For create command, keep process running to complete pairing
+    if (sessionArgs[0]?.toLowerCase() === "create" && result.success) {
+      log.info("Waiting for pairing to complete...");
+      // Process stays alive for pairing
+      return;
+    }
+
+    // For list/delete, exit after completion
+    process.exit(0);
+  }
+
+  // No CLI command - start in normal mode
+  // First, restore any existing sessions from database
+  const sessions = sessionManager.list();
+
+  if (sessions.length > 0) {
+    log.info(`Found ${sessions.length} existing session(s), restoring...`);
+    await sessionManager.restoreAllSessions();
+    log.info("All sessions restored. Running in multi-session mode.");
+  } else {
+    // No sessions in database - start legacy single-session mode
+    log.info("Starting in single-session mode...");
+    await startLegacySession();
+  }
+};
+
+main();
