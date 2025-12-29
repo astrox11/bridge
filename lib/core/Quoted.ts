@@ -20,16 +20,18 @@ export class Quoted {
   sudo: boolean;
   text: string | undefined;
   client: WASocket;
+  sessionId: string;
   media: boolean;
   viewonce: boolean;
   device: "web" | "unknown" | "android" | "ios" | "desktop";
 
-  constructor(quoted: proto.IContextInfo, client: WASocket) {
+  constructor(quoted: proto.IContextInfo, client: WASocket, sessionId: string = "main") {
+    this.sessionId = sessionId;
     this.key = {
       remoteJid: quoted.remoteJid,
       id: quoted.stanzaId,
       participant: quoted.participant,
-      participantAlt: getAlternateId(quoted.participant),
+      participantAlt: getAlternateId(this.sessionId, quoted.participant),
     };
     this.sender = quoted.participant!;
     this.sender_alt = this.key.participantAlt;
@@ -40,7 +42,7 @@ export class Quoted {
     this.audio = this.type === "audioMessage";
     this.sticker =
       this.type === "stickerMessage" || this.type === "lottieStickerMessage";
-    this.sudo = isSudo(this.sender);
+    this.sudo = isSudo(this.sessionId, this.sender);
 
     this.text = ExtractTextFromMessage(this.message);
     this.client = client;

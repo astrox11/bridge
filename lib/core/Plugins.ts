@@ -40,7 +40,7 @@ export class Plugins {
     if (
       cmd?.isGroup &&
       cmd?.isAdmin &&
-      !isAdmin(this.message.chat, this.message.sender)
+      !isAdmin(this.message.sessionId, this.message.chat, this.message.sender)
     ) {
       return await this.message.reply(
         "```this command requires group admin privileges!```",

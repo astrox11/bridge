@@ -137,6 +137,13 @@ class SessionManager {
     const { state, saveCreds } = await useSessionAuth(session.id);
     const { version } = await fetchLatestBaileysVersion();
 
+    // Create a session-scoped getMessage function
+    const sessionGetMessage = async (key: any) => getMessage(session.id, key);
+
+    // Create a session-scoped cachedGroupMetadata function
+    const sessionCachedGroupMetadata = async (id: string) =>
+      cachedGroupMetadata(session.id, id);
+
     const sock = makeWASocket({
       auth: {
         creds: state.creds,
@@ -144,8 +151,8 @@ class SessionManager {
       },
       logger,
       version,
-      getMessage,
-      cachedGroupMetadata,
+      getMessage: sessionGetMessage,
+      cachedGroupMetadata: sessionCachedGroupMetadata,
       msgRetryCounterCache: session.msgRetryCounterCache,
       generateHighQualityLinkPreview: true,
     });
@@ -207,9 +214,9 @@ class SessionManager {
 
           if (!hasSynced) {
             hasSynced = true;
-            addSudo(sock.user.id, sock.user.lid);
+            addSudo(session.id, sock.user.id, sock.user.lid);
             await delay(15000);
-            await syncGroupMetadata(sock);
+            await syncGroupMetadata(session.id, sock);
           }
         }
       }
@@ -223,8 +230,8 @@ class SessionManager {
         await Promise.all(
           messages.map(async (message) => {
             try {
-              saveMessage(message.key, message);
-              const msg = new Message(sock, message);
+              saveMessage(session.id, message.key, message);
+              const msg = new Message(sock, message, session.id);
               if (msg?.message?.protocolMessage?.type === 0) {
                 sock.ev.emit("messages.delete", { keys: [msg.key] });
               }
@@ -244,7 +251,7 @@ class SessionManager {
 
       if (events["lid-mapping.update"]) {
         const { pn, lid } = events["lid-mapping.update"];
-        addContact(pn, lid);
+        addContact(session.id, pn, lid);
       }
 
       if (events["group-participants.update"]) {
@@ -257,14 +264,14 @@ class SessionManager {
           return;
         }
         const metadata = await sock.groupMetadata(id);
-        cacheGroupMetadata(metadata);
+        cacheGroupMetadata(session.id, metadata);
       }
 
       if (events["groups.update"]) {
         const updates = events["groups.update"];
         for (const update of updates) {
           const metadata = await sock.groupMetadata(update.id);
-          cacheGroupMetadata(metadata);
+          cacheGroupMetadata(session.id, metadata);
         }
       }
 
@@ -272,7 +279,7 @@ class SessionManager {
         const groups = events["groups.upsert"];
         for (const group of groups) {
           const metadata = await sock.groupMetadata(group.id);
-          cacheGroupMetadata(metadata);
+          cacheGroupMetadata(session.id, metadata);
         }
       }
 

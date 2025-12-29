@@ -37,6 +37,9 @@ const logger = MAIN_LOGGER({
   level: "silent",
 });
 
+// Session ID for the main/legacy session
+const MAIN_SESSION_ID = "main";
+
 /**
  * Start the legacy single-session mode using PHONE_NUMBER from config/.env
  */
@@ -45,6 +48,12 @@ const startLegacySession = async () => {
   const { state, saveCreds } = await useBunqlAuth();
   const { version } = await fetchLatestBaileysVersion();
 
+  // Create session-scoped functions for data isolation
+  const sessionGetMessage = async (key: any) =>
+    getMessage(MAIN_SESSION_ID, key);
+  const sessionCachedGroupMetadata = async (id: string) =>
+    cachedGroupMetadata(MAIN_SESSION_ID, id);
+
   const sock = makeWASocket({
     auth: {
       creds: state.creds,
@@ -52,8 +61,8 @@ const startLegacySession = async () => {
     },
     logger,
     version,
-    getMessage,
-    cachedGroupMetadata,
+    getMessage: sessionGetMessage,
+    cachedGroupMetadata: sessionCachedGroupMetadata,
     msgRetryCounterCache,
     generateHighQualityLinkPreview: true,
   });
@@ -87,9 +96,9 @@ const startLegacySession = async () => {
         log.info("Connected to WhatsApp");
         if (!hasSynced) {
           hasSynced = true;
-          addSudo(sock.user.id, sock.user.lid);
+          addSudo(MAIN_SESSION_ID, sock.user.id, sock.user.lid);
           await delay(15000);
-          await syncGroupMetadata(sock);
+          await syncGroupMetadata(MAIN_SESSION_ID, sock);
         }
       }
     }
@@ -104,8 +113,8 @@ const startLegacySession = async () => {
       await Promise.all(
         messages.map(async (message) => {
           try {
-            saveMessage(message.key, message);
-            const msg = new Message(sock, message);
+            saveMessage(MAIN_SESSION_ID, message.key, message);
+            const msg = new Message(sock, message, MAIN_SESSION_ID);
             if (msg?.message?.protocolMessage?.type === 0) {
               sock.ev.emit("messages.delete", { keys: [msg.key] });
             }
@@ -123,7 +132,7 @@ const startLegacySession = async () => {
 
     if (events["lid-mapping.update"]) {
       const { pn, lid } = events["lid-mapping.update"];
-      addContact(pn, lid);
+      addContact(MAIN_SESSION_ID, pn, lid);
     }
 
     if (events["group-participants.update"]) {
@@ -135,14 +144,14 @@ const startLegacySession = async () => {
         return;
       }
       const metadata = await sock.groupMetadata(id);
-      cacheGroupMetadata(metadata);
+      cacheGroupMetadata(MAIN_SESSION_ID, metadata);
     }
 
     if (events["groups.update"]) {
       const updates = events["groups.update"];
       for (const update of updates) {
         const metadata = await sock.groupMetadata(update.id);
-        cacheGroupMetadata(metadata);
+        cacheGroupMetadata(MAIN_SESSION_ID, metadata);
       }
     }
 
@@ -150,7 +159,7 @@ const startLegacySession = async () => {
       const groups = events["groups.upsert"];
       for (const group of groups) {
         const metadata = await sock.groupMetadata(group.id);
-        cacheGroupMetadata(metadata);
+        cacheGroupMetadata(MAIN_SESSION_ID, metadata);
       }
     }
 

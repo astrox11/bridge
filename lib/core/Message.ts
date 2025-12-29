@@ -28,6 +28,7 @@ import { readFile } from "fs/promises";
 
 export class Message {
   client: WASocket;
+  sessionId: string;
   chat: string;
   key: WAMessageKey;
   message: WAMessageContent;
@@ -47,8 +48,9 @@ export class Message {
   sender_alt: string | undefined;
   contextInfo: proto.IContextInfo | undefined;
 
-  constructor(client: WASocket, message: WAMessage) {
+  constructor(client: WASocket, message: WAMessage, sessionId: string = "main") {
     this.client = client;
+    this.sessionId = sessionId;
     this.chat = message.key.remoteJid!;
     this.key = message.key;
     this.message = normalizeMessageContent(message.message!);
@@ -58,7 +60,7 @@ export class Message {
         ? this.key.remoteJid
         : jidNormalizedUser(this.client.user.id)
       : this.key.participant;
-    this.sender_alt = getAlternateId(this.sender);
+    this.sender_alt = getAlternateId(this.sessionId, this.sender);
     this.type = getContentType(this.message);
     this.image = this.type === "imageMessage";
     this.video = this.type === "videoMessage";
@@ -66,8 +68,8 @@ export class Message {
     this.sticker =
       this.type === "stickerMessage" || this.type === "lottieStickerMessage";
     this.device = getDevice(this.key.id);
-    this.mode = getMode();
-    this.sudo = isSudo(this.sender);
+    this.mode = getMode(this.sessionId);
+    this.sudo = isSudo(this.sessionId, this.sender);
     this.pushName = message.pushName;
 
     const content = this.message?.[this.type!];
@@ -78,7 +80,7 @@ export class Message {
 
     this.quoted =
       this.contextInfo?.stanzaId && this.contextInfo?.quotedMessage
-        ? new Quoted(this.contextInfo, client)
+        ? new Quoted(this.contextInfo, client, this.sessionId)
         : undefined;
 
     this.text = this.message ? ExtractTextFromMessage(this.message) : undefined;
@@ -140,7 +142,7 @@ export class Message {
         additionalNodes,
       },
     );
-    return new Message(this.client, { key: { id: m } });
+    return new Message(this.client, { key: { id: m } }, this.sessionId);
   }
 
   async send_interactive(message: proto.IMessage["interactiveMessage"]) {
@@ -156,7 +158,7 @@ export class Message {
         additionalNodes,
       },
     );
-    return new Message(this.client, { key: { id: m } });
+    return new Message(this.client, { key: { id: m } }, this.sessionId);
   }
 
   async reply(text: string) {
@@ -165,7 +167,7 @@ export class Message {
       { text },
       { quoted: this },
     );
-    return new Message(this.client, msg!);
+    return new Message(this.client, msg!, this.sessionId);
   }
 
   async edit(text: string) {

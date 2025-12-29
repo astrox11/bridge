@@ -2,39 +2,69 @@ import type { GroupParticipant } from "baileys";
 import { bunql } from "./_sql";
 
 const Contact = bunql.define("contacts", {
-  pn: { type: "TEXT", primary: true },
+  session_id: { type: "TEXT", notNull: true },
+  pn: { type: "TEXT", notNull: true },
   lid: { type: "TEXT" },
 });
 
-export const addContact = (pn: string, lid: string) => {
+// Create composite index for efficient lookups
+try {
+  bunql.exec(
+    "CREATE INDEX IF NOT EXISTS idx_contacts_session ON contacts(session_id, pn)",
+  );
+} catch {
+  // Index may already exist
+}
+
+export const addContact = (sessionId: string, pn: string, lid: string) => {
   if (pn && lid) {
     pn = pn?.split("@")[0];
     lid = lid?.split("@")[0];
-    return Contact.upsert({ pn, lid });
+    const exists = Contact.query()
+      .where("session_id", "=", sessionId)
+      .where("pn", "=", pn)
+      .first();
+    if (exists) {
+      Contact.update({ lid })
+        .where("session_id", "=", sessionId)
+        .where("pn", "=", pn)
+        .run();
+    } else {
+      Contact.insert({ session_id: sessionId, pn, lid });
+    }
   }
   return;
 };
 
-export const getAllContacts = () => {
-  return Contact.all()
+export const getAllContacts = (sessionId: string) => {
+  return Contact.query()
+    .where("session_id", "=", sessionId)
+    .get()
     .map((p) => p.pn)
     .map((e) => `${e}@s.whatsapp.net`);
 };
 
-export const getLidByPn = async (pn: string) => {
-  const contact = Contact.find({ pn })[0];
+export const getLidByPn = async (sessionId: string, pn: string) => {
+  const contact = Contact.query()
+    .where("session_id", "=", sessionId)
+    .where("pn", "=", pn)
+    .first();
   return contact?.lid + "@lid" || null;
 };
 
-export const getPnByLid = (lid: string) => {
-  const contact = Contact.query().where("lid", "=", lid).first();
+export const getPnByLid = (sessionId: string, lid: string) => {
+  const contact = Contact.query()
+    .where("session_id", "=", sessionId)
+    .where("lid", "=", lid)
+    .first();
   return contact?.pn + "@s.whatsapp.net" || null;
 };
 
-export const getBothId = (id: string) => {
+export const getBothId = (sessionId: string, id: string) => {
   const cleanId = (id.includes(":") ? id.split(":")[1] : id).split("@")[0];
 
   const contact = Contact.query()
+    .where("session_id", "=", sessionId)
     .where("pn", "=", cleanId)
     .orWhere("lid", "=", cleanId)
     .first();
@@ -47,9 +77,10 @@ export const getBothId = (id: string) => {
   };
 };
 
-export const getAlternateId = (id: string) => {
+export const getAlternateId = (sessionId: string, id: string) => {
   id = id?.split("@")?.[0];
   const contact = Contact.query()
+    .where("session_id", "=", sessionId)
     .where("pn", "=", id)
     .orWhere("lid", "=", id)
     .first();
@@ -59,24 +90,33 @@ export const getAlternateId = (id: string) => {
     : contact.pn + "@s.whatsapp.net";
 };
 
-export const removeContact = (id: string) => {
-  return Contact.delete().where("pn", "=", id).orWhere("lid", "=", id).run();
+export const removeContact = (sessionId: string, id: string) => {
+  return Contact.delete()
+    .where("session_id", "=", sessionId)
+    .where("pn", "=", id)
+    .orWhere("lid", "=", id)
+    .run();
 };
 
 export const syncGroupParticipantsToContactList = (
+  sessionId: string,
   participants: GroupParticipant[],
 ) => {
+  if (!participants) return;
   for (const participant of participants) {
-    addContact(participant.phoneNumber, participant.id);
+    addContact(sessionId, participant.phoneNumber, participant.id);
   }
 };
 
-export function parseId(input: string): string | null;
-export function parseId(input: string[]): string[];
-export function parseId(input: string | string[]): string | string[] | null {
+export function parseId(sessionId: string, input: string): string | null;
+export function parseId(sessionId: string, input: string[]): string[];
+export function parseId(
+  sessionId: string,
+  input: string | string[],
+): string | string[] | null {
   if (Array.isArray(input)) {
     return input
-      .map((v) => parseId(v))
+      .map((v) => parseId(sessionId, v))
       .filter((v): v is string => typeof v === "string");
   }
 
@@ -96,6 +136,7 @@ export function parseId(input: string | string[]): string | string[] | null {
   };
 
   const contact = Contact.query()
+    .where("session_id", "=", sessionId)
     .where("pn", "=", base)
     .orWhere("lid", "=", base)
     .first();
@@ -106,6 +147,7 @@ export function parseId(input: string | string[]): string | string[] | null {
   }
 
   const fuzzy = Contact.query()
+    .where("session_id", "=", sessionId)
     .where("pn", "LIKE", `${base}%`)
     .orWhere("lid", "LIKE", `${base}%`)
     .limit(1)

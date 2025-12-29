@@ -27,7 +27,7 @@ export default [
         return await msg.reply(
           "```Provide a number or reply someone's message!```",
         );
-      const jid = parseId(args);
+      const jid = parseId(msg.sessionId, args);
       if (!jid) return await msg.reply("Invalid number!");
       await msg.reply("ᴅᴏɴᴇ");
       return await msg.block(jid);
@@ -45,7 +45,7 @@ export default [
         return await msg.reply(
           "```Provide a number or reply someone's message!```",
         );
-      const jid = parseId(args);
+      const jid = parseId(msg.sessionId, args);
       if (!jid) return await msg.reply("Invalid number!");
       await msg.unblock(jid);
       return await msg.reply("ᴅᴏɴᴇ");

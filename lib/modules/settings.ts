@@ -19,15 +19,19 @@ export default [
     async exec(msg, sock, args) {
       args = msg?.quoted?.sender || args?.replace(/[^a-zA-Z0-9]/g, "");
       if (!msg.isGroup && !args) args = msg.chat;
-      const user = parseId(msg?.quoted?.sender ?? args);
+      const user = parseId(msg.sessionId, msg?.quoted?.sender ?? args);
       if (!user)
         return await msg.reply("```Please provide or quote a user.```");
 
-      const { pn, lid } = getBothId(user);
-      if (isSudo(pn) || isSudo(lid))
+      const bothId = getBothId(msg.sessionId, user);
+      if (!bothId)
+        return await msg.reply("```Could not resolve user ID.```");
+
+      const { pn, lid } = bothId;
+      if (isSudo(msg.sessionId, pn) || isSudo(msg.sessionId, lid))
         return await msg.reply("```User is already Sudo.```");
 
-      addSudo(pn, lid);
+      addSudo(msg.sessionId, pn, lid);
       return await sock.sendMessage(msg.chat, {
         text: `\`\`\`@${pn.split("@")[0]} is now sudo user.\`\`\``,
         mentions: [pn, lid],
@@ -42,15 +46,19 @@ export default [
     async exec(msg, sock, args) {
       args = msg?.quoted?.sender || args?.replace(/[^a-zA-Z0-9]/g, "");
       if (!msg.isGroup && !args) args = msg.chat;
-      const user = parseId(msg?.quoted?.sender ?? args);
+      const user = parseId(msg.sessionId, msg?.quoted?.sender ?? args);
       if (!user)
         return await msg.reply("```Please provide or quote a user.```");
 
-      const { pn, lid } = getBothId(user);
-      if (!isSudo(pn) && !isSudo(lid))
+      const bothId = getBothId(msg.sessionId, user);
+      if (!bothId)
+        return await msg.reply("```Could not resolve user ID.```");
+
+      const { pn, lid } = bothId;
+      if (!isSudo(msg.sessionId, pn) && !isSudo(msg.sessionId, lid))
         return await msg.reply("```User is not a Sudo user.```");
 
-      removeSudo(pn);
+      removeSudo(msg.sessionId, pn);
       return await sock.sendMessage(msg.chat, {
         text: `\`\`\`@${pn.split("@")[0]} is no longer a sudo user.\`\`\``,
         mentions: [pn, lid],
@@ -63,7 +71,7 @@ export default [
     isSudo: true,
     category: "settings",
     async exec(msg, sock) {
-      const sudos = getSudos(); // Assuming this returns an array of { pn, lid }
+      const sudos = getSudos(msg.sessionId);
       if (!sudos.length) return await msg.reply("```No sudo users found.```");
 
       let text = "*Sudo Users List*\n\n";
@@ -84,7 +92,7 @@ export default [
     category: "settings",
     async exec(msg, _, args) {
       const targetMode = args?.trim().toLowerCase();
-      const currentMode = getMode();
+      const currentMode = getMode(msg.sessionId);
 
       if (!targetMode) {
         return await msg.reply(
@@ -104,7 +112,7 @@ export default [
         );
       }
 
-      setMode(targetMode as "private" | "public");
+      setMode(msg.sessionId, targetMode as "private" | "public");
       return await msg.reply(
         `\`\`\`Mode changed: ${currentMode} ➜ ${targetMode}\`\`\``,
       );

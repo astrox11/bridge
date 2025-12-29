@@ -4,45 +4,67 @@ import { log } from "../util";
 import { syncGroupParticipantsToContactList } from "./contact";
 
 const Group = bunql.define("groups", {
-  id: { type: "TEXT", primary: true },
+  session_id: { type: "TEXT", notNull: true },
+  id: { type: "TEXT", notNull: true },
   data: { type: "TEXT" },
 });
 
-export const cachedGroupMetadata = async (id: string) => {
-  const metadata = Group.select().where("id", "=", id).get() as unknown as
-    | GroupMetadata
-    | undefined;
-  return metadata ? metadata : undefined;
+// Create composite index for efficient lookups
+try {
+  bunql.exec(
+    "CREATE INDEX IF NOT EXISTS idx_groups_session ON groups(session_id, id)",
+  );
+} catch {
+  // Index may already exist
+}
+
+export const cachedGroupMetadata = async (sessionId: string, id: string) => {
+  const row = Group.query()
+    .where("session_id", "=", sessionId)
+    .where("id", "=", id)
+    .first();
+  return row?.data ? JSON.parse(row.data) : undefined;
 };
 
-export const GetGroupMeta = (id: string) => {
-  const metadata = Group.select().where("id", "=", id).get()[0]
-    ?.data as unknown as GroupMetadata | undefined;
-  return metadata ? JSON.parse(metadata as any as string) : undefined;
+export const GetGroupMeta = (sessionId: string, id: string) => {
+  const row = Group.query()
+    .where("session_id", "=", sessionId)
+    .where("id", "=", id)
+    .first();
+  return row?.data ? JSON.parse(row.data) : undefined;
 };
 
-export const GetParticipants = (id: string) => {
-  let metadata = Group.select().where("id", "=", id).get()[0]
-    ?.data as unknown as GroupMetadata | undefined;
+export const GetParticipants = (sessionId: string, id: string) => {
+  const row = Group.query()
+    .where("session_id", "=", sessionId)
+    .where("id", "=", id)
+    .first();
 
-  metadata = JSON.parse(metadata as any as string);
+  if (!row?.data) return [];
 
-  return metadata
-    ? [
-        ...metadata.participants.map((p) => p.id),
-        ...metadata.participants.map((p) => p.phoneNumber),
-      ].filter(Boolean)
-    : [];
+  const metadata = JSON.parse(row.data) as GroupMetadata;
+  return [
+    ...metadata.participants.map((p) => p.id),
+    ...metadata.participants.map((p) => p.phoneNumber),
+  ].filter(Boolean);
 };
 
-export const isParticipant = (chat: string, participantId: string) => {
-  return GetParticipants(chat).includes(participantId);
+export const isParticipant = (
+  sessionId: string,
+  chat: string,
+  participantId: string,
+) => {
+  return GetParticipants(sessionId, chat).includes(participantId);
 };
 
 export const cacheGroupMetadata = async (
+  sessionId: string,
   metadata: GroupMetadata | (Partial<GroupMetadata> & { id: string }),
 ) => {
-  const exists = Group.select().where("id", "=", metadata.id).get()[0];
+  const exists = Group.query()
+    .where("session_id", "=", sessionId)
+    .where("id", "=", metadata.id)
+    .first();
 
   if (exists) {
     const existingData = JSON.parse(exists.data) as GroupMetadata;
@@ -55,31 +77,41 @@ export const cacheGroupMetadata = async (
           ? metadata.participants
           : existingData.participants,
     };
-    syncGroupParticipantsToContactList(metadata.participants);
+    syncGroupParticipantsToContactList(sessionId, metadata.participants);
     return Group.update({ data: JSON.stringify(mergedData) })
+      .where("session_id", "=", sessionId)
       .where("id", "=", metadata.id)
       .run();
   } else {
-    syncGroupParticipantsToContactList(metadata.participants);
+    syncGroupParticipantsToContactList(sessionId, metadata.participants);
     return Group.insert({
+      session_id: sessionId,
       id: metadata.id,
       data: JSON.stringify(metadata),
     });
   }
 };
 
-export const removeGroupMetadata = async (id: string) => {
-  return Group.delete().where("id", "=", id).run();
+export const removeGroupMetadata = async (sessionId: string, id: string) => {
+  return Group.delete()
+    .where("session_id", "=", sessionId)
+    .where("id", "=", id)
+    .run();
 };
 
-export const isAdmin = function (chat: string, participantId: string) {
-  let metadata = Group.select().where("id", "=", chat).get()[0]
-    ?.data as unknown as GroupMetadata | undefined;
+export const isAdmin = function (
+  sessionId: string,
+  chat: string,
+  participantId: string,
+) {
+  const row = Group.query()
+    .where("session_id", "=", sessionId)
+    .where("id", "=", chat)
+    .first();
 
-  if (metadata) {
-    metadata = JSON.parse(metadata as any as string);
-  }
+  if (!row?.data) return false;
 
+  const metadata = JSON.parse(row.data) as GroupMetadata;
   const participant = metadata?.participants.filter((p) => p.admin !== null);
 
   return [
@@ -88,24 +120,28 @@ export const isAdmin = function (chat: string, participantId: string) {
   ].includes(participantId);
 };
 
-export const getGroupAdmins = function (chat: string) {
-  const metadata = Group.select().where("id", "=", chat).get() as unknown as
-    | GroupMetadata
-    | undefined;
-  if (!metadata) return [];
+export const getGroupAdmins = function (sessionId: string, chat: string) {
+  const row = Group.query()
+    .where("session_id", "=", sessionId)
+    .where("id", "=", chat)
+    .first();
+
+  if (!row?.data) return [];
+
+  const metadata = JSON.parse(row.data) as GroupMetadata;
   const admins = metadata.participants
     .filter((p) => p.admin !== null)
     .map((p) => p.id);
   return admins;
 };
 
-export const syncGroupMetadata = async (client: WASocket) => {
+export const syncGroupMetadata = async (sessionId: string, client: WASocket) => {
   try {
     const groups = await client.groupFetchAllParticipating();
     for (const [id, metadata] of Object.entries(groups)) {
       metadata.id = id;
-      syncGroupParticipantsToContactList(metadata.participants);
-      await cacheGroupMetadata(metadata);
+      syncGroupParticipantsToContactList(sessionId, metadata.participants);
+      await cacheGroupMetadata(sessionId, metadata);
     }
   } catch (error) {
     log.error("Error syncing group metadata:", error);
