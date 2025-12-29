@@ -179,7 +179,10 @@ const main = async () => {
     }
 
     // For create command, keep process running to complete pairing
-    if (sessionArgs[0]?.toLowerCase() === SESSION_COMMANDS.CREATE && result.success) {
+    if (
+      sessionArgs[0]?.toLowerCase() === SESSION_COMMANDS.CREATE &&
+      result.success
+    ) {
       log.info("Waiting for pairing to complete...");
       // Process stays alive for pairing
       return;

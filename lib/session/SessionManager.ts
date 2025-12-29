@@ -94,7 +94,10 @@ class SessionManager {
 
     // Check if session already exists
     if (sessionExists(sanitized) || this.sessions.has(sanitized)) {
-      return { success: false, error: "Session already exists for this number" };
+      return {
+        success: false,
+        error: "Session already exists for this number",
+      };
     }
 
     const sessionId = this.generateSessionId(sanitized);
@@ -184,7 +187,8 @@ class SessionManager {
         const { connection, lastDisconnect } = update;
 
         if (connection === "close") {
-          const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+          const statusCode = (lastDisconnect?.error as Boom)?.output
+            ?.statusCode;
           if (statusCode !== DisconnectReason.loggedOut) {
             // Reconnect
             session.status = "connecting";
@@ -231,7 +235,10 @@ class SessionManager {
               await cmd.load("./lib/modules");
               await Promise.allSettled([cmd.text(), cmd.eventUser(type)]);
             } catch (error) {
-              log.error(`Session ${session.id} failed to handle message:`, error);
+              log.error(
+                `Session ${session.id} failed to handle message:`,
+                error,
+              );
             }
           }),
         );
@@ -243,7 +250,8 @@ class SessionManager {
       }
 
       if (events["group-participants.update"]) {
-        const { id, participants, action } = events["group-participants.update"];
+        const { id, participants, action } =
+          events["group-participants.update"];
         if (
           action === "remove" &&
           participants[0].id === jidNormalizedUser(sock.user.lid)
@@ -271,7 +279,10 @@ class SessionManager {
       }
 
       if (events["messages.delete"]) {
-        log.debug(`Session ${session.id} message deleted:`, events["messages.delete"]);
+        log.debug(
+          `Session ${session.id} message deleted:`,
+          events["messages.delete"],
+        );
       }
     });
   }
@@ -306,7 +317,8 @@ class SessionManager {
     }
 
     this.sessions.delete(sessionId);
-    const deleted = deleteSessionRecord(sessionId) || deleteSessionRecord(idOrPhone);
+    const deleted =
+      deleteSessionRecord(sessionId) || deleteSessionRecord(idOrPhone);
 
     if (!deleted && !activeSession) {
       return { success: false, error: "Session not found" };
@@ -367,9 +379,8 @@ class SessionManager {
    * Get active session count
    */
   getActiveCount(): number {
-    return [...this.sessions.values()].filter(
-      (s) => s.status === "connected",
-    ).length;
+    return [...this.sessions.values()].filter((s) => s.status === "connected")
+      .length;
   }
 }
 

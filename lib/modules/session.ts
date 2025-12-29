@@ -13,7 +13,9 @@ export default [
       if (!subcommand) {
         const sessions = sessionManager.list();
         if (sessions.length === 0) {
-          return await msg.reply("```No sessions found.\n\nUsage:\nsession create <phone_number>\nsession delete <session_id | phone_number>\nsession list```");
+          return await msg.reply(
+            "```No sessions found.\n\nUsage:\nsession create <phone_number>\nsession delete <session_id | phone_number>\nsession list```",
+          );
         }
 
         let text = "*Sessions*\n\n";
@@ -46,7 +48,9 @@ export default [
               `\`\`\`✓ Session created successfully!\n\nSession ID: ${result.id}\nPairing Code: ${formattedCode}\n\nEnter this code in WhatsApp > Linked Devices > Link a Device\`\`\``,
             );
           } else {
-            return await msg.reply(`\`\`\`✗ Failed to create session: ${result.error}\`\`\``);
+            return await msg.reply(
+              `\`\`\`✗ Failed to create session: ${result.error}\`\`\``,
+            );
           }
         }
 
@@ -64,7 +68,9 @@ export default [
           if (result.success) {
             return await msg.reply("```✓ Session deleted successfully```");
           } else {
-            return await msg.reply(`\`\`\`✗ Failed to delete session: ${result.error}\`\`\``);
+            return await msg.reply(
+              `\`\`\`✗ Failed to delete session: ${result.error}\`\`\``,
+            );
           }
         }
 
@@ -136,7 +142,9 @@ export default [
           `\`\`\`✓ Session created successfully!\n\nSession ID: ${result.id}\nPairing Code: ${formattedCode}\n\nEnter this code in WhatsApp > Linked Devices > Link a Device\`\`\``,
         );
       } else {
-        return await msg.reply(`\`\`\`✗ Failed to create session: ${result.error}\`\`\``);
+        return await msg.reply(
+          `\`\`\`✗ Failed to create session: ${result.error}\`\`\``,
+        );
       }
     },
   },
@@ -157,7 +165,9 @@ export default [
       if (result.success) {
         return await msg.reply("```✓ Session deleted successfully```");
       } else {
-        return await msg.reply(`\`\`\`✗ Failed to delete session: ${result.error}\`\`\``);
+        return await msg.reply(
+          `\`\`\`✗ Failed to delete session: ${result.error}\`\`\``,
+        );
       }
     },
   },
