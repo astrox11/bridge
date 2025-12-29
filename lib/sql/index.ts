@@ -5,5 +5,6 @@ export * from "./contact";
 export * from "./group";
 export * from "./mode";
 export * from "./msg";
+export * from "./prefix";
 export * from "./session";
 export * from "./sudo";

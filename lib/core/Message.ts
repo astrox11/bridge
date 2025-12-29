@@ -23,6 +23,7 @@ import {
   isUrl,
   isPath,
   writeExifWebp,
+  get_prefix,
 } from "..";
 import { readFile } from "fs/promises";
 
@@ -40,6 +41,7 @@ export class Message {
   audio: boolean;
   sudo: boolean;
   sticker: boolean;
+  prefix: string[] | null;
   device: "web" | "unknown" | "android" | "ios" | "desktop";
   mode: "private" | "public";
   quoted: Quoted | undefined;
@@ -75,6 +77,7 @@ export class Message {
     this.mode = getMode(this.sessionId);
     this.sudo = isSudo(this.sessionId, this.sender);
     this.pushName = message.pushName;
+    this.prefix = get_prefix(sessionId);
 
     const content = this.message?.[this.type!];
     this.contextInfo =

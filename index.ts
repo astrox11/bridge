@@ -1,3 +1,18 @@
+import { WebSocket } from "ws";
+
+const wsListener = WebSocket.prototype.on || WebSocket.prototype.addListener;
+const mockEvent = (event: string) =>
+  event === "upgrade" || event === "unexpected-response";
+
+if (wsListener) {
+  const patch = function (this: any, event: string, listener: any) {
+    if (mockEvent(event)) return this;
+    return wsListener.call(this, event, listener);
+  };
+  if (WebSocket.prototype.on) WebSocket.prototype.on = patch;
+  if (WebSocket.prototype.addListener) WebSocket.prototype.addListener = patch;
+}
+
 import makeWASocket, {
   delay,
   jidNormalizedUser,

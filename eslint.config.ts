@@ -16,6 +16,7 @@ export default defineConfig([
       "no-explicit-any": "off",
       "no-redeclare": "off",
       "@typescript-eslint/no-redeclare": ["error"],
+      "@typescript-eslint/ban-ts-comment": "off",
     },
   },
 ]);
