@@ -1,25 +1,40 @@
 import { bunql } from "./_sql";
+import {
+  createUserPrefixTable,
+  getPhoneFromSessionId,
+  getUserTableName,
+} from "./tables";
 
-const Prefix = bunql.define("prefix", {
-  session_id: { type: "TEXT" },
-  prefix: { type: "TEXT" },
-});
+/**
+ * Get the appropriate prefix table for a session
+ */
+function getPrefixTable(sessionId: string) {
+  const phoneNumber = getPhoneFromSessionId(sessionId);
+  createUserPrefixTable(phoneNumber);
+  return getUserTableName(phoneNumber, "prefix");
+}
 
 export const set_prefix = (session_id: string, prefix?: string) => {
-  Prefix.delete().where({ session_id });
+  const tableName = getPrefixTable(session_id);
+  bunql.exec(`DELETE FROM "${tableName}" WHERE id = 1`);
 
-  return Prefix.insert({
-    session_id,
-    prefix,
-  });
+  const prefixValue = prefix ? `'${prefix.replace(/'/g, "''")}'` : "NULL";
+  bunql.exec(
+    `INSERT INTO "${tableName}" (id, prefix) VALUES (1, ${prefixValue})`,
+  );
 };
 
 export const get_prefix = (session_id: string) => {
-  const row = Prefix.select().where({ session_id }).first();
+  const tableName = getPrefixTable(session_id);
+  const rows = bunql.query<{ prefix: string | null }>(
+    `SELECT prefix FROM "${tableName}" WHERE id = 1`,
+  );
+  const row = rows[0];
 
   return row ? row.prefix?.split("") : null;
 };
 
 export const del_prefix = (session_id: string) => {
-  return Prefix.delete().where({ session_id }).run();
+  const tableName = getPrefixTable(session_id);
+  bunql.exec(`DELETE FROM "${tableName}" WHERE id = 1`);
 };

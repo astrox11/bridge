@@ -13,180 +13,17 @@ if (wsListener) {
   if (WebSocket.prototype.addListener) WebSocket.prototype.addListener = patch;
 }
 
-import makeWASocket, {
-  delay,
-  jidNormalizedUser,
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore,
-  type CacheStore,
-} from "baileys";
-import {
-  log,
-  addSudo,
-  Message,
-  Plugins,
-  getMessage,
-  addContact,
-  saveMessage,
-  useBunqlAuth,
-  cacheGroupMetadata,
-  cachedGroupMetadata,
-  syncGroupMetadata,
-  verify_user_phone_number,
-  sessionManager,
-} from "./lib";
+import { log, sessionManager } from "./lib";
 import {
   isSessionCommand,
   getSessionArgs,
   handleSessionCommand,
   SESSION_COMMANDS,
 } from "./cli";
-import { rm } from "fs/promises";
-import { Boom } from "@hapi/boom";
-import MAIN_LOGGER from "pino";
-import NodeCache from "@cacheable/node-cache";
-
-const msgRetryCounterCache = new NodeCache() as CacheStore;
-const logger = MAIN_LOGGER({
-  level: "silent",
-});
-
-// Session ID for the main/legacy session
-const MAIN_SESSION_ID = "main";
 
 /**
- * Start the legacy single-session mode using PHONE_NUMBER from config/.env
- */
-const startLegacySession = async () => {
-  const phone = verify_user_phone_number();
-  const { state, saveCreds } = await useBunqlAuth();
-  const { version } = await fetchLatestBaileysVersion();
-
-  // Create session-scoped functions for data isolation
-  const sessionGetMessage = async (key: any) =>
-    getMessage(MAIN_SESSION_ID, key);
-  const sessionCachedGroupMetadata = async (id: string) =>
-    cachedGroupMetadata(MAIN_SESSION_ID, id);
-
-  const sock = makeWASocket({
-    auth: {
-      creds: state.creds,
-      keys: makeCacheableSignalKeyStore(state.keys, logger),
-    },
-    logger,
-    version,
-    getMessage: sessionGetMessage,
-    cachedGroupMetadata: sessionCachedGroupMetadata,
-    msgRetryCounterCache,
-    generateHighQualityLinkPreview: true,
-  });
-
-  if (!sock.authState.creds.registered) {
-    await delay(10000);
-    const code = await sock.requestPairingCode(phone?.replace(/\D+/g, ""));
-    log.info(`Code: ${code.slice(0, 4)}-${code.slice(4)}`);
-  }
-
-  sock.ev.process(async (events) => {
-    let hasSynced = false;
-
-    if (events["connection.update"]) {
-      const update = events["connection.update"];
-      const { connection, lastDisconnect } = update;
-      if (connection === "close") {
-        if (
-          (lastDisconnect?.error as Boom)?.output?.statusCode !==
-          DisconnectReason.loggedOut
-        ) {
-          startLegacySession();
-        } else {
-          await delay(5000);
-          ["database.db", "database.dn-shm", "database.db-wal"].forEach(
-            async (file) => await rm(file, { force: true }),
-          );
-          log.error("Connection closed. You are logged out.");
-        }
-      }
-      if (connection === "open") {
-        log.info("Connected to WhatsApp");
-        if (!hasSynced) {
-          hasSynced = true;
-          addSudo(MAIN_SESSION_ID, sock.user.id, sock.user.lid);
-          await delay(15000);
-          await syncGroupMetadata(MAIN_SESSION_ID, sock);
-        }
-      }
-    }
-
-    if (events["creds.update"]) {
-      await saveCreds();
-    }
-
-    if (events["messages.upsert"]) {
-      const { messages, type } = events["messages.upsert"];
-      // Fire everything at once
-      await Promise.all(
-        messages.map(async (message) => {
-          try {
-            saveMessage(MAIN_SESSION_ID, message.key, message);
-            const msg = new Message(sock, message, MAIN_SESSION_ID);
-            if (msg?.message?.protocolMessage?.type === 0) {
-              sock.ev.emit("messages.delete", { keys: [msg.key] });
-            }
-
-            const cmd = new Plugins(msg, sock);
-            await cmd.load("./lib/modules");
-            await Promise.allSettled([cmd.text(), cmd.eventUser(type)]);
-          } catch (error) {
-            log.error(`failed to handle_message:`, error);
-            // Continue processing other messages
-          }
-        }),
-      );
-    }
-
-    if (events["lid-mapping.update"]) {
-      const { pn, lid } = events["lid-mapping.update"];
-      addContact(MAIN_SESSION_ID, pn, lid);
-    }
-
-    if (events["group-participants.update"]) {
-      const { id, participants, action } = events["group-participants.update"];
-      if (
-        action == "remove" &&
-        participants[0].id == jidNormalizedUser(sock.user.lid)
-      ) {
-        return;
-      }
-      const metadata = await sock.groupMetadata(id);
-      cacheGroupMetadata(MAIN_SESSION_ID, metadata);
-    }
-
-    if (events["groups.update"]) {
-      const updates = events["groups.update"];
-      for (const update of updates) {
-        const metadata = await sock.groupMetadata(update.id);
-        cacheGroupMetadata(MAIN_SESSION_ID, metadata);
-      }
-    }
-
-    if (events["groups.upsert"]) {
-      const groups = events["groups.upsert"];
-      for (const group of groups) {
-        const metadata = await sock.groupMetadata(group.id);
-        cacheGroupMetadata(MAIN_SESSION_ID, metadata);
-      }
-    }
-
-    if (events["messages.delete"]) {
-      log.debug("Message deleted:", events["messages.delete"]);
-    }
-  });
-};
-
-/**
- * Main entry point - handles CLI commands or starts sessions
+ * Main entry point - handles CLI commands or starts all sessions
+ * All users are treated as sessions - no concept of a "main" user
  */
 const main = async () => {
   const args = process.argv.slice(2);
@@ -217,20 +54,21 @@ const main = async () => {
     process.exit(0);
   }
 
-  // No CLI command - start in normal mode
-  // Always start the main session first (most important session)
-  log.info("Starting main session...");
-  await startLegacySession();
-
-  // Then restore any additional sessions from database
+  // No CLI command - start all sessions from database
   const sessions = sessionManager.list();
-  if (sessions.length > 0) {
-    log.info(`Found ${sessions.length} additional session(s), restoring...`);
-    await sessionManager.restoreAllSessions();
+
+  if (sessions.length === 0) {
+    log.info("No sessions found in database.");
     log.info(
-      "All additional sessions restored. Running in multi-session mode.",
+      "Use 'session create <phone_number>' to create a new session.",
     );
+    log.info("Example: bun run index.ts session create 14155551234");
+    return;
   }
+
+  log.info(`Found ${sessions.length} session(s), starting all...`);
+  await sessionManager.restoreAllSessions();
+  log.info("All sessions started. Running in multi-session mode.");
 };
 
 main();

@@ -1,73 +1,79 @@
 import type { GroupParticipant } from "baileys";
 import { bunql } from "./_sql";
+import {
+  createUserContactsTable,
+  getPhoneFromSessionId,
+  getUserTableName,
+} from "./tables";
 
-const Contact = bunql.define("contacts", {
-  session_id: { type: "TEXT", notNull: true },
-  pn: { type: "TEXT", notNull: true },
-  lid: { type: "TEXT" },
-});
-
-// Create composite index for efficient lookups
-try {
-  bunql.exec(
-    "CREATE INDEX IF NOT EXISTS idx_contacts_session ON contacts(session_id, pn)",
-  );
-} catch {
-  // Index may already exist
+/**
+ * Get the appropriate contacts table for a session
+ */
+function getContactsTable(sessionId: string) {
+  const phoneNumber = getPhoneFromSessionId(sessionId);
+  createUserContactsTable(phoneNumber);
+  return getUserTableName(phoneNumber, "contacts");
 }
 
 export const addContact = (sessionId: string, pn: string, lid: string) => {
   if (pn && lid) {
     pn = pn?.split("@")[0];
     lid = lid?.split("@")[0];
-    const exists = Contact.query()
-      .where("session_id", "=", sessionId)
-      .where("pn", "=", pn)
-      .first();
-    if (exists) {
-      Contact.update({ lid })
-        .where("session_id", "=", sessionId)
-        .where("pn", "=", pn)
-        .run();
+    const tableName = getContactsTable(sessionId);
+
+    const existing = bunql.query<{ pn: string }>(
+      `SELECT pn FROM "${tableName}" WHERE pn = ?`,
+      [pn],
+    );
+
+    if (existing.length > 0) {
+      bunql.exec(
+        `UPDATE "${tableName}" SET lid = '${lid}' WHERE pn = '${pn}'`,
+      );
     } else {
-      Contact.insert({ session_id: sessionId, pn, lid });
+      bunql.exec(
+        `INSERT INTO "${tableName}" (pn, lid) VALUES ('${pn}', '${lid}')`,
+      );
     }
   }
   return;
 };
 
 export const getAllContacts = (sessionId: string) => {
-  return Contact.query()
-    .where("session_id", "=", sessionId)
-    .get()
-    .map((p) => p.pn)
-    .map((e) => `${e}@s.whatsapp.net`);
+  const tableName = getContactsTable(sessionId);
+  const rows = bunql.query<{ pn: string }>(`SELECT pn FROM "${tableName}"`);
+  return rows.map((p) => `${p.pn}@s.whatsapp.net`);
 };
 
 export const getLidByPn = async (sessionId: string, pn: string) => {
-  const contact = Contact.query()
-    .where("session_id", "=", sessionId)
-    .where("pn", "=", pn)
-    .first();
+  const tableName = getContactsTable(sessionId);
+  const rows = bunql.query<{ lid: string }>(
+    `SELECT lid FROM "${tableName}" WHERE pn = ?`,
+    [pn],
+  );
+  const contact = rows[0];
   return contact?.lid + "@lid" || null;
 };
 
 export const getPnByLid = (sessionId: string, lid: string) => {
-  const contact = Contact.query()
-    .where("session_id", "=", sessionId)
-    .where("lid", "=", lid)
-    .first();
+  const tableName = getContactsTable(sessionId);
+  const rows = bunql.query<{ pn: string }>(
+    `SELECT pn FROM "${tableName}" WHERE lid = ?`,
+    [lid],
+  );
+  const contact = rows[0];
   return contact?.pn + "@s.whatsapp.net" || null;
 };
 
 export const getBothId = (sessionId: string, id: string) => {
   const cleanId = (id.includes(":") ? id.split(":")[1] : id).split("@")[0];
+  const tableName = getContactsTable(sessionId);
 
-  const contact = Contact.query()
-    .where("session_id", "=", sessionId)
-    .where("pn", "=", cleanId)
-    .orWhere("lid", "=", cleanId)
-    .first();
+  const rows = bunql.query<{ pn: string; lid: string }>(
+    `SELECT pn, lid FROM "${tableName}" WHERE pn = ? OR lid = ?`,
+    [cleanId, cleanId],
+  );
+  const contact = rows[0];
 
   if (!contact) return null;
 
@@ -79,11 +85,14 @@ export const getBothId = (sessionId: string, id: string) => {
 
 export const getAlternateId = (sessionId: string, id: string) => {
   id = id?.split("@")?.[0];
-  const contact = Contact.query()
-    .where("session_id", "=", sessionId)
-    .where("pn", "=", id)
-    .orWhere("lid", "=", id)
-    .first();
+  const tableName = getContactsTable(sessionId);
+
+  const rows = bunql.query<{ pn: string; lid: string }>(
+    `SELECT pn, lid FROM "${tableName}" WHERE pn = ? OR lid = ?`,
+    [id, id],
+  );
+  const contact = rows[0];
+
   if (!contact) return null;
   return contact.pn === id
     ? contact.lid + "@lid"
@@ -91,11 +100,10 @@ export const getAlternateId = (sessionId: string, id: string) => {
 };
 
 export const removeContact = (sessionId: string, id: string) => {
-  return Contact.delete()
-    .where("session_id", "=", sessionId)
-    .where("pn", "=", id)
-    .orWhere("lid", "=", id)
-    .run();
+  const tableName = getContactsTable(sessionId);
+  bunql.exec(
+    `DELETE FROM "${tableName}" WHERE pn = '${id}' OR lid = '${id}'`,
+  );
 };
 
 export const syncGroupParticipantsToContactList = (
@@ -129,29 +137,30 @@ export function parseId(
   if (suffix === "s.whatsapp.net") return `${base}@s.whatsapp.net`;
   if (suffix === "lid") return `${base}@lid`;
 
+  const tableName = getContactsTable(sessionId);
+
   const resolve = (pn?: string, lid?: string) => {
     if (pn === base || pn?.startsWith(base)) return `${pn}@s.whatsapp.net`;
     if (lid === base || lid?.startsWith(base)) return `${lid}@lid`;
     return null;
   };
 
-  const contact = Contact.query()
-    .where("session_id", "=", sessionId)
-    .where("pn", "=", base)
-    .orWhere("lid", "=", base)
-    .first();
+  const rows = bunql.query<{ pn: string; lid: string }>(
+    `SELECT pn, lid FROM "${tableName}" WHERE pn = ? OR lid = ?`,
+    [base, base],
+  );
+  const contact = rows[0];
 
   if (contact) {
     const resolved = resolve(contact.pn, contact.lid);
     if (resolved) return resolved;
   }
 
-  const fuzzy = Contact.query()
-    .where("session_id", "=", sessionId)
-    .where("pn", "LIKE", `${base}%`)
-    .orWhere("lid", "LIKE", `${base}%`)
-    .limit(1)
-    .get()[0];
+  const fuzzyRows = bunql.query<{ pn: string; lid: string }>(
+    `SELECT pn, lid FROM "${tableName}" WHERE pn LIKE ? OR lid LIKE ? LIMIT 1`,
+    [`${base}%`, `${base}%`],
+  );
+  const fuzzy = fuzzyRows[0];
 
   if (fuzzy) {
     const resolved = resolve(fuzzy.pn, fuzzy.lid);

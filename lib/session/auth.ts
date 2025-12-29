@@ -9,63 +9,60 @@ import {
 } from "baileys";
 import { Mutex } from "async-mutex";
 import { addContact } from "../sql/contact";
-import { log } from "../util/logger";
+import {
+  createUserAuthTable,
+  getPhoneFromSessionId,
+  getUserTableName,
+} from "../sql/tables";
 
 const mutex = new Mutex();
 
-// Session-specific auth table
-const SessionAuth = bunql.define("session_auth", {
-  session_id: { type: "TEXT", notNull: true },
-  name: { type: "TEXT", notNull: true },
-  data: { type: "TEXT", notNull: true },
-});
-
-// Create composite index for efficient lookups
-try {
-  bunql.exec(
-    "CREATE UNIQUE INDEX IF NOT EXISTS idx_session_auth_composite ON session_auth(session_id, name)",
-  );
-} catch (error) {
-  log.error(
-    "Failed to create index 'idx_session_auth_composite' on 'session_auth':",
-    error,
-  );
+/**
+ * Get the appropriate auth table for a session
+ */
+function getAuthTable(sessionId: string) {
+  const phoneNumber = getPhoneFromSessionId(sessionId);
+  createUserAuthTable(phoneNumber);
+  return getUserTableName(phoneNumber, "auth");
 }
 
 export const useSessionAuth = async (sessionId: string) => {
+  const tableName = getAuthTable(sessionId);
+
   const writeData = async (data: any, name: string) =>
     mutex.runExclusive(() => {
-      const row = SessionAuth.query()
-        .where("session_id", "=", sessionId)
-        .where("name", "=", name)
-        .first();
+      const rows = bunql.query<{ name: string }>(
+        `SELECT name FROM "${tableName}" WHERE name = ?`,
+        [name],
+      );
+      const row = rows[0];
       const payload = JSON.stringify(data, BufferJSON.replacer);
+      const escapedPayload = payload.replace(/'/g, "''");
 
       if (row) {
-        SessionAuth.update({ data: payload })
-          .where("session_id", "=", sessionId)
-          .where("name", "=", name)
-          .run();
+        bunql.exec(
+          `UPDATE "${tableName}" SET data = '${escapedPayload}' WHERE name = '${name}'`,
+        );
       } else {
-        SessionAuth.insert({ session_id: sessionId, name, data: payload });
+        bunql.exec(
+          `INSERT INTO "${tableName}" (name, data) VALUES ('${name}', '${escapedPayload}')`,
+        );
       }
     });
 
   const readData = async (name: string) =>
     mutex.runExclusive(() => {
-      const row = SessionAuth.query()
-        .where("session_id", "=", sessionId)
-        .where("name", "=", name)
-        .first();
+      const rows = bunql.query<{ data: string }>(
+        `SELECT data FROM "${tableName}" WHERE name = ?`,
+        [name],
+      );
+      const row = rows[0];
       return row ? JSON.parse(row.data, BufferJSON.reviver) : null;
     });
 
   const removeData = async (name: string) =>
     mutex.runExclusive(() => {
-      SessionAuth.delete()
-        .where("session_id", "=", sessionId)
-        .where("name", "=", name)
-        .run();
+      bunql.exec(`DELETE FROM "${tableName}" WHERE name = '${name}'`);
     });
 
   const creds: AuthenticationCreds =
@@ -105,7 +102,7 @@ export const useSessionAuth = async (sessionId: string) => {
 
               const key = `${category}-${id}`;
               if (key.includes("lid-mapping")) {
-                handleLidMapping(key, value as string);
+                handleLidMapping(sessionId, key, value as string);
               }
               tasks.push(value ? writeData(value, key) : removeData(key));
             }
@@ -122,24 +119,24 @@ export const useSessionAuth = async (sessionId: string) => {
 
     clearAuth: async () => {
       await mutex.runExclusive(() => {
-        SessionAuth.delete().where("session_id", "=", sessionId).run();
+        bunql.exec(`DELETE FROM "${tableName}"`);
       });
     },
   };
 };
 
-function handleLidMapping(key: string, value: string) {
+function handleLidMapping(sessionId: string, key: string, value: string) {
   const isPn = !key.includes("reverse");
 
   if (isPn) {
     const pnKey = key.split("-")[2];
     const cleanedValue = value.replace(/^"|"$/g, "");
 
-    addContact(pnKey, cleanedValue);
+    addContact(sessionId, pnKey, cleanedValue);
   } else {
     const lidKey = key.split("-")[2].split("_")[0];
     const cleanedValue = value.replace(/^"|"$/g, "");
 
-    addContact(cleanedValue, lidKey);
+    addContact(sessionId, cleanedValue, lidKey);
   }
 }

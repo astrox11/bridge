@@ -28,6 +28,8 @@ import {
   deleteSession as deleteSessionRecord,
   updateSessionStatus,
   sessionExists,
+  initializeUserTables,
+  deleteUserTables,
   type SessionRecord,
 } from "../";
 import { useSessionAuth } from "./auth";
@@ -102,6 +104,9 @@ class SessionManager {
       };
     }
 
+    // Initialize user-specific database tables
+    initializeUserTables(sanitized);
+
     // Initialize session in memory first (before database record)
     const activeSession: ActiveSession = {
       id: sessionId,
@@ -121,6 +126,7 @@ class SessionManager {
     } catch (error) {
       // Cleanup on failure - only need to remove from memory since DB record wasn't created
       this.sessions.delete(sessionId);
+      deleteUserTables(sanitized);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       return { success: false, error: errorMessage };
@@ -300,14 +306,23 @@ class SessionManager {
   ): Promise<{ success: boolean; error?: string }> {
     // Try to find session by ID first, then by phone number
     let sessionId = idOrPhone;
+    let phoneNumber: string | null = null;
     const sanitized = this.sanitizePhoneNumber(idOrPhone);
 
     if (sanitized) {
       const record = getSession(sanitized);
       if (record) {
         sessionId = record.id;
+        phoneNumber = record.phone_number;
       } else {
         sessionId = this.generateSessionId(sanitized);
+        phoneNumber = sanitized;
+      }
+    } else {
+      // Try to get phone number from session record
+      const record = getSession(idOrPhone);
+      if (record) {
+        phoneNumber = record.phone_number;
       }
     }
 
@@ -319,6 +334,7 @@ class SessionManager {
         // Ignore logout errors
       }
       activeSession.socket = null;
+      phoneNumber = phoneNumber || activeSession.phoneNumber;
     }
 
     this.sessions.delete(sessionId);
@@ -327,6 +343,11 @@ class SessionManager {
 
     if (!deleted && !activeSession) {
       return { success: false, error: "Session not found" };
+    }
+
+    // Clean up user-specific database tables
+    if (phoneNumber) {
+      deleteUserTables(phoneNumber);
     }
 
     log.info(`Session ${sessionId} deleted`);
@@ -366,6 +387,9 @@ class SessionManager {
     // Restore sessions concurrently for faster startup
     const restorationPromises = sessionsToRestore.map(async (sessionRecord) => {
       log.info(`Restoring session ${sessionRecord.id}...`);
+
+      // Initialize user-specific database tables
+      initializeUserTables(sessionRecord.phone_number);
 
       const activeSession: ActiveSession = {
         id: sessionRecord.id,

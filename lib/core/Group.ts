@@ -4,14 +4,17 @@ import { GetGroupMeta, isAdmin, isParticipant } from "../sql";
 export class Group {
   client: WASocket;
   metadata: GroupMetadata;
-  constructor(id: string, client: WASocket) {
-    this.metadata = GetGroupMeta(id);
+  sessionId: string;
+
+  constructor(sessionId: string, id: string, client: WASocket) {
+    this.sessionId = sessionId;
+    this.metadata = GetGroupMeta(sessionId, id);
     this.client = client;
   }
 
   async Promote(participant: string) {
-    if (isParticipant(this.metadata.id, participant)) {
-      if (isAdmin(this.metadata.id, participant)) return null;
+    if (isParticipant(this.sessionId, this.metadata.id, participant)) {
+      if (isAdmin(this.sessionId, this.metadata.id, participant)) return null;
       await this.client.groupParticipantsUpdate(
         this.metadata.id,
         [participant],
@@ -23,8 +26,8 @@ export class Group {
   }
 
   async Demote(participant: string) {
-    if (isParticipant(this.metadata.id, participant)) {
-      if (!isAdmin(this.metadata.id, participant)) return null;
+    if (isParticipant(this.sessionId, this.metadata.id, participant)) {
+      if (!isAdmin(this.sessionId, this.metadata.id, participant)) return null;
       await this.client.groupParticipantsUpdate(
         this.metadata.id,
         [participant],
@@ -36,7 +39,7 @@ export class Group {
   }
 
   async Remove(participant: string) {
-    if (isParticipant(this.metadata.id, participant)) {
+    if (isParticipant(this.sessionId, this.metadata.id, participant)) {
       await this.client.groupParticipantsUpdate(
         this.metadata.id,
         [participant],

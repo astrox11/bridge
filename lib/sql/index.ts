@@ -8,3 +8,4 @@ export * from "./msg";
 export * from "./prefix";
 export * from "./session";
 export * from "./sudo";
+export * from "./tables";

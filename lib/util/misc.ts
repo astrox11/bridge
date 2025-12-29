@@ -1,31 +1,4 @@
 import type { WAMessageContent } from "baileys";
-import config from "../../config";
-import { parseEnv } from "util";
-import { readFileSync } from "fs";
-import { isValidPhoneNumber } from "libphonenumber-js";
-import { log } from "./logger";
-
-export function verify_user_phone_number(): string | undefined {
-  const initial = config?.PHONE_NUMBER
-    ? `+${config.PHONE_NUMBER.replace(/\D+/g, "")}`
-    : undefined;
-
-  const fallbackEnv = parseEnv(readFileSync(".env").toString())?.PHONE_NUMBER;
-  const fallback = fallbackEnv
-    ? `+${fallbackEnv.replace(/\D+/g, "")}`
-    : undefined;
-
-  if (initial && isValidPhoneNumber(initial)) {
-    return initial;
-  }
-
-  if (fallback && isValidPhoneNumber(fallback)) {
-    return fallback;
-  }
-
-  log.error("Invalid PHONE_NUMBER variable.");
-  return process.exit(1);
-}
 
 export function formatRuntime(uptimeSeconds: number) {
   let seconds = Math.floor(uptimeSeconds);

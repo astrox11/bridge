@@ -1,4 +1,4 @@
-import type { WASocket } from "baileys/src";
+import type { WASocket } from "baileys";
 
 export class Community {
   id: string;

@@ -1,21 +1,25 @@
-import { jidNormalizedUser } from "baileys/src";
+import { jidNormalizedUser } from "baileys";
 import { bunql } from "./_sql";
+import {
+  createUserSudoTable,
+  getPhoneFromSessionId,
+  getUserTableName,
+} from "./tables";
 
-const Sudo = bunql.define("sudo", {
-  session_id: { type: "TEXT", notNull: true },
-  pn: { type: "TEXT", notNull: true },
-  lid: { type: "TEXT" },
-});
-
-// Create index for efficient lookups by session
-try {
-  bunql.exec("CREATE INDEX IF NOT EXISTS idx_sudo_session ON sudo(session_id)");
-} catch {
-  // Index may already exist
+/**
+ * Get the appropriate sudo table for a session
+ */
+function getSudoTable(sessionId: string) {
+  const phoneNumber = getPhoneFromSessionId(sessionId);
+  createUserSudoTable(phoneNumber);
+  return getUserTableName(phoneNumber, "sudo");
 }
 
 export const isSudo = (sessionId: string, id: string) => {
-  const rows = Sudo.query().where("session_id", "=", sessionId).get();
+  const tableName = getSudoTable(sessionId);
+  const rows = bunql.query<{ pn: string; lid: string }>(
+    `SELECT pn, lid FROM "${tableName}"`,
+  );
   const pn = rows.map((e) => e.pn);
   const lid = rows.map((e) => e.lid);
 
@@ -26,7 +30,10 @@ export const addSudo = (sessionId: string, id: string, lid: string) => {
   id = jidNormalizedUser(id);
   lid = jidNormalizedUser(lid);
   if (!isSudo(sessionId, id)) {
-    Sudo.insert({ session_id: sessionId, pn: id, lid });
+    const tableName = getSudoTable(sessionId);
+    bunql.exec(
+      `INSERT INTO "${tableName}" (pn, lid) VALUES ('${id}', '${lid}')`,
+    );
     return true;
   }
   return false;
@@ -34,16 +41,18 @@ export const addSudo = (sessionId: string, id: string, lid: string) => {
 
 export const removeSudo = (sessionId: string, id: string) => {
   if (isSudo(sessionId, id)) {
-    Sudo.delete()
-      .where("session_id", "=", sessionId)
-      .where("pn", "=", id)
-      .orWhere("lid", "=", id)
-      .run();
+    const tableName = getSudoTable(sessionId);
+    bunql.exec(
+      `DELETE FROM "${tableName}" WHERE pn = '${id}' OR lid = '${id}'`,
+    );
     return true;
   }
   return false;
 };
 
 export const getSudos = (sessionId: string) => {
-  return Sudo.query().where("session_id", "=", sessionId).get();
+  const tableName = getSudoTable(sessionId);
+  return bunql.query<{ pn: string; lid: string }>(
+    `SELECT * FROM "${tableName}"`,
+  );
 };

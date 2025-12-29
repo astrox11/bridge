@@ -2,43 +2,48 @@ import type { GroupMetadata, WASocket } from "baileys";
 import { bunql } from "./_sql";
 import { log } from "../util";
 import { syncGroupParticipantsToContactList } from "./contact";
+import {
+  createUserGroupsTable,
+  getPhoneFromSessionId,
+  getUserTableName,
+} from "./tables";
 
-const Group = bunql.define("groups", {
-  session_id: { type: "TEXT", notNull: true },
-  id: { type: "TEXT", notNull: true },
-  data: { type: "TEXT" },
-});
-
-// Create composite index for efficient lookups
-try {
-  bunql.exec(
-    "CREATE INDEX IF NOT EXISTS idx_groups_session ON groups(session_id, id)",
-  );
-} catch {
-  // Index may already exist
+/**
+ * Get the appropriate groups table for a session
+ */
+function getGroupsTable(sessionId: string) {
+  const phoneNumber = getPhoneFromSessionId(sessionId);
+  createUserGroupsTable(phoneNumber);
+  return getUserTableName(phoneNumber, "groups");
 }
 
 export const cachedGroupMetadata = async (sessionId: string, id: string) => {
-  const row = Group.query()
-    .where("session_id", "=", sessionId)
-    .where("id", "=", id)
-    .first();
+  const tableName = getGroupsTable(sessionId);
+  const rows = bunql.query<{ data: string }>(
+    `SELECT data FROM "${tableName}" WHERE id = ?`,
+    [id],
+  );
+  const row = rows[0];
   return row?.data ? JSON.parse(row.data) : undefined;
 };
 
 export const GetGroupMeta = (sessionId: string, id: string) => {
-  const row = Group.query()
-    .where("session_id", "=", sessionId)
-    .where("id", "=", id)
-    .first();
+  const tableName = getGroupsTable(sessionId);
+  const rows = bunql.query<{ data: string }>(
+    `SELECT data FROM "${tableName}" WHERE id = ?`,
+    [id],
+  );
+  const row = rows[0];
   return row?.data ? JSON.parse(row.data) : undefined;
 };
 
 export const GetParticipants = (sessionId: string, id: string) => {
-  const row = Group.query()
-    .where("session_id", "=", sessionId)
-    .where("id", "=", id)
-    .first();
+  const tableName = getGroupsTable(sessionId);
+  const rows = bunql.query<{ data: string }>(
+    `SELECT data FROM "${tableName}" WHERE id = ?`,
+    [id],
+  );
+  const row = rows[0];
 
   if (!row?.data) return [];
 
@@ -61,10 +66,12 @@ export const cacheGroupMetadata = async (
   sessionId: string,
   metadata: GroupMetadata | (Partial<GroupMetadata> & { id: string }),
 ) => {
-  const exists = Group.query()
-    .where("session_id", "=", sessionId)
-    .where("id", "=", metadata.id)
-    .first();
+  const tableName = getGroupsTable(sessionId);
+  const rows = bunql.query<{ data: string }>(
+    `SELECT data FROM "${tableName}" WHERE id = ?`,
+    [metadata.id],
+  );
+  const exists = rows[0];
 
   if (exists) {
     const existingData = JSON.parse(exists.data) as GroupMetadata;
@@ -78,25 +85,22 @@ export const cacheGroupMetadata = async (
           : existingData.participants,
     };
     syncGroupParticipantsToContactList(sessionId, metadata.participants);
-    return Group.update({ data: JSON.stringify(mergedData) })
-      .where("session_id", "=", sessionId)
-      .where("id", "=", metadata.id)
-      .run();
+    const dataStr = JSON.stringify(mergedData).replace(/'/g, "''");
+    bunql.exec(
+      `UPDATE "${tableName}" SET data = '${dataStr}' WHERE id = '${metadata.id}'`,
+    );
   } else {
     syncGroupParticipantsToContactList(sessionId, metadata.participants);
-    return Group.insert({
-      session_id: sessionId,
-      id: metadata.id,
-      data: JSON.stringify(metadata),
-    });
+    const dataStr = JSON.stringify(metadata).replace(/'/g, "''");
+    bunql.exec(
+      `INSERT INTO "${tableName}" (id, data) VALUES ('${metadata.id}', '${dataStr}')`,
+    );
   }
 };
 
 export const removeGroupMetadata = async (sessionId: string, id: string) => {
-  return Group.delete()
-    .where("session_id", "=", sessionId)
-    .where("id", "=", id)
-    .run();
+  const tableName = getGroupsTable(sessionId);
+  bunql.exec(`DELETE FROM "${tableName}" WHERE id = '${id}'`);
 };
 
 export const isAdmin = function (
@@ -104,10 +108,12 @@ export const isAdmin = function (
   chat: string,
   participantId: string,
 ) {
-  const row = Group.query()
-    .where("session_id", "=", sessionId)
-    .where("id", "=", chat)
-    .first();
+  const tableName = getGroupsTable(sessionId);
+  const rows = bunql.query<{ data: string }>(
+    `SELECT data FROM "${tableName}" WHERE id = ?`,
+    [chat],
+  );
+  const row = rows[0];
 
   if (!row?.data) return false;
 
@@ -121,10 +127,12 @@ export const isAdmin = function (
 };
 
 export const getGroupAdmins = function (sessionId: string, chat: string) {
-  const row = Group.query()
-    .where("session_id", "=", sessionId)
-    .where("id", "=", chat)
-    .first();
+  const tableName = getGroupsTable(sessionId);
+  const rows = bunql.query<{ data: string }>(
+    `SELECT data FROM "${tableName}" WHERE id = ?`,
+    [chat],
+  );
+  const row = rows[0];
 
   if (!row?.data) return [];
 

@@ -1,27 +1,44 @@
 import { bunql } from "./_sql";
+import {
+  createUserModeTable,
+  getPhoneFromSessionId,
+  getUserTableName,
+} from "./tables";
 
-const BotMode = bunql.define("mode", {
-  session_id: { type: "TEXT", primary: true },
-  mode: { type: "TEXT", notNull: true },
-});
+/**
+ * Get the appropriate mode table for a session
+ */
+function getModeTable(sessionId: string) {
+  const phoneNumber = getPhoneFromSessionId(sessionId);
+  createUserModeTable(phoneNumber);
+  return getUserTableName(phoneNumber, "mode");
+}
 
 type Mode = "private" | "public";
 
 export const setMode = (sessionId: string, type: Mode): boolean | null => {
-  const row = BotMode.query().where("session_id", "=", sessionId).first();
+  const tableName = getModeTable(sessionId);
+  const rows = bunql.query<{ mode: string }>(
+    `SELECT mode FROM "${tableName}" WHERE id = 1`,
+  );
+  const row = rows[0];
 
   if (row?.mode === type) return null;
 
   if (row) {
-    BotMode.update({ mode: type }).where("session_id", "=", sessionId).run();
+    bunql.exec(`UPDATE "${tableName}" SET mode = '${type}' WHERE id = 1`);
   } else {
-    BotMode.insert({ session_id: sessionId, mode: type });
+    bunql.exec(`INSERT INTO "${tableName}" (id, mode) VALUES (1, '${type}')`);
   }
 
   return true;
 };
 
 export const getMode = (sessionId: string): Mode => {
-  const row = BotMode.query().where("session_id", "=", sessionId).first();
+  const tableName = getModeTable(sessionId);
+  const rows = bunql.query<{ mode: string }>(
+    `SELECT mode FROM "${tableName}" WHERE id = 1`,
+  );
+  const row = rows[0];
   return (row?.mode as Mode) ?? "private";
 };
