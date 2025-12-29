@@ -5,13 +5,52 @@
 import { bunql } from "./_sql";
 import { log } from "../util/logger";
 
+// Allowed table suffixes - whitelist approach for security
+const ALLOWED_TABLE_SUFFIXES = [
+  "auth",
+  "messages",
+  "contacts",
+  "groups",
+  "sudo",
+  "ban",
+  "mode",
+  "prefix",
+  "antidelete",
+] as const;
+
+type TableSuffix = (typeof ALLOWED_TABLE_SUFFIXES)[number];
+
+/**
+ * Validate table suffix against whitelist
+ */
+function isValidTableSuffix(suffix: string): suffix is TableSuffix {
+  return ALLOWED_TABLE_SUFFIXES.includes(suffix as TableSuffix);
+}
+
+/**
+ * Sanitize phone number to contain only digits
+ */
+function sanitizePhoneNumber(phoneNumber: string): string {
+  return phoneNumber.replace(/\D/g, "");
+}
+
 /**
  * Generate a table name for a specific user session
  * Format: user_<phoneNumber>_<tableName>
+ * Both phone number and table name are validated/sanitized
  */
-export function getUserTableName(phoneNumber: string, tableName: string): string {
+export function getUserTableName(
+  phoneNumber: string,
+  tableName: TableSuffix,
+): string {
   // Sanitize phone number (remove any non-digit characters)
-  const sanitizedPhone = phoneNumber.replace(/\D/g, "");
+  const sanitizedPhone = sanitizePhoneNumber(phoneNumber);
+
+  // Validate table name is in the whitelist
+  if (!isValidTableSuffix(tableName)) {
+    throw new Error(`Invalid table suffix: ${tableName}`);
+  }
+
   return `user_${sanitizedPhone}_${tableName}`;
 }
 
@@ -30,7 +69,7 @@ const createdTables = new Set<string>();
  */
 export function createUserAuthTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "auth");
-  
+
   if (!createdTables.has(tableName)) {
     try {
       bunql.exec(`
@@ -44,7 +83,7 @@ export function createUserAuthTable(phoneNumber: string): string {
       log.error(`Failed to create table ${tableName}:`, error);
     }
   }
-  
+
   return tableName;
 }
 
@@ -253,13 +292,9 @@ export function initializeUserTables(phoneNumber: string): void {
  * Delete all tables for a user session (cleanup on session delete)
  */
 export function deleteUserTables(phoneNumber: string): void {
-  const sanitizedPhone = phoneNumber.replace(/\D/g, "");
-  const tableNames = [
-    "auth", "messages", "contacts", "groups", 
-    "sudo", "ban", "mode", "prefix", "antidelete"
-  ];
-  
-  for (const table of tableNames) {
+  const sanitizedPhone = sanitizePhoneNumber(phoneNumber);
+
+  for (const table of ALLOWED_TABLE_SUFFIXES) {
     const tableName = `user_${sanitizedPhone}_${table}`;
     try {
       bunql.exec(`DROP TABLE IF EXISTS "${tableName}"`);
@@ -268,6 +303,6 @@ export function deleteUserTables(phoneNumber: string): void {
       log.error(`Failed to drop table ${tableName}:`, error);
     }
   }
-  
+
   log.debug(`Deleted tables for user ${phoneNumber}`);
 }

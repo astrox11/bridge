@@ -15,6 +15,13 @@ function getContactsTable(sessionId: string) {
   return getUserTableName(phoneNumber, "contacts");
 }
 
+/**
+ * Escape special LIKE characters to prevent wildcard injection
+ */
+function escapeLikePattern(value: string): string {
+  return value.replace(/[%_\\]/g, "\\$&");
+}
+
 export const addContact = (sessionId: string, pn: string, lid: string) => {
   if (pn && lid) {
     pn = pn?.split("@")[0];
@@ -159,9 +166,11 @@ export function parseId(
     if (resolved) return resolved;
   }
 
+  // Escape special LIKE characters to prevent wildcard injection
+  const escapedBase = escapeLikePattern(base);
   const fuzzyRows = bunql.query<{ pn: string; lid: string }>(
-    `SELECT pn, lid FROM "${tableName}" WHERE pn LIKE ? OR lid LIKE ? LIMIT 1`,
-    [`${base}%`, `${base}%`],
+    `SELECT pn, lid FROM "${tableName}" WHERE pn LIKE ? ESCAPE '\\' OR lid LIKE ? ESCAPE '\\' LIMIT 1`,
+    [`${escapedBase}%`, `${escapedBase}%`],
   );
   const fuzzy = fuzzyRows[0];
 
