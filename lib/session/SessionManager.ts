@@ -10,7 +10,9 @@ import makeWASocket, {
 import { Boom } from "@hapi/boom";
 import MAIN_LOGGER from "pino";
 import NodeCache from "@cacheable/node-cache";
-import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
+import parsePhoneNumberFromString, {
+  isValidPhoneNumber,
+} from "libphonenumber-js";
 import {
   log,
   addSudo,
@@ -72,7 +74,7 @@ class SessionManager {
     }
 
     // Parse and format to E.164, then remove the +
-    const parsed = parsePhoneNumber(cleaned);
+    const parsed = parsePhoneNumberFromString(cleaned);
     return parsed.number.replace("+", "");
   }
 

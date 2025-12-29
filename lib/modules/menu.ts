@@ -62,7 +62,7 @@ export default [
 
       const m = await msg.send_interactive({
         header: {
-          title: "╭━━━〔 αѕтяσχ вσт 〕━━━",
+          title: `╭━━━〔 ${config.BOT_NAME} 〕━━━`,
         },
         body: {
           text: reply.trim(),

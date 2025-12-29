@@ -22,13 +22,11 @@ import {
 } from "./cli";
 
 /**
- * Main entry point - handles CLI commands or starts all sessions
- * All users are treated as sessions - no concept of a "main" user
+ * Main entry point
  */
 const main = async () => {
   const args = process.argv.slice(2);
 
-  // Handle session CLI commands
   if (isSessionCommand(args)) {
     const sessionArgs = getSessionArgs(args);
     const result = await handleSessionCommand(sessionArgs);
@@ -40,29 +38,23 @@ const main = async () => {
       process.exit(1);
     }
 
-    // For create command, keep process running to complete pairing
     if (
       sessionArgs[0]?.toLowerCase() === SESSION_COMMANDS.CREATE &&
       result.success
     ) {
       log.info("Waiting for pairing to complete...");
-      // Process stays alive for pairing
       return;
     }
 
-    // For list/delete, exit after completion
     process.exit(0);
   }
 
-  // No CLI command - start all sessions from database
   const sessions = sessionManager.list();
 
   if (sessions.length === 0) {
     log.info("No sessions found in database.");
-    log.info(
-      "Use 'session create <phone_number>' to create a new session.",
-    );
-    log.info("Example: bun run index.ts session create 14155551234");
+    log.info("Use 'session create <phone_number>' to create a new session.");
+    log.info("Example: bun start session create 14155551234");
     return;
   }
 
