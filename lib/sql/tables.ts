@@ -16,6 +16,12 @@ const ALLOWED_TABLE_SUFFIXES = [
   "mode",
   "prefix",
   "antidelete",
+  "alive",
+  "mention",
+  "filter",
+  "afk",
+  "group_event",
+  "sticker",
 ] as const;
 
 type TableSuffix = (typeof ALLOWED_TABLE_SUFFIXES)[number];
@@ -273,6 +279,146 @@ export function createUserAntideleteTable(phoneNumber: string): string {
 }
 
 /**
+ * Create alive table for a specific user session
+ */
+export function createUserAliveTable(phoneNumber: string): string {
+  const tableName = getUserTableName(phoneNumber, "alive");
+  
+  if (!createdTables.has(tableName)) {
+    try {
+      bunql.exec(`
+        CREATE TABLE IF NOT EXISTS "${tableName}" (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          alive_message TEXT
+        )
+      `);
+      createdTables.add(tableName);
+    } catch (error) {
+      log.error(`Failed to create table ${tableName}:`, error);
+    }
+  }
+  
+  return tableName;
+}
+
+/**
+ * Create mention table for a specific user session
+ */
+export function createUserMentionTable(phoneNumber: string): string {
+  const tableName = getUserTableName(phoneNumber, "mention");
+  
+  if (!createdTables.has(tableName)) {
+    try {
+      bunql.exec(`
+        CREATE TABLE IF NOT EXISTS "${tableName}" (
+          groupId TEXT PRIMARY KEY,
+          message TEXT
+        )
+      `);
+      createdTables.add(tableName);
+    } catch (error) {
+      log.error(`Failed to create table ${tableName}:`, error);
+    }
+  }
+  
+  return tableName;
+}
+
+/**
+ * Create filter table for a specific user session
+ */
+export function createUserFilterTable(phoneNumber: string): string {
+  const tableName = getUserTableName(phoneNumber, "filter");
+  
+  if (!createdTables.has(tableName)) {
+    try {
+      bunql.exec(`
+        CREATE TABLE IF NOT EXISTS "${tableName}" (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          status INTEGER,
+          message TEXT
+        )
+      `);
+      createdTables.add(tableName);
+    } catch (error) {
+      log.error(`Failed to create table ${tableName}:`, error);
+    }
+  }
+  
+  return tableName;
+}
+
+/**
+ * Create afk table for a specific user session
+ */
+export function createUserAfkTable(phoneNumber: string): string {
+  const tableName = getUserTableName(phoneNumber, "afk");
+  
+  if (!createdTables.has(tableName)) {
+    try {
+      bunql.exec(`
+        CREATE TABLE IF NOT EXISTS "${tableName}" (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          status INTEGER,
+          message TEXT
+        )
+      `);
+      createdTables.add(tableName);
+    } catch (error) {
+      log.error(`Failed to create table ${tableName}:`, error);
+    }
+  }
+  
+  return tableName;
+}
+
+/**
+ * Create group_event table for a specific user session
+ */
+export function createUserGroupEventTable(phoneNumber: string): string {
+  const tableName = getUserTableName(phoneNumber, "group_event");
+  
+  if (!createdTables.has(tableName)) {
+    try {
+      bunql.exec(`
+        CREATE TABLE IF NOT EXISTS "${tableName}" (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          status INTEGER
+        )
+      `);
+      createdTables.add(tableName);
+    } catch (error) {
+      log.error(`Failed to create table ${tableName}:`, error);
+    }
+  }
+  
+  return tableName;
+}
+
+/**
+ * Create sticker table for a specific user session
+ */
+export function createUserStickerTable(phoneNumber: string): string {
+  const tableName = getUserTableName(phoneNumber, "sticker");
+  
+  if (!createdTables.has(tableName)) {
+    try {
+      bunql.exec(`
+        CREATE TABLE IF NOT EXISTS "${tableName}" (
+          name TEXT PRIMARY KEY,
+          sha256 TEXT
+        )
+      `);
+      createdTables.add(tableName);
+    } catch (error) {
+      log.error(`Failed to create table ${tableName}:`, error);
+    }
+  }
+  
+  return tableName;
+}
+
+/**
  * Initialize all tables for a user session
  */
 export function initializeUserTables(phoneNumber: string): void {
@@ -285,6 +431,12 @@ export function initializeUserTables(phoneNumber: string): void {
   createUserModeTable(phoneNumber);
   createUserPrefixTable(phoneNumber);
   createUserAntideleteTable(phoneNumber);
+  createUserAliveTable(phoneNumber);
+  createUserMentionTable(phoneNumber);
+  createUserFilterTable(phoneNumber);
+  createUserAfkTable(phoneNumber);
+  createUserGroupEventTable(phoneNumber);
+  createUserStickerTable(phoneNumber);
   log.debug(`Initialized tables for user ${phoneNumber}`);
 }
 
