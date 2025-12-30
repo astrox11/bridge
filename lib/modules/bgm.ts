@@ -1,9 +1,12 @@
-import type { CommandProperty } from "..";
-import { saveBgm, deleteBgm, getAllBgms } from "../sql";
+import type { WAMessage } from "baileys";
+import { log, type CommandProperty } from "..";
+import { saveBgm, deleteBgm, getAllBgms } from "..";
 
 export default [
   {
     pattern: "bgm",
+    alias: ["setbgm"],
+    isSudo: true,
     category: "media",
     async exec(msg, _, args) {
       if (!msg?.quoted?.audio) {
@@ -15,8 +18,7 @@ export default [
       }
 
       try {
-        const audioBuffer = await msg.quoted.download();
-        const audioData = audioBuffer.toString("base64");
+        const audioData = JSON.stringify(msg.quoted);
         saveBgm(msg.sessionId, args.trim(), audioData);
         await msg.reply(`\`\`\`BGM saved with trigger: ${args.trim()}\`\`\``);
       } catch (error) {
@@ -27,6 +29,7 @@ export default [
   },
   {
     pattern: "delbgm",
+    isSudo: true,
     category: "media",
     async exec(msg, _, args) {
       if (!args) {
@@ -44,6 +47,7 @@ export default [
   },
   {
     pattern: "getbgm",
+    isSudo: true,
     category: "media",
     async exec(msg) {
       try {
@@ -63,6 +67,25 @@ export default [
       } catch (error) {
         const e = error instanceof Error ? error.message : String(error);
         await msg.reply(`\`\`\`Error: ${e}\n\`\`\``);
+      }
+    },
+  },
+  {
+    event: true,
+    async exec(msg) {
+      if (!msg.text || msg.key.fromMe) return;
+
+      try {
+        const bgms = getAllBgms(msg.sessionId);
+        const match = bgms.find(
+          (b) => b.trigger.toLowerCase() === msg.text.toLowerCase().trim(),
+        );
+        if (match) {
+          const audioMsg = JSON.parse(match.audioData) as WAMessage;
+          await msg.forward(msg.chat, audioMsg);
+        }
+      } catch (e) {
+        log.error(e);
       }
     },
   },
