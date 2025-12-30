@@ -1,10 +1,3 @@
-/**
- * Message Handler Module
- *
- * Normalizes raw WhatsApp messages into domain-friendly structures
- * and classifies them for appropriate routing.
- */
-
 import {
   getDevice,
   isJidGroup,
@@ -21,9 +14,6 @@ import type {
   MediaType,
 } from "./types";
 
-/**
- * Normalizes a raw WhatsApp message into a domain-friendly structure.
- */
 export function normalizeMessage(
   client: WASocket,
   rawMessage: WAMessage,
@@ -89,9 +79,6 @@ function determineSenderId(
   return message.key.participant ?? message.key.remoteJid!;
 }
 
-/**
- * Classifies a message based on its content type and text.
- */
 export function classifyMessage(
   content: WAMessageContent | null | undefined,
   contentType: string | undefined,
@@ -137,9 +124,6 @@ function isCommand(text: string): boolean {
   return firstWord.length > 0 && firstWord.length <= 50;
 }
 
-/**
- * Extracts command information from text.
- */
 export function extractCommand(text: string): CommandInfo {
   const trimmed = text.trim();
   const spaceIndex = trimmed.indexOf(" ");
@@ -188,9 +172,6 @@ function hasQuotedMessage(
   return false;
 }
 
-/**
- * Extracts text content from various message types.
- */
 export function extractText(
   content: WAMessageContent | null | undefined,
 ): string | undefined {
@@ -228,9 +209,6 @@ export function extractText(
   return undefined;
 }
 
-/**
- * Validates that a normalized message has required fields.
- */
 export function validateMessage(message: NormalizedMessage): boolean {
   if (!message.id || !message.chatId || !message.senderId) {
     return false;

@@ -1,10 +1,3 @@
-/**
- * Middleware Service - Event-Emitter Based Architecture
- *
- * Provides an abstraction layer between WhatsApp (Baileys) and the application.
- * Uses Node.js EventEmitter for decoupled event handling.
- */
-
 import { EventEmitter } from "events";
 import type { WASocket, WAMessage, proto } from "baileys";
 import { DisconnectReason } from "baileys";
@@ -64,9 +57,6 @@ import type {
   MiddlewareEvents,
 } from "./types";
 
-/**
- * Event-emitter based middleware service for WhatsApp message processing.
- */
 export class MiddlewareService extends EventEmitter {
   private readonly options: Required<MiddlewareOptions>;
   private registry: CommandRegistry | null = null;
@@ -81,22 +71,18 @@ export class MiddlewareService extends EventEmitter {
     };
   }
 
-  /** Gets the session ID for this middleware instance */
   get sessionId(): string {
     return this.options.sessionId;
   }
 
-  /** Sets the command registry */
   setRegistry(registry: CommandRegistry): void {
     this.registry = registry;
   }
 
-  /** Sets event handlers */
   setEventHandlers(handlers: CommandDefinition[]): void {
     this.eventHandlers = handlers.filter((h) => h.event === true);
   }
 
-  /** Type-safe event emission */
   emit<K extends keyof MiddlewareEvents>(
     event: K,
     ...args: Parameters<MiddlewareEvents[K]>
@@ -104,7 +90,6 @@ export class MiddlewareService extends EventEmitter {
     return super.emit(event, ...args);
   }
 
-  /** Type-safe event listener */
   on<K extends keyof MiddlewareEvents>(
     event: K,
     listener: MiddlewareEvents[K],
@@ -112,7 +97,6 @@ export class MiddlewareService extends EventEmitter {
     return super.on(event, listener);
   }
 
-  /** Type-safe once listener */
   once<K extends keyof MiddlewareEvents>(
     event: K,
     listener: MiddlewareEvents[K],
@@ -120,9 +104,6 @@ export class MiddlewareService extends EventEmitter {
     return super.once(event, listener);
   }
 
-  /**
-   * Processes a raw WhatsApp message through the middleware pipeline.
-   */
   async processMessage(
     client: WASocket,
     rawMessage: WAMessage,
@@ -160,7 +141,6 @@ export class MiddlewareService extends EventEmitter {
       return { message, valid: true, dispatched: null, eventResults: [] };
     }
 
-    // Emit message event
     this.emit("message", message, client);
 
     let dispatched: DispatchResult | null = null;
@@ -179,7 +159,6 @@ export class MiddlewareService extends EventEmitter {
     return { message, valid: true, dispatched, eventResults };
   }
 
-  /** Creates a normalized event */
   createEvent<T>(type: EventType, payload: T): NormalizedEvent<T> {
     return {
       type,
@@ -189,7 +168,6 @@ export class MiddlewareService extends EventEmitter {
     };
   }
 
-  /** Processes a connection update event */
   processConnectionUpdate(update: {
     connection?: "close" | "open" | "connecting";
     lastDisconnect?: { error: Error };
@@ -212,7 +190,6 @@ export class MiddlewareService extends EventEmitter {
     return event;
   }
 
-  /** Processes a group participants update event */
   processGroupParticipantsUpdate(update: {
     id: string;
     participants: string[];
@@ -231,7 +208,6 @@ export class MiddlewareService extends EventEmitter {
     return event;
   }
 
-  /** Processes a group metadata update event */
   processGroupUpdate(update: {
     id?: string;
     [key: string]: unknown;
@@ -246,7 +222,6 @@ export class MiddlewareService extends EventEmitter {
     return event;
   }
 
-  /** Processes a LID mapping update event */
   processLidMappingUpdate(update: {
     pn: string;
     lid: string;
@@ -260,7 +235,6 @@ export class MiddlewareService extends EventEmitter {
     return event;
   }
 
-  /** Processes a message delete event */
   processMessageDelete(deleteInfo: {
     keys: proto.IMessageKey[];
   }): NormalizedEvent<MessageDeletePayload> {
@@ -272,14 +246,12 @@ export class MiddlewareService extends EventEmitter {
     return event;
   }
 
-  /** Processes credentials update event */
   processCredentialsUpdate(): NormalizedEvent<void> {
     const event = this.createEvent<void>("credentials", undefined);
     this.emit("credentials", event);
     return event;
   }
 
-  /** Emits an error event */
   emitError(error: Error, context: string): void {
     this.emit("error", error, context);
     if (this.options.debug) {
@@ -288,12 +260,10 @@ export class MiddlewareService extends EventEmitter {
   }
 }
 
-/** Factory function to create a configured middleware instance */
 export function createMiddleware(
   options: MiddlewareOptions = {},
 ): MiddlewareService {
   return new MiddlewareService(options);
 }
 
-/** Default middleware instance */
 export const middleware = createMiddleware();

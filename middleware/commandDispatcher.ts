@@ -1,10 +1,3 @@
-/**
- * Command Dispatcher Module
- *
- * Routes normalized messages to command handlers and manages
- * command registration, permissions, and execution.
- */
-
 import type { WASocket } from "baileys";
 import { log } from "../lib/util";
 import { isAdmin } from "../lib/sql";
@@ -14,7 +7,6 @@ import type {
   MessageClassification,
 } from "./types";
 
-/** Command definition interface */
 export interface CommandDefinition {
   pattern?: string;
   alias?: string[];
@@ -27,7 +19,6 @@ export interface CommandDefinition {
   exec: (msg: any, sock?: WASocket, args?: string) => Promise<any>;
 }
 
-/** Command registry interface */
 export interface CommandRegistry {
   get(pattern: string): CommandDefinition | undefined;
   getAll(): CommandDefinition[];
@@ -39,9 +30,6 @@ interface PermissionResult {
   reason?: string;
 }
 
-/**
- * Dispatches a normalized message to the appropriate command handler.
- */
 export async function dispatchCommand(
   message: NormalizedMessage,
   client: WASocket,
@@ -82,9 +70,6 @@ export async function dispatchCommand(
   }
 }
 
-/**
- * Dispatches event-based commands for all registered event handlers.
- */
 export async function dispatchEvents(
   message: NormalizedMessage,
   client: WASocket,
@@ -120,9 +105,6 @@ export async function dispatchEvents(
   return results;
 }
 
-/**
- * Checks if a message sender has permission to execute a command.
- */
 export function checkPermissions(
   message: NormalizedMessage,
   command: CommandDefinition,
@@ -148,9 +130,6 @@ export function checkPermissions(
   return { allowed: true };
 }
 
-/**
- * Creates a simple in-memory command registry.
- */
 export function createRegistry(commands: CommandDefinition[]): CommandRegistry {
   const commandMap = new Map<string, CommandDefinition>();
 
@@ -180,9 +159,6 @@ export function createRegistry(commands: CommandDefinition[]): CommandRegistry {
   };
 }
 
-/**
- * Filters messages that should be processed as commands.
- */
 export function shouldDispatch(
   message: NormalizedMessage,
   registry: CommandRegistry,
@@ -196,9 +172,6 @@ export function shouldDispatch(
   return registry.has(message.command.name);
 }
 
-/**
- * Gets a list of commands by category.
- */
 export function getCommandsByCategory(
   registry: CommandRegistry,
   category: string,
@@ -206,9 +179,6 @@ export function getCommandsByCategory(
   return registry.getAll().filter((cmd) => cmd.category === category);
 }
 
-/**
- * Gets all available categories from registered commands.
- */
 export function getCategories(registry: CommandRegistry): string[] {
   const categories = new Set<string>();
   for (const cmd of registry.getAll()) {
@@ -219,9 +189,6 @@ export function getCategories(registry: CommandRegistry): string[] {
   return Array.from(categories);
 }
 
-/**
- * Determines if a message classification requires dispatch.
- */
 export function requiresDispatch(
   classification: MessageClassification,
 ): boolean {

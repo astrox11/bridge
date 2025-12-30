@@ -1,12 +1,3 @@
-/**
- * Whatsaly Backend Service
- *
- * Exposes HTTP APIs for session management, authentication, messaging, and statistics.
- * Supports multiple isolated sessions consumable by external clients.
- * Proxies page requests to Astro SSR server.
- * Includes WebSocket support for real-time stats streaming and bidirectional communication.
- */
-
 import { WebSocket } from "ws";
 import Bun from "bun";
 import { join } from "path";
@@ -34,14 +25,8 @@ import {
   type WsRequest,
 } from "./api";
 
-/**
- * WebSocket clients for stats streaming
- */
 const wsClients: Set<any> = new Set();
 
-/**
- * Broadcast stats to all connected WebSocket clients
- */
 function broadcastStats() {
   if (wsClients.size === 0) return;
 
@@ -72,16 +57,12 @@ function broadcastStats() {
   }
 }
 
-// Broadcast stats every 500ms for more instant updates
 const BROADCAST_INTERVAL_MS = 500;
 setInterval(broadcastStats, BROADCAST_INTERVAL_MS);
 
 const STATIC_DIR = join(import.meta.dir, "service", "dist", "client");
 const ASTRO_SERVER_URL = "http://localhost:4321";
 
-/**
- * MIME types for static files
- */
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html",
   ".css": "text/css",
@@ -98,9 +79,6 @@ const MIME_TYPES: Record<string, string> = {
   ".ttf": "font/ttf",
 };
 
-/**
- * Get MIME type from file extension
- */
 function getMimeType(filePath: string): string {
   const dotIndex = filePath.lastIndexOf(".");
   if (dotIndex === -1) {
@@ -110,9 +88,6 @@ function getMimeType(filePath: string): string {
   return MIME_TYPES[ext] || "application/octet-stream";
 }
 
-/**
- * Determine HTTP status code from API response
- */
 function getHttpStatusCode(data: ApiResponse): number {
   if (data.success) {
     return 200;
@@ -123,9 +98,6 @@ function getHttpStatusCode(data: ApiResponse): number {
   return 400;
 }
 
-/**
- * Create HTTP response with proper headers
- */
 function createResponse(data: ApiResponse): Response {
   return new Response(JSON.stringify(data), {
     status: getHttpStatusCode(data),
@@ -135,9 +107,6 @@ function createResponse(data: ApiResponse): Response {
   });
 }
 
-/**
- * Serve static file
- */
 async function serveStaticFile(filePath: string): Promise<Response | null> {
   try {
     const file = Bun.file(filePath);
@@ -149,15 +118,10 @@ async function serveStaticFile(filePath: string): Promise<Response | null> {
         },
       });
     }
-  } catch {
-    // File doesn't exist
-  }
+  } catch {}
   return null;
 }
 
-/**
- * Proxy request to Astro SSR server
- */
 async function proxyToAstro(req: Request): Promise<Response> {
   try {
     log.debug("Proxying request to Astro SSR server:", req.url);
@@ -196,7 +160,6 @@ const server = Bun.serve({
 
     log.debug("Received request:", req.method, path);
 
-    // WebSocket upgrade for stats streaming
     if (path === "/ws/stats" && req.headers.get("upgrade") === "websocket") {
       log.debug("WebSocket upgrade requested");
       const success = server.upgrade(req);
@@ -204,7 +167,6 @@ const server = Bun.serve({
       return new Response("WebSocket upgrade failed", { status: 500 });
     }
 
-    // Health check endpoint
     if (path === "/health" && req.method === "GET") {
       log.debug("Health check requested");
       return createResponse({
@@ -218,27 +180,23 @@ const server = Bun.serve({
       });
     }
 
-    // API routes
     if (path.startsWith("/api/")) {
       log.debug("API request:", path);
       const result = await handleApiRequest(req);
       return createResponse(result);
     }
 
-    // Serve static files from client folder (_astro assets)
     if (path.startsWith("/_astro/")) {
       const clientPath = join(STATIC_DIR, path);
       const response = await serveStaticFile(clientPath);
       if (response) return response;
     }
 
-    // Serve favicon
     if (path === "/favicon.svg") {
       const response = await serveStaticFile(join(STATIC_DIR, "favicon.svg"));
       if (response) return response;
     }
 
-    // Proxy all other requests to Astro SSR server for dynamic page rendering
     return proxyToAstro(req);
   },
   websocket: {
@@ -246,7 +204,6 @@ const server = Bun.serve({
       wsClients.add(ws);
       log.info("WebSocket client connected for stats");
 
-      // Send initial stats immediately
       const overallStats = runtimeStats.getOverallStats();
       const sessions = sessionManager.listExtended();
       const networkState = sessionManager.getNetworkState();
@@ -266,7 +223,6 @@ const server = Bun.serve({
       );
     },
     async message(ws, message) {
-      // Handle WebSocket action requests
       try {
         const msgStr =
           typeof message === "string" ? message : message.toString();

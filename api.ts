@@ -1,10 +1,3 @@
-/**
- * API Routes Handler
- *
- * Handles all API endpoints for session management, authentication, messaging, and statistics.
- * Also provides WebSocket message handlers for real-time communication.
- */
-
 import { sessionManager, log, getAllMessages, getMessagesCount } from "./lib";
 import config from "./config";
 
@@ -19,9 +12,6 @@ interface SessionCreateRequest {
   botName?: string;
 }
 
-/**
- * WebSocket Action Types
- */
 export type WsAction =
   | "getSessions"
   | "getSession"
@@ -48,9 +38,6 @@ export interface WsResponse {
   error?: string;
 }
 
-/**
- * Statistics tracking for the runtime
- */
 class RuntimeStats {
   private messageCount: Map<string, number> = new Map();
   private sessionStartTimes: Map<string, number> = new Map();
@@ -60,7 +47,6 @@ class RuntimeStats {
     const current = this.messageCount.get(sessionId) || 0;
     this.messageCount.set(sessionId, current + 1);
 
-    // Track hourly activity
     const hour = new Date().getHours();
     const hourlyKey = `${sessionId}_${new Date().toDateString()}`;
     let hourly = this.hourlyActivity.get(hourlyKey);
@@ -105,7 +91,6 @@ class RuntimeStats {
   }
 }
 
-// Time constants for uptime formatting
 const MS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
 const MINUTES_PER_HOUR = 60;
@@ -131,9 +116,6 @@ function formatUptime(ms: number): string {
 
 const runtimeStats = new RuntimeStats();
 
-/**
- * Parse JSON body from request
- */
 async function parseBody<T>(req: Request): Promise<T | null> {
   try {
     return (await req.json()) as T;
