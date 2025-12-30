@@ -73,7 +73,7 @@ export const getAllMessages = (
     `SELECT id, msg FROM "${tableName}" ORDER BY rowid DESC LIMIT ? OFFSET ?`,
     [limit, offset],
   );
-  
+
   return results.map((row) => ({
     id: row.id,
     message: JSON.parse(row.msg || "{}") as WAMessage,

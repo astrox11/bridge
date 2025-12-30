@@ -68,7 +68,7 @@ class SessionManager {
     isPaused: false,
   };
   private networkCheckInterval?: ReturnType<typeof setInterval>;
-  
+
   // Configurable thresholds
   private static readonly NETWORK_FAILURE_THRESHOLD = 3;
   private static readonly NETWORK_CHECK_INTERVAL_MS = 5000;
@@ -104,16 +104,22 @@ class SessionManager {
 
     // Count disconnected sessions
     const disconnectedCount = [...this.sessions.values()].filter(
-      (s) => s.status === "disconnected" || s.status === "connecting"
+      (s) => s.status === "disconnected" || s.status === "connecting",
     ).length;
 
     const totalSessions = this.sessions.size;
 
     // If more than half of sessions are disconnected, assume network issue
-    if (totalSessions > 0 && disconnectedCount >= Math.ceil(totalSessions / 2)) {
+    if (
+      totalSessions > 0 &&
+      disconnectedCount >= Math.ceil(totalSessions / 2)
+    ) {
       this.networkState.consecutiveFailures++;
-      
-      if (this.networkState.consecutiveFailures >= SessionManager.NETWORK_FAILURE_THRESHOLD) {
+
+      if (
+        this.networkState.consecutiveFailures >=
+        SessionManager.NETWORK_FAILURE_THRESHOLD
+      ) {
         if (!this.networkState.isPaused) {
           this.pauseAllSessions();
         }
@@ -122,7 +128,7 @@ class SessionManager {
     } else {
       // Network is healthy
       this.networkState.consecutiveFailures = 0;
-      
+
       if (this.networkState.isPaused && !this.networkState.isHealthy) {
         // Resume sessions when network recovers
         this.resumeAllSessions();
@@ -135,7 +141,9 @@ class SessionManager {
    * Pause all sessions to prevent reconnection spam
    */
   private pauseAllSessions() {
-    log.warn("Network appears unhealthy, pausing all sessions to prevent reconnection spam");
+    log.warn(
+      "Network appears unhealthy, pausing all sessions to prevent reconnection spam",
+    );
     this.networkState.isPaused = true;
   }
 
@@ -145,7 +153,7 @@ class SessionManager {
   private resumeAllSessions() {
     log.info("Network recovered, resuming sessions");
     this.networkState.isPaused = false;
-    
+
     // Restart disconnected sessions
     for (const [sessionId, session] of this.sessions) {
       if (session.status === "disconnected") {
@@ -179,7 +187,7 @@ class SessionManager {
     // Then check periodically until we have it
     session.pushNameInterval = setInterval(() => {
       const dbSession = getSession(session.id);
-      
+
       // Stop checking once we have a pushName saved
       if (dbSession?.push_name) {
         if (session.pushNameInterval) {
@@ -201,7 +209,7 @@ class SessionManager {
       const pushName = session.socket.user.name;
       updateSessionPushName(session.id, pushName);
       log.debug(`Saved pushName "${pushName}" for session ${session.id}`);
-      
+
       // Clear interval once saved
       if (session.pushNameInterval) {
         clearInterval(session.pushNameInterval);
@@ -297,7 +305,9 @@ class SessionManager {
   ): Promise<string | undefined> {
     // Check if network is paused
     if (this.networkState.isPaused) {
-      log.info(`Session ${session.id} initialization deferred due to network pause`);
+      log.info(
+        `Session ${session.id} initialization deferred due to network pause`,
+      );
       session.status = "disconnected";
       return undefined;
     }
@@ -366,12 +376,14 @@ class SessionManager {
             // Reconnect only if network is not paused
             session.status = "connecting";
             log.info(`Session ${session.id} reconnecting...`);
-            
+
             if (!this.networkState.isPaused) {
               await this.initializeSession(session, false);
             } else {
               session.status = "disconnected";
-              log.info(`Session ${session.id} reconnection deferred due to network pause`);
+              log.info(
+                `Session ${session.id} reconnection deferred due to network pause`,
+              );
             }
           } else {
             // Logged out - cleanup
@@ -506,7 +518,7 @@ class SessionManager {
       }
       activeSession.socket = null;
       phoneNumber = phoneNumber || activeSession.phoneNumber;
-      
+
       // Clear pushName interval
       if (activeSession.pushNameInterval) {
         clearInterval(activeSession.pushNameInterval);
@@ -605,7 +617,7 @@ class SessionManager {
     if (activeSession?.socket?.user?.name) {
       return activeSession.socket.user.name;
     }
-    
+
     // Fall back to database
     const dbSession = getSession(sessionId);
     return dbSession?.push_name;

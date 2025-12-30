@@ -26,7 +26,13 @@ if (wsListener) {
 
 import { log, sessionManager } from "./lib";
 import config from "./config";
-import { handleApiRequest, handleWsAction, runtimeStats, type ApiResponse, type WsRequest } from "./api";
+import {
+  handleApiRequest,
+  handleWsAction,
+  runtimeStats,
+  type ApiResponse,
+  type WsRequest,
+} from "./api";
 
 /**
  * WebSocket clients for stats streaming
@@ -38,23 +44,23 @@ const wsClients: Set<any> = new Set();
  */
 function broadcastStats() {
   if (wsClients.size === 0) return;
-  
+
   const overallStats = runtimeStats.getOverallStats();
   const sessions = sessionManager.listExtended();
   const networkState = sessionManager.getNetworkState();
-  
+
   const message = JSON.stringify({
     type: "stats",
     data: {
       overall: overallStats,
-      sessions: sessions.map(s => ({
+      sessions: sessions.map((s) => ({
         ...s,
         stats: runtimeStats.getStats(s.id),
       })),
       network: networkState,
     },
   });
-  
+
   for (const client of wsClients) {
     try {
       client.send(message);
@@ -68,7 +74,7 @@ function broadcastStats() {
 const BROADCAST_INTERVAL_MS = 500;
 setInterval(broadcastStats, BROADCAST_INTERVAL_MS);
 
-const STATIC_DIR = join(import.meta.dir, "astro-web-runtime", "dist", "client");
+const STATIC_DIR = join(import.meta.dir, "service", "dist", "client");
 const ASTRO_SERVER_URL = "http://localhost:4321";
 
 /**
@@ -154,21 +160,24 @@ async function proxyToAstro(req: Request): Promise<Response> {
   try {
     const url = new URL(req.url);
     const astroUrl = new URL(url.pathname + url.search, ASTRO_SERVER_URL);
-    
+
     const proxyReq = new Request(astroUrl.toString(), {
       method: req.method,
       headers: req.headers,
       body: req.body,
     });
-    
+
     const response = await fetch(proxyReq);
     return response;
   } catch (error) {
     log.error("Failed to proxy to Astro server:", error);
-    return new Response("Frontend server unavailable. Make sure to run both servers in production mode: bun run start:all", { 
-      status: 503,
-      headers: { "Content-Type": "text/plain" },
-    });
+    return new Response(
+      "Frontend server unavailable. Make sure to run both servers in production mode: bun run start:all",
+      {
+        status: 503,
+        headers: { "Content-Type": "text/plain" },
+      },
+    );
   }
 }
 
@@ -180,7 +189,7 @@ const server = Bun.serve({
   hostname: config.API_HOST,
   async fetch(req, server) {
     const url = new URL(req.url);
-    let path = url.pathname;
+    const path = url.pathname;
 
     // WebSocket upgrade for stats streaming
     if (path === "/ws/stats" && req.headers.get("upgrade") === "websocket") {
@@ -228,40 +237,45 @@ const server = Bun.serve({
     open(ws) {
       wsClients.add(ws);
       log.info("WebSocket client connected for stats");
-      
+
       // Send initial stats immediately
       const overallStats = runtimeStats.getOverallStats();
       const sessions = sessionManager.listExtended();
       const networkState = sessionManager.getNetworkState();
-      
-      ws.send(JSON.stringify({
-        type: "stats",
-        data: {
-          overall: overallStats,
-          sessions: sessions.map(s => ({
-            ...s,
-            stats: runtimeStats.getStats(s.id),
-          })),
-          network: networkState,
-        },
-      }));
+
+      ws.send(
+        JSON.stringify({
+          type: "stats",
+          data: {
+            overall: overallStats,
+            sessions: sessions.map((s) => ({
+              ...s,
+              stats: runtimeStats.getStats(s.id),
+            })),
+            network: networkState,
+          },
+        }),
+      );
     },
     async message(ws, message) {
       // Handle WebSocket action requests
       try {
-        const msgStr = typeof message === "string" ? message : message.toString();
+        const msgStr =
+          typeof message === "string" ? message : message.toString();
         const request = JSON.parse(msgStr) as WsRequest;
-        
+
         if (request.action) {
           const response = await handleWsAction(request);
           ws.send(JSON.stringify(response));
         }
       } catch (error) {
         log.error("WebSocket message error:", error);
-        ws.send(JSON.stringify({
-          success: false,
-          error: "Invalid message format",
-        }));
+        ws.send(
+          JSON.stringify({
+            success: false,
+            error: "Invalid message format",
+          }),
+        );
       }
     },
     close(ws) {
