@@ -23,7 +23,7 @@ export const saveBgm = (
   audioData: string,
 ) => {
   const tableName = getBgmTable(sessionId);
-  
+
   // Use INSERT OR REPLACE for efficient upsert
   execWithParams(
     `INSERT OR REPLACE INTO "${tableName}" (trigger, audioData) VALUES (?, ?)`,

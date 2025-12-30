@@ -1,6 +1,11 @@
 import type { CommandProperty } from "..";
 import { Plugins } from "../core/Plugins";
-import { saveSticker, getStickerByName, deleteSticker, getAllStickers } from "../sql";
+import {
+  saveSticker,
+  getStickerByName,
+  deleteSticker,
+  getAllStickers,
+} from "../sql";
 
 export default [
   {
@@ -23,7 +28,9 @@ export default [
       const command = plugins.find(commandName);
 
       if (!command) {
-        return await msg.reply(`\`\`\`Command '${commandName}' not found in the system\`\`\``);
+        return await msg.reply(
+          `\`\`\`Command '${commandName}' not found in the system\`\`\``,
+        );
       }
 
       try {
@@ -36,14 +43,16 @@ export default [
         }
 
         // Convert Buffer to hex string if needed
-        const sha256Hex = Buffer.isBuffer(sha256) 
-          ? sha256.toString("hex") 
+        const sha256Hex = Buffer.isBuffer(sha256)
+          ? sha256.toString("hex")
           : sha256.toString();
 
         // Save the sticker with the command name
         saveSticker(msg.sessionId, commandName, sha256Hex);
 
-        await msg.reply(`\`\`\`Sticker saved for command: ${commandName}\`\`\``);
+        await msg.reply(
+          `\`\`\`Sticker saved for command: ${commandName}\`\`\``,
+        );
       } catch (error) {
         const e = error instanceof Error ? error.message : String(error);
         await msg.reply(`\`\`\`Error: ${e}\n\`\`\``);
@@ -65,13 +74,17 @@ export default [
         const sticker = getStickerByName(msg.sessionId, commandName);
 
         if (!sticker) {
-          return await msg.reply(`\`\`\`No sticker found for command: ${commandName}\`\`\``);
+          return await msg.reply(
+            `\`\`\`No sticker found for command: ${commandName}\`\`\``,
+          );
         }
 
         // Delete the sticker
         deleteSticker(msg.sessionId, commandName);
 
-        await msg.reply(`\`\`\`Sticker deleted for command: ${commandName}\`\`\``);
+        await msg.reply(
+          `\`\`\`Sticker deleted for command: ${commandName}\`\`\``,
+        );
       } catch (error) {
         const e = error instanceof Error ? error.message : String(error);
         await msg.reply(`\`\`\`Error: ${e}\n\`\`\``);
@@ -110,10 +123,14 @@ export default [
           const sticker = getStickerByName(msg.sessionId, commandName);
 
           if (!sticker) {
-            return await msg.reply(`\`\`\`No sticker found for command: ${commandName}\`\`\``);
+            return await msg.reply(
+              `\`\`\`No sticker found for command: ${commandName}\`\`\``,
+            );
           }
 
-          await msg.reply(`\`\`\`Sticker found for command: ${commandName}\nSHA256: ${sticker.sha256}\`\`\``);
+          await msg.reply(
+            `\`\`\`Sticker found for command: ${commandName}\nSHA256: ${sticker.sha256}\`\`\``,
+          );
         } catch (error) {
           const e = error instanceof Error ? error.message : String(error);
           await msg.reply(`\`\`\`Error: ${e}\n\`\`\``);

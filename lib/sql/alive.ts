@@ -25,14 +25,14 @@ export const setAliveMessage = (sessionId: string, message: string) => {
   const current = rows[0];
 
   if (current) {
-    execWithParams(
-      `UPDATE "${tableName}" SET alive_message = ? WHERE id = 1`,
-      [message],
-    );
-  } else {
-    execWithParams(`INSERT INTO "${tableName}" (id, alive_message) VALUES (1, ?)`, [
+    execWithParams(`UPDATE "${tableName}" SET alive_message = ? WHERE id = 1`, [
       message,
     ]);
+  } else {
+    execWithParams(
+      `INSERT INTO "${tableName}" (id, alive_message) VALUES (1, ?)`,
+      [message],
+    );
   }
 
   return { session_id: sessionId, alive_message: message };

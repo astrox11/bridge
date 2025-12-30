@@ -28,7 +28,9 @@ export default [
       const number = args.includes("@s.whatsapp.net")
         ? args
         : args + "@s.whatsapp.net";
-      const result = await new Group(msg.sessionId, msg.chat, sock).Remove(number);
+      const result = await new Group(msg.sessionId, msg.chat, sock).Remove(
+        number,
+      );
       if (result === null) return await msg.reply("ғᴀɪʟᴇᴅ: ᴜsᴇʀ ɴᴏᴛ ɪɴ ɢʀᴏᴜᴘ");
       await msg.reply("ᴅᴏɴᴇ");
     },
@@ -56,7 +58,9 @@ export default [
       const number = args.includes("@s.whatsapp.net")
         ? args
         : args + "@s.whatsapp.net";
-      const result = await new Group(msg.sessionId, msg.chat, sock).Promote(number);
+      const result = await new Group(msg.sessionId, msg.chat, sock).Promote(
+        number,
+      );
       if (result === null)
         return await msg.reply("ғᴀɪʟᴇᴅ: ᴜsᴇʀ ɴᴏᴛ ɪɴ ɢʀᴏᴜᴘ ᴏʀ ᴀʟʀᴇᴀᴅʏ ᴀᴅᴍɪɴ");
       await msg.reply("ᴅᴏɴᴇ");
@@ -75,7 +79,9 @@ export default [
       const number = args.includes("@s.whatsapp.net")
         ? args
         : args + "@s.whatsapp.net";
-      const result = await new Group(msg.sessionId, msg.chat, sock).Demote(number);
+      const result = await new Group(msg.sessionId, msg.chat, sock).Demote(
+        number,
+      );
       if (result === null)
         return await msg.reply("ғᴀɪʟᴇᴅ: ᴜsᴇʀ ɴᴏᴛ ɪɴ ɢʀᴏᴜᴘ ᴏʀ ɴᴏᴛ ᴀᴅᴍɪɴ");
       await msg.reply("ᴅᴏɴᴇ");
@@ -122,7 +128,11 @@ export default [
     isGroup: true,
     isAdmin: true,
     async exec(msg, sock) {
-      const link = await new Group(msg.sessionId, msg.chat, sock).RevokeInvite();
+      const link = await new Group(
+        msg.sessionId,
+        msg.chat,
+        sock,
+      ).RevokeInvite();
       await msg.reply(`ɴᴇᴡ ɢʀᴏᴜᴘ ʟɪɴᴋ: ${link}`);
     },
   },
@@ -151,7 +161,11 @@ export default [
         return await msg.reply(
           "ᴘʀᴏᴠɪᴅᴇ ᴛɪᴍᴇ ɪɴ sᴇᴄᴏɴᴅs (0 ᴛᴏ ɪɴsᴛᴀɴᴛ ᴅɪsᴀʙʟᴇ)",
         );
-      const result = await new Group(msg.sessionId, msg.chat, sock).EphermalSetting(duration);
+      const result = await new Group(
+        msg.sessionId,
+        msg.chat,
+        sock,
+      ).EphermalSetting(duration);
       if (result === null)
         return await msg.reply("ғᴀɪʟᴇᴅ: ᴀʟʀᴇᴀᴅʏ sᴇᴛ ᴛᴏ ᴛʜɪs ᴅᴜʀᴀᴛɪᴏɴ");
       await msg.reply("ᴅᴏɴᴇ");
@@ -169,9 +183,11 @@ export default [
         return await msg.reply(
           "```this command will set who can add new members to the group\n\nUsage: \n.addmode admin\n.addmode member```",
         );
-      const result = await new Group(msg.sessionId, msg.chat, sock).MemberJoinMode(
-        mode === "admin" ? "admin_add" : "all_member_add",
-      );
+      const result = await new Group(
+        msg.sessionId,
+        msg.chat,
+        sock,
+      ).MemberJoinMode(mode === "admin" ? "admin_add" : "all_member_add");
       if (result === null)
         return await msg.reply("ғᴀɪʟᴇᴅ: ᴀʟʀᴇᴀᴅʏ sᴇᴛ ᴛᴏ ᴛʜɪs ᴍᴏᴅᴇ");
       await msg.reply("ᴅᴏɴᴇ");
@@ -189,9 +205,11 @@ export default [
         return await msg.reply(
           "```this command will set the group join mode\n\nUsage: \n.joinmode approval\n.joinmode open```",
         );
-      const result = await new Group(msg.sessionId, msg.chat, sock).GroupJoinMode(
-        mode === "approval" ? "on" : "off",
-      );
+      const result = await new Group(
+        msg.sessionId,
+        msg.chat,
+        sock,
+      ).GroupJoinMode(mode === "approval" ? "on" : "off");
       if (result === null)
         return await msg.reply("ғᴀɪʟᴇᴅ: ᴀʟʀᴇᴀᴅʏ sᴇᴛ ᴛᴏ ᴛʜɪs ᴍᴏᴅᴇ");
       await msg.reply("ᴅᴏɴᴇ");
@@ -204,9 +222,11 @@ export default [
     isGroup: true,
     isAdmin: true,
     async exec(msg, sock) {
-      const result = await new Group(msg.sessionId, msg.chat, sock).SetAnnouncementMode(
-        "announcement",
-      );
+      const result = await new Group(
+        msg.sessionId,
+        msg.chat,
+        sock,
+      ).SetAnnouncementMode("announcement");
       if (result === null)
         return await msg.reply("ғᴀɪʟᴇᴅ: ɢʀᴏᴜᴘ ᴀʟʀᴇᴀᴅʏ ᴍᴜᴛᴇᴅ");
       await msg.reply("ᴅᴏɴᴇ");
@@ -219,9 +239,11 @@ export default [
     isGroup: true,
     isAdmin: true,
     async exec(msg, sock) {
-      const result = await new Group(msg.sessionId, msg.chat, sock).SetAnnouncementMode(
-        "not_announcement",
-      );
+      const result = await new Group(
+        msg.sessionId,
+        msg.chat,
+        sock,
+      ).SetAnnouncementMode("not_announcement");
       if (result === null)
         return await msg.reply("ғᴀɪʟᴇᴅ: ɢʀᴏᴜᴘ ᴀʟʀᴇᴀᴅʏ ᴜɴᴍᴜᴛᴇᴅ");
       await msg.reply("ᴅᴏɴᴇ");
@@ -234,9 +256,11 @@ export default [
     isGroup: true,
     isAdmin: true,
     async exec(msg, sock) {
-      const result = await new Group(msg.sessionId, msg.chat, sock).SetRestrictedMode(
-        "locked",
-      );
+      const result = await new Group(
+        msg.sessionId,
+        msg.chat,
+        sock,
+      ).SetRestrictedMode("locked");
       if (result === null)
         return await msg.reply("ғᴀɪʟᴇᴅ: ɢʀᴏᴜᴘ ᴀʟʀᴇᴀᴅʏ ʟᴏᴄᴋᴇᴅ");
       await msg.reply("ᴅᴏɴᴇ");
@@ -249,9 +273,11 @@ export default [
     isGroup: true,
     isAdmin: true,
     async exec(msg, sock) {
-      const result = await new Group(msg.sessionId, msg.chat, sock).SetRestrictedMode(
-        "unlocked",
-      );
+      const result = await new Group(
+        msg.sessionId,
+        msg.chat,
+        sock,
+      ).SetRestrictedMode("unlocked");
       if (result === null)
         return await msg.reply("ғᴀɪʟᴇᴅ: ɢʀᴏᴜᴘ ᴀʟʀᴇᴀᴅʏ ᴜɴʟᴏᴄᴋᴇᴅ");
       await msg.reply("ᴅᴏɴᴇ");

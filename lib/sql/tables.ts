@@ -311,17 +311,18 @@ export function createUserMentionTable(phoneNumber: string): string {
   if (!createdTables.has(tableName)) {
     try {
       bunql.exec(`
-        CREATE TABLE IF NOT EXISTS "${tableName}" (
-          groupId TEXT PRIMARY KEY,
-          message TEXT
-        )
-      `);
+         CREATE TABLE IF NOT EXISTS "${tableName}" (
+           groupId TEXT PRIMARY KEY,
+           message TEXT,
+           type TEXT DEFAULT 'text',
+           data TEXT
+         )
+       `);
       createdTables.add(tableName);
     } catch (error) {
       log.error(`Failed to create table ${tableName}:`, error);
     }
   }
-
   return tableName;
 }
 

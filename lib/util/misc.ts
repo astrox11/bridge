@@ -250,3 +250,57 @@ export function ToPTT(inputPath: string): string {
     throw new Error(err.stderr?.toString() || err.message);
   }
 }
+
+async function fetchFact(): Promise<string> {
+  return fetch("https://uselessfacts.jsph.pl/api/v2/facts/random")
+    .then((res) => res.json())
+    .then((data: { text: string }) => data.text)
+    .catch(() => "Did you know facts are fun?");
+}
+
+async function fetchQuote(): Promise<string> {
+  return fetch("https://zenquotes.io/api/random")
+    .then((res) => res.json())
+    .then((data: { q: string; a: string }[]) => `${data[0].q} - ${data[0].a}`)
+    .catch(() => "Stay positive!");
+}
+
+async function fetchJoke(): Promise<string> {
+  return fetch("https://v2.jokeapi.dev/joke/Any?type=single")
+    .then((res) => res.json())
+    .then(
+      (data: { joke: string }) =>
+        data.joke ||
+        "Why don't scientists trust atoms? They make up everything!",
+    )
+    .catch(() => "Why don't scientists trust atoms? They make up everything!");
+}
+
+export async function replacePlaceholders(
+  message: string,
+  sender: string,
+  ownerId: string,
+  botName: string,
+): Promise<string> {
+  let result = message
+    .replace(/@user/g, sender.split("@")[0])
+    .replace(/@owner/g, ownerId.split("@")[0])
+    .replace(/@botname/g, botName);
+
+  if (result.includes("@facts")) {
+    const fact = await fetchFact();
+    result = result.replace(/@facts/g, fact);
+  }
+
+  if (result.includes("@quotes")) {
+    const quote = await fetchQuote();
+    result = result.replace(/@quotes/g, quote);
+  }
+
+  if (result.includes("@jokes")) {
+    const joke = await fetchJoke();
+    result = result.replace(/@jokes/g, joke);
+  }
+
+  return result;
+}

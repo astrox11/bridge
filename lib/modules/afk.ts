@@ -79,7 +79,14 @@ export default [
         const finalMessage = `\`\`\`${afkMessage}\n\nAway for: ${timeAway}\`\`\``;
 
         if (msg.isGroup) {
-          if (msg.mentions.includes(pn) || msg.mentions.includes(lid)) {
+          if (
+            msg.mentions.includes(pn) ||
+            msg.mentions.includes(lid) ||
+            [
+              jidNormalizedUser(sock.user.id),
+              jidNormalizedUser(sock.user.lid),
+            ].includes(msg?.quoted?.sender)
+          ) {
             await msg.reply(finalMessage);
           }
         } else {

@@ -11,7 +11,9 @@ const STATUS_FILTER = "_status";
 
 async function fetchFact(): Promise<string> {
   try {
-    const res = await fetch("https://uselessfacts.jsph.pl/random.json?language=en");
+    const res = await fetch(
+      "https://uselessfacts.jsph.pl/random.json?language=en",
+    );
     const data = await res.json();
     return data.text || "Did you know facts are fun?";
   } catch {
@@ -34,7 +36,9 @@ async function fetchQuote(): Promise<string> {
 
 async function fetchJoke(): Promise<string> {
   try {
-    const res = await fetch("https://official-joke-api.appspot.com/random_joke");
+    const res = await fetch(
+      "https://official-joke-api.appspot.com/random_joke",
+    );
     const data = await res.json();
     if (data.setup && data.punchline) {
       return `${data.setup} ${data.punchline}`;
@@ -84,7 +88,7 @@ export default [
       }
 
       const command = args.toLowerCase().trim();
-      
+
       if (command === "on") {
         setFilter(msg.sessionId, STATUS_FILTER, "", 1);
         return await msg.reply("```Filter enabled```");
@@ -124,7 +128,9 @@ export default [
     pattern: "getfilter",
     category: "util",
     async exec(msg) {
-      const filters = getAllFilters(msg.sessionId).filter(f => f.trigger !== STATUS_FILTER);
+      const filters = getAllFilters(msg.sessionId).filter(
+        (f) => f.trigger !== STATUS_FILTER,
+      );
 
       if (filters.length === 0) {
         return await msg.reply("```No filters found```");

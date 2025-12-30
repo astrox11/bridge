@@ -20,30 +20,20 @@ function getMentionTable(sessionId: string) {
 export const setMentionMessage = (
   sessionId: string,
   groupId: string,
-  message: string,
+  content: { message?: string; type: string; data?: any },
 ) => {
   const tableName = getMentionTable(sessionId);
-  const rows = bunql.query<{ message: string }>(
-    `SELECT message FROM "${tableName}" WHERE groupId = ?`,
-    [groupId],
+  const dataStr = content.data ? JSON.stringify(content.data) : null;
+
+  execWithParams(
+    `INSERT INTO "${tableName}" (groupId, message, type, data)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(groupId) DO UPDATE SET
+      message = excluded.message, type = excluded.type, data = excluded.data`,
+    [groupId, content.message || null, content.type, dataStr],
   );
-  const current = rows[0];
-
-  if (current) {
-    execWithParams(
-      `UPDATE "${tableName}" SET message = ? WHERE groupId = ?`,
-      [message, groupId],
-    );
-  } else {
-    execWithParams(`INSERT INTO "${tableName}" (groupId, message) VALUES (?, ?)`, [
-      groupId,
-      message,
-    ]);
-  }
-
-  return { session_id: sessionId, groupId, message };
+  return { session_id: sessionId, groupId };
 };
-
 /**
  * Get mention message for a group
  */
@@ -63,4 +53,15 @@ export const deleteMentionMessage = (sessionId: string, groupId: string) => {
   const tableName = getMentionTable(sessionId);
   execWithParams(`DELETE FROM "${tableName}" WHERE groupId = ?`, [groupId]);
   return { session_id: sessionId, groupId };
+};
+
+export const getMentionData = (sessionId: string, groupId: string) => {
+  const tableName = getMentionTable(sessionId);
+  const rows = bunql.query<{ message: string; type: string; data: string }>(
+    `SELECT * FROM "${tableName}" WHERE groupId = ?`,
+    [groupId],
+  );
+  const res = rows[0];
+  if (!res) return null;
+  return { ...res, data: res.data ? JSON.parse(res.data) : null };
 };
