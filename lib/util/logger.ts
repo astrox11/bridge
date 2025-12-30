@@ -26,6 +26,7 @@ export const log = {
     console.log(prefix, ...args.map(formatArg), COLORS.reset);
   },
   warn(...args: any[]) {
+    if (!config.DEBUG) return;
     const prefix = `\x1b[1m${COLORS.warn}${timestamp()} [WARN]`;
     console.warn(prefix, ...args.map(formatArg), COLORS.reset);
   },
