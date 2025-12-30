@@ -20,7 +20,7 @@ WORKDIR /root/wa-runtime
 RUN bun install
 
 # Install and build frontend
-WORKDIR /root/wa-runtime/astro-web-runtime
+WORKDIR /root/wa-runtime/service
 RUN npm install
 RUN npm run build
 
@@ -30,4 +30,4 @@ WORKDIR /root/wa-runtime
 EXPOSE 3000 4321
 
 # Start both backend and frontend
-CMD ["sh", "-c", "bun run server & cd astro-web-runtime && npm start"]
+CMD ["sh", "-c", "bun run server & cd service && npm start"]

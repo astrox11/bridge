@@ -85,12 +85,12 @@ bun run web:build
 
 Configuration can be set via environment variables or the `config.ts` file:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PHONE_NUMBER` | Phone number for auto-session creation | - |
-| `BOT_NAME` | Display name for the bot | `wa-runtime` |
-| `API_PORT` | Backend API port | `3000` |
-| `API_HOST` | Backend API host | `0.0.0.0` |
+| Variable       | Description                            | Default      |
+| -------------- | -------------------------------------- | ------------ |
+| `PHONE_NUMBER` | Phone number for auto-session creation | -            |
+| `BOT_NAME`     | Display name for the bot               | `wa-runtime` |
+| `API_PORT`     | Backend API port                       | `3000`       |
+| `API_HOST`     | Backend API host                       | `0.0.0.0`    |
 
 ### Using .env file
 
@@ -107,26 +107,29 @@ API_PORT=3000
 Connect to `/ws/stats` for real-time bidirectional communication:
 
 ```javascript
-const ws = new WebSocket('ws://localhost:3000/ws/stats');
+const ws = new WebSocket("ws://localhost:3000/ws/stats");
 
 // Receive stats broadcasts
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
-  if (data.type === 'stats') {
-    console.log('Sessions:', data.data.sessions);
-    console.log('Network:', data.data.network);
+  if (data.type === "stats") {
+    console.log("Sessions:", data.data.sessions);
+    console.log("Network:", data.data.network);
   }
 };
 
 // Send requests
-ws.send(JSON.stringify({
-  action: 'createSession',
-  requestId: 'req_1',
-  params: { phoneNumber: '14155551234' }
-}));
+ws.send(
+  JSON.stringify({
+    action: "createSession",
+    requestId: "req_1",
+    params: { phoneNumber: "14155551234" },
+  }),
+);
 ```
 
 **WebSocket Actions:**
+
 - `getSessions` - List all sessions
 - `createSession` - Create a new session
 - `deleteSession` - Delete a session
@@ -139,18 +142,18 @@ ws.send(JSON.stringify({
 
 ### REST API
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/sessions` | List all sessions |
-| POST | `/api/sessions` | Create a new session |
-| GET | `/api/sessions/:id` | Get session details |
-| DELETE | `/api/sessions/:id` | Delete a session |
-| GET | `/api/auth/status/:sessionId` | Get authentication status |
-| GET | `/api/stats` | Get overall runtime statistics |
-| GET | `/api/stats/:sessionId` | Get session-specific statistics |
-| GET | `/api/config` | Get runtime configuration |
-| GET | `/api/network` | Get network state |
-| GET | `/api/messages/:sessionId` | Get session messages |
+| Method | Endpoint                      | Description                     |
+| ------ | ----------------------------- | ------------------------------- |
+| GET    | `/api/sessions`               | List all sessions               |
+| POST   | `/api/sessions`               | Create a new session            |
+| GET    | `/api/sessions/:id`           | Get session details             |
+| DELETE | `/api/sessions/:id`           | Delete a session                |
+| GET    | `/api/auth/status/:sessionId` | Get authentication status       |
+| GET    | `/api/stats`                  | Get overall runtime statistics  |
+| GET    | `/api/stats/:sessionId`       | Get session-specific statistics |
+| GET    | `/api/config`                 | Get runtime configuration       |
+| GET    | `/api/network`                | Get network state               |
+| GET    | `/api/messages/:sessionId`    | Get session messages            |
 
 ### Example: Create a Session
 
@@ -161,6 +164,7 @@ curl -X POST http://localhost:3000/api/sessions \
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -177,17 +181,20 @@ Response:
 The web dashboard provides a visual interface for managing sessions:
 
 ### Home Page
+
 - Create new sessions by entering phone number and bot name
 - View existing sessions with real-time status
 - Quick stats: total sessions, active sessions, messages
 - Network health indicator
 
 ### Pairing Page
+
 - Displays the 8-digit pairing code
 - Instructions for linking via WhatsApp
 - Automatic redirect to dashboard on success
 
 ### Dashboard
+
 - Session statistics (messages, uptime, health)
 - Activity graphs showing messages per hour
 - Runtime statistics (total sessions, server uptime)
@@ -221,6 +228,7 @@ docker run -p 3000:3000 wa-runtime
 - Docker
 
 **Not supported:**
+
 - Android (Bun.js limitation)
 
 ## Contributing

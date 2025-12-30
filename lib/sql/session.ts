@@ -19,7 +19,9 @@ const Session = bunql.define("sessions", {
 
 // Ensure push_name column exists (migration for existing databases)
 try {
-  const columns = bunql.query<{ name: string }>(`PRAGMA table_info("sessions")`);
+  const columns = bunql.query<{ name: string }>(
+    `PRAGMA table_info("sessions")`,
+  );
   const hasPushName = columns.some((c) => c.name === "push_name");
   if (!hasPushName) {
     bunql.exec(`ALTER TABLE "sessions" ADD COLUMN push_name TEXT`);
@@ -113,7 +115,10 @@ export const sessionExists = (idOrPhone: string): boolean => {
 /**
  * Update pushName for a session
  */
-export const updateSessionPushName = (id: string, pushName: string): boolean => {
+export const updateSessionPushName = (
+  id: string,
+  pushName: string,
+): boolean => {
   const exists = Session.find({ id }).run()[0];
   if (exists) {
     Session.update({ push_name: pushName }).where("id", "=", id).run();

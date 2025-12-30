@@ -1,5 +1,5 @@
 {
-  "name": "astro-web-runtime",
+  "name": "service",
   "type": "module",
   "version": "1.0.0",
   "description": "Web dashboard for wa-runtime",

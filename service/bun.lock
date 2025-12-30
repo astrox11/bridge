@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "astro-web-runtime",
+      "name": "service",
       "dependencies": {
         "@astrojs/node": "^9.5.1",
         "@astrojs/tailwind": "^6.0.2",

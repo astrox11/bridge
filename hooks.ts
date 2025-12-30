@@ -35,22 +35,22 @@ try {
   /** */
 }
 
-// Build astro-web-runtime frontend
+// Build service frontend
 try {
-  const astroPath = path.join(process.cwd(), "astro-web-runtime");
+  const astroPath = path.join(process.cwd(), "service");
   if (fs.existsSync(astroPath)) {
-    console.log("Installing astro-web-runtime dependencies...");
+    console.log("Installing service dependencies...");
     execSync("bun install", {
       cwd: astroPath,
       stdio: "inherit",
     });
-    console.log("Building astro-web-runtime...");
+    console.log("Building service...");
     execSync("bun run build", {
       cwd: astroPath,
       stdio: "inherit",
     });
-    console.log("astro-web-runtime build complete.");
+    console.log("service build complete.");
   }
 } catch (error) {
-  console.error("Failed to build astro-web-runtime:", error);
+  console.error("Failed to build service:", error);
 }
