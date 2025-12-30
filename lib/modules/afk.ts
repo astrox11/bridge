@@ -68,7 +68,8 @@ export default [
       const afkStatus = getAfk(msg.sessionId);
 
       if (afkStatus && afkStatus.status === 1) {
-        const botJid = jidNormalizedUser(sock.user.id).split("@")[0];
+        const pn = jidNormalizedUser(sock.user.id);
+        const lid = jidNormalizedUser(sock.user.lid);
         const afkMessage =
           afkStatus.message ||
           "I'm currently AFK\n\n> This is an automated message, no need to reply again.";
@@ -78,7 +79,7 @@ export default [
         const finalMessage = `\`\`\`${afkMessage}\n\nAway for: ${timeAway}\`\`\``;
 
         if (msg.isGroup) {
-          if (msg.mentions.includes(botJid)) {
+          if (msg.mentions.includes(pn) || msg.mentions.includes(lid)) {
             await msg.reply(finalMessage);
           }
         } else {
