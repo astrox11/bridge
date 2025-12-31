@@ -68,7 +68,7 @@ export function validatePagination(
  * WebSocket request predicates
  */
 
-const VALID_WS_ACTIONS: WsAction[] = [
+const VALID_WS_ACTIONS = new Set<WsAction>([
   "getSessions",
   "getSession",
   "createSession",
@@ -82,13 +82,13 @@ const VALID_WS_ACTIONS: WsAction[] = [
   "getGroups",
   "pauseSession",
   "resumeSession",
-];
+]);
 
 /**
  * Check if a string is a valid WebSocket action
  */
 export function isValidWsAction(action: string): action is WsAction {
-  return VALID_WS_ACTIONS.includes(action as WsAction);
+  return VALID_WS_ACTIONS.has(action as WsAction);
 }
 
 /**
