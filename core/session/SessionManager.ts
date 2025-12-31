@@ -292,6 +292,30 @@ class SessionManager {
     requestPairingCode: boolean,
   ): Promise<string | undefined> {
     log.debug("Session State:", session);
+    
+    // Check if session was paused by user - don't initialize
+    if (isPausedStatus(session.status)) {
+      log.info(
+        `Session ${session.id} initialization skipped - session is paused`,
+      );
+      return undefined;
+    }
+    
+    // Also check database status in case it was just updated by a concurrent pause action
+    const dbSession = getSession(session.id);
+    if (dbSession && isPausedStatus(dbSession.status)) {
+      log.info(
+        `Session ${session.id} initialization skipped - session is paused in database`,
+      );
+      // Update in-memory status to match database
+      if (dbSession.status === "paused_user") {
+        session.status = "paused_user";
+      } else if (dbSession.status === "paused_network") {
+        session.status = "paused_network";
+      }
+      return undefined;
+    }
+    
     if (this.networkState.isPaused) {
       log.info(
         `Session ${session.id} initialization deferred due to network pause`,
