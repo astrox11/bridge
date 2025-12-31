@@ -157,12 +157,14 @@ export async function handleWsAction(request: WsRequest): Promise<WsResponse> {
  * Parse and handle raw WebSocket message
  * Validates message format before processing
  */
-export async function handleRawWsMessage(data: unknown): Promise<WsResponse> {
+export async function handleRawWsMessage(
+  data: unknown,
+): Promise<WsResponse | { success: false; error: string }> {
   const request = parseWsRequest(data);
 
   if (!request) {
+    // Return a minimal error response without action for invalid requests
     return {
-      action: "getSessions" as WsAction, // default action for error response
       success: false,
       error: WsResponseErrors.INVALID_REQUEST,
     };
