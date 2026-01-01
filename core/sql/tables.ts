@@ -3,7 +3,7 @@
  * Creates and manages tables with format: user_<phoneNumber>_<tableName>
  */
 import { bunql } from "./_sql";
-import { log } from "../util/logger";
+import { log } from "../";
 
 // Allowed table suffixes - whitelist approach for security
 const ALLOWED_TABLE_SUFFIXES = [

@@ -22,7 +22,6 @@ import {
   ExtractTextFromMessage,
   isUrl,
   isPath,
-  writeExifWebp,
   get_prefix,
 } from "..";
 import { readFile } from "fs/promises";
@@ -110,36 +109,6 @@ export class Message {
         writable: true,
         configurable: true,
       },
-    });
-  }
-
-  async send_sticker(
-    sticker: Buffer | URL | string,
-    { author, packname }: { author?: string; packname?: string },
-  ) {
-    let data: any;
-
-    if (Buffer.isBuffer(sticker)) {
-      data = sticker;
-    } else if (sticker instanceof URL) {
-      const res = await fetch(sticker);
-      data = Buffer.from(await res.arrayBuffer());
-    } else if (typeof sticker === "string") {
-      if (isPath(sticker)) {
-        data = await readFile(sticker);
-      } else if (isUrl(sticker)) {
-        const res = await fetch(sticker);
-        data = Buffer.from(await res.arrayBuffer());
-      } else {
-        throw new TypeError("Invalid sticker input");
-      }
-    } else {
-      throw new TypeError("Unsupported sticker type");
-    }
-
-    data = await writeExifWebp(data, { author, packname });
-    await this.client.sendMessage(this.chat, {
-      sticker: { url: data },
     });
   }
 
