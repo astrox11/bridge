@@ -1,6 +1,7 @@
 import { bunql } from "./_sql";
 import { VALID_STATUSES, StatusType, type Session } from "../auth";
 import type { Contact } from "baileys";
+import { log } from "../util";
 
 const Session = bunql.define("sessions", {
   id: { type: "TEXT", primary: true },
@@ -58,6 +59,7 @@ export const updateSessionStatus = (
   id: string,
   status: StatusType,
 ): boolean => {
+  log.debug(`Updating session ${id} status to ${StatusType[status]}`);
   if (!VALID_STATUSES.includes(status)) {
     return false;
   }
