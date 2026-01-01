@@ -114,7 +114,7 @@ async function serveStaticFile(filePath: string): Promise<Response | null> {
         },
       });
     }
-  } catch { }
+  } catch {}
   return null;
 }
 

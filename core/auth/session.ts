@@ -1,4 +1,4 @@
-import { bunql, execWithParams } from "../sql/_sql";
+import { Mutex } from "async-mutex";
 import {
   BufferJSON,
   initAuthCreds,
@@ -7,19 +7,17 @@ import {
   type SignalDataSet,
   type SignalDataTypeMap,
 } from "baileys";
-import { Mutex } from "async-mutex";
-import { addContact } from "../sql/contact";
 import {
+  bunql,
+  execWithParams,
   createUserAuthTable,
   getPhoneFromSessionId,
   getUserTableName,
-} from "../sql/tables";
+  handleLidMapping,
+} from "..";
 
 const mutex = new Mutex();
 
-/**
- * Get the appropriate auth table for a session
- */
 function getAuthTable(sessionId: string) {
   const phoneNumber = getPhoneFromSessionId(sessionId);
   createUserAuthTable(phoneNumber);
@@ -125,19 +123,3 @@ export const useSessionAuth = async (sessionId: string) => {
     },
   };
 };
-
-function handleLidMapping(sessionId: string, key: string, value: string) {
-  const isPn = !key.includes("reverse");
-
-  if (isPn) {
-    const pnKey = key.split("-")[2];
-    const cleanedValue = value.replace(/^"|"$/g, "");
-
-    addContact(sessionId, pnKey, cleanedValue);
-  } else {
-    const lidKey = key.split("-")[2].split("_")[0];
-    const cleanedValue = value.replace(/^"|"$/g, "");
-
-    addContact(sessionId, cleanedValue, lidKey);
-  }
-}

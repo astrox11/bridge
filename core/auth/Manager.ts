@@ -10,9 +10,6 @@ import makeWASocket, {
 import { Boom } from "@hapi/boom";
 import MAIN_LOGGER from "pino";
 import NodeCache from "@cacheable/node-cache";
-import parsePhoneNumberFromString, {
-  isValidPhoneNumber,
-} from "libphonenumber-js";
 import {
   log,
   addSudo,
@@ -27,40 +24,24 @@ import {
   createSession,
   getSession,
   getAllSessions,
-  deleteSession as deleteSessionRecord,
+  deleteSession,
   updateSessionStatus,
-  updateSessionPushName,
   sessionExists,
-  initializeUserTables,
+  initializeSql,
   deleteUserTables,
-  type SessionRecord,
-} from "../";
-import { useSessionAuth } from "./auth";
-import { isNetworkStable } from "../util/networkProbe";
-import type { ActiveSession, NetworkState } from "./types";
+  sanitizePhoneNumber,
+  generateSessionId,
+  updateSessionUserInfo,
+} from "..";
+import { useSessionAuth } from "./session";
+import { type Session, SessionErrorType, StatusType } from "./types";
+import { UserPausedStatus } from "./util";
 
 const logger = MAIN_LOGGER({ level: "silent" });
 
-/**
- * Helper to check if a status represents a paused state
- */
-const isPausedStatus = (status: string | undefined): boolean =>
-  status === "paused_user" || status === "paused_network";
-
 class SessionManager {
-  private sessions: Map<string, ActiveSession> = new Map();
+  private sessions: Map<string, Session> = new Map();
   private static instance: SessionManager | null = null;
-  private networkState: NetworkState = {
-    isHealthy: true,
-    consecutiveFailures: 0,
-    lastCheck: Date.now(),
-    isPaused: false,
-  };
-  private networkCheckInterval?: ReturnType<typeof setInterval>;
-
-  private static readonly NETWORK_FAILURE_THRESHOLD = 3;
-  private static readonly NETWORK_CHECK_INTERVAL_MS = 5000;
-  private static readonly PUSHNAME_CHECK_INTERVAL_MS = 10000;
 
   static getInstance(): SessionManager {
     if (!SessionManager.instance) {
@@ -69,179 +50,20 @@ class SessionManager {
     return SessionManager.instance;
   }
 
-  constructor() {
-    // Start network monitoring
-    this.startNetworkMonitoring();
-  }
-
-  /**
-   * Start continuous network health monitoring
-   */
-  private startNetworkMonitoring() {
-    this.networkCheckInterval = setInterval(async () => {
-      await this.checkNetworkHealth();
-    }, SessionManager.NETWORK_CHECK_INTERVAL_MS);
-  }
-
-  /**
-   * Check network health and pause/resume sessions accordingly
-   */
-  private async checkNetworkHealth() {
-    const now = Date.now();
-    this.networkState.lastCheck = now;
-
-    // Count disconnected sessions
-    const disconnectedCount = [...this.sessions.values()].filter(
-      (s) => s.status === "disconnected" || s.status === "connecting",
-    ).length;
-
-    const totalSessions = this.sessions.size;
-
-    log.debug(
-      `Network health check: ${disconnectedCount}/${totalSessions} sessions disconnected`,
-    );
-
-    if (
-      totalSessions > 0 &&
-      (disconnectedCount >= Math.ceil(totalSessions / 2) ||
-        !(await isNetworkStable()))
-    ) {
-      this.networkState.consecutiveFailures++;
-
-      if (
-        this.networkState.consecutiveFailures >=
-        SessionManager.NETWORK_FAILURE_THRESHOLD
-      ) {
-        if (!this.networkState.isPaused) {
-          this.pauseAllSessions();
-        }
-        this.networkState.isHealthy = false;
-      }
-    } else {
-      this.networkState.consecutiveFailures = 0;
-
-      if (this.networkState.isPaused && !this.networkState.isHealthy) {
-        this.resumeAllSessions();
-      }
-      this.networkState.isHealthy = true;
-    }
-  }
-
-  /**
-   * Pause all sessions to prevent reconnection spam
-   */
-  private pauseAllSessions() {
-    log.warn(
-      "Network appears unhealthy, pausing all sessions to prevent reconnection spam",
-    );
-    this.networkState.isPaused = true;
-  }
-
-  /**
-   * Resume all sessions after network recovery
-   */
-  private resumeAllSessions() {
-    log.info("Network recovered, resuming sessions");
-    this.networkState.isPaused = false;
-
-    // Restart disconnected sessions
-    for (const [sessionId, session] of this.sessions) {
-      if (session.status === "disconnected") {
-        log.info(`Resuming session ${sessionId}...`);
-        this.initializeSession(session, false).catch((error) => {
-          log.error(`Failed to resume session ${sessionId}:`, error);
-        });
-      }
-    }
-  }
-
-  /**
-   * Get network state for monitoring
-   */
-  getNetworkState(): NetworkState {
-    return { ...this.networkState };
-  }
-
-  /**
-   * Start continuous pushName fetching for a session
-   */
-  private startPushNameFetching(session: ActiveSession) {
-    // Clear existing interval if any
-    if (session.pushNameInterval) {
-      clearInterval(session.pushNameInterval);
-    }
-
-    this.fetchAndSavePushName(session);
-    session.pushNameInterval = setInterval(() => {
-      const dbSession = getSession(session.id);
-
-      if (dbSession?.push_name) {
-        if (session.pushNameInterval) {
-          clearInterval(session.pushNameInterval);
-          session.pushNameInterval = undefined;
-        }
-        return;
-      }
-
-      this.fetchAndSavePushName(session);
-    }, SessionManager.PUSHNAME_CHECK_INTERVAL_MS);
-  }
-
-  /**
-   * Fetch pushName from socket and save to database
-   */
-  private fetchAndSavePushName(session: ActiveSession) {
-    if (session.socket?.user?.name) {
-      const pushName = session.socket.user.name;
-      updateSessionPushName(session.id, pushName);
-      if (session.pushNameInterval) {
-        clearInterval(session.pushNameInterval);
-        session.pushNameInterval = undefined;
-      }
-    }
-  }
-
-  /**
-   * Sanitize and validate phone number, ensuring it includes country code without +
-   */
-  sanitizePhoneNumber(phoneNumber: string): string | null {
-    // Remove all non-digit characters except +
-    let cleaned = phoneNumber.replace(/[^\d+]/g, "");
-
-    // Ensure it starts with + for validation
-    if (!cleaned.startsWith("+")) {
-      cleaned = "+" + cleaned;
-    }
-
-    if (!isValidPhoneNumber(cleaned)) {
-      return null;
-    }
-
-    // Parse and format to E.164, then remove the +
-    const parsed = parsePhoneNumberFromString(cleaned);
-    return parsed.number.replace("+", "");
-  }
-
-  /**
-   * Generate a unique session ID from phone number
-   */
-  private generateSessionId(phoneNumber: string): string {
-    return `session_${phoneNumber}`;
-  }
-
   /**
    * Create a new session for the given phone number
    */
   async create(
-    phoneNumber: string,
+    phone: string,
   ): Promise<{ success: boolean; code?: string; error?: string; id?: string }> {
-    const sanitized = this.sanitizePhoneNumber(phoneNumber);
-    if (!sanitized) {
-      log.debug("Invalid phone number format:", phoneNumber);
+    const phone_number = sanitizePhoneNumber(phone);
+
+    if (!phone_number) {
+      log.debug("Invalid phone number format:", phone);
       return { success: false, error: "Invalid phone number format" };
     }
 
-    const sessionId = this.generateSessionId(sanitized);
+    const sessionId = generateSessionId(phone_number);
 
     log.debug("Creating new session:", sessionId);
 
@@ -253,32 +75,32 @@ class SessionManager {
       };
     }
 
-    initializeUserTables(sanitized);
-    log.debug("Initialized user tables for:", sanitized);
+    initializeSql(phone_number);
+    log.debug("Initialized user tables for:", phone_number);
 
-    // Initialize session in memory first (before database record)
-    const activeSession: ActiveSession = {
+    const sessionState: Session = {
       id: sessionId,
-      phoneNumber: sanitized,
-      socket: null,
+      client: null,
+      phone_number,
+      status: StatusType.Pairing,
       msgRetryCounterCache: new NodeCache() as CacheStore,
-      status: "pairing",
+      created_at: Date.now(),
     };
 
-    this.sessions.set(sessionId, activeSession);
+    this.sessions.set(sessionId, sessionState);
 
     try {
-      const code = await this.initializeSession(activeSession, true);
-      // Create database record only after successful initialization
-      createSession(sessionId, sanitized);
+      const code = await this.initializeSession(sessionState, true);
+      createSession(sessionId, phone_number);
       log.debug("Session created:", sessionId);
       return { success: true, code, id: sessionId };
     } catch (error) {
-      // Cleanup on failure - only need to remove from memory since DB record wasn't created
       this.sessions.delete(sessionId);
-      deleteUserTables(sanitized);
+      deleteUserTables(phone_number);
+
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
+
       log.error("Failed to create session:", sessionId, errorMessage);
       return { success: false, error: errorMessage };
     }
@@ -288,39 +110,29 @@ class SessionManager {
    * Initialize a WhatsApp session
    */
   private async initializeSession(
-    session: ActiveSession,
+    session: Session,
     requestPairingCode: boolean,
   ): Promise<string | undefined> {
     log.debug("Session State:", session);
 
-    // Check if session was paused by user - don't initialize
-    if (isPausedStatus(session.status)) {
+    if (UserPausedStatus(session.status)) {
       log.info(
         `Session ${session.id} initialization skipped - session is paused`,
       );
       return undefined;
     }
 
-    // Also check database status in case it was just updated by a concurrent pause action
     const dbSession = getSession(session.id);
-    if (dbSession && isPausedStatus(dbSession.status)) {
+    if (dbSession && UserPausedStatus(dbSession.status)) {
       log.info(
         `Session ${session.id} initialization skipped - session is paused in database`,
       );
-      // Update in-memory status to match database
-      if (dbSession.status === "paused_user") {
-        session.status = "paused_user";
-      } else if (dbSession.status === "paused_network") {
-        session.status = "paused_network";
-      }
-      return undefined;
-    }
 
-    if (this.networkState.isPaused) {
-      log.info(
-        `Session ${session.id} initialization deferred due to network pause`,
-      );
-      session.status = "disconnected";
+      if (dbSession.status === StatusType.PausedUser) {
+        session.status = StatusType.PausedUser;
+      } else if (dbSession.status === StatusType.PausedNetwork) {
+        session.status = StatusType.PausedNetwork;
+      }
       return undefined;
     }
 
@@ -351,15 +163,14 @@ class SessionManager {
       generateHighQualityLinkPreview: true,
     });
 
-    session.socket = sock;
+    session.client = sock;
 
     let pairingCode: string | undefined;
 
-    // Request pairing code if needed
     if (requestPairingCode && !sock.authState.creds.registered) {
       log.debug("Requesting pairing code for session:", session.id);
       await delay(10000);
-      pairingCode = await sock.requestPairingCode(session.phoneNumber);
+      pairingCode = await sock.requestPairingCode(session.phone_number);
       log.info(
         `Session ${session.id} pairing code: ${pairingCode.slice(0, 4)}-${pairingCode.slice(4)}`,
       );
@@ -374,7 +185,7 @@ class SessionManager {
    * Set up event handlers for a session
    */
   private setupEventHandlers(
-    session: ActiveSession,
+    session: Session,
     sock: WASocket,
     saveCreds: () => Promise<void>,
   ): void {
@@ -399,38 +210,26 @@ class SessionManager {
           );
           if (statusCode !== DisconnectReason.loggedOut) {
             const session_status = getSession(session.id).status;
-            if (session_status === "paused_user") {
+            if (session_status === StatusType.PausedUser) {
               log.info(
                 `Session ${session.id} reconnection skipped - session is paused by user`,
               );
               return;
             }
 
-            // Reconnect only if network is not paused
-            session.status = "connecting";
+            session.status = StatusType.Connecting;
             log.info(`Session ${session.id} reconnecting...`);
-
-            if (!this.networkState.isPaused) {
-              await this.initializeSession(session, false);
-            } else {
-              session.status = "disconnected";
-              log.info(
-                `Session ${session.id} reconnection deferred due to network pause`,
-              );
-            }
           } else {
-            session.status = "disconnected";
-            updateSessionStatus(session.id, "inactive");
+            session.status = StatusType.Disconnected;
+            updateSessionStatus(session.id, StatusType.Inactive);
             log.error(`Session ${session.id} logged out`);
           }
         }
 
         if (connection === "open") {
-          session.status = "connected";
-          updateSessionStatus(session.id, "active");
+          session.status = StatusType.Connected;
+          updateSessionStatus(session.id, StatusType.Active);
           log.info(`Session ${session.id} connected to WhatsApp`);
-
-          this.startPushNameFetching(session);
 
           if (!hasSynced) {
             hasSynced = true;
@@ -438,6 +237,8 @@ class SessionManager {
             addSudo(session.id, sock.user.id, sock.user.lid);
             await delay(15000);
             await syncGroupMetadata(session.id, sock);
+            updateSessionUserInfo(session.id, sock.user);
+            log.info(`Session ${session.id} group sync completed`);
           }
         }
       }
@@ -527,22 +328,20 @@ class SessionManager {
   async delete(
     idOrPhone: string,
   ): Promise<{ success: boolean; error?: string }> {
-    // Try to find session by ID first, then by phone number
     let sessionId = idOrPhone;
     let phoneNumber: string | null = null;
-    const sanitized = this.sanitizePhoneNumber(idOrPhone);
+    const i = sanitizePhoneNumber(idOrPhone);
 
-    if (sanitized) {
-      const record = getSession(sanitized);
+    if (i) {
+      const record = getSession(i);
       if (record) {
         sessionId = record.id;
         phoneNumber = record.phone_number;
       } else {
-        sessionId = this.generateSessionId(sanitized);
-        phoneNumber = sanitized;
+        sessionId = generateSessionId(i);
+        phoneNumber = i;
       }
     } else {
-      // Try to get phone number from session record
       const record = getSession(idOrPhone);
       if (record) {
         phoneNumber = record.phone_number;
@@ -550,30 +349,20 @@ class SessionManager {
     }
 
     const activeSession = this.sessions.get(sessionId);
-    if (activeSession?.socket) {
-      try {
-        await activeSession.socket.logout();
-      } catch {
-        // Ignore logout errors
-      }
-      activeSession.socket = null;
-      phoneNumber = phoneNumber || activeSession.phoneNumber;
+    if (activeSession?.client) {
+      await activeSession.client.logout();
 
-      // Clear pushName interval
-      if (activeSession.pushNameInterval) {
-        clearInterval(activeSession.pushNameInterval);
-      }
+      activeSession.client = null;
+      phoneNumber = phoneNumber || activeSession.phone_number;
     }
 
     this.sessions.delete(sessionId);
-    const deleted =
-      deleteSessionRecord(sessionId) || deleteSessionRecord(idOrPhone);
+    const deleted = deleteSession(sessionId) || deleteSession(idOrPhone);
 
     if (!deleted && !activeSession) {
-      return { success: false, error: "Session not found" };
+      return { success: false, error: SessionErrorType.SessionNotFound };
     }
 
-    // Clean up user-specific database tables
     if (phoneNumber) {
       deleteUserTables(phoneNumber);
     }
@@ -585,16 +374,16 @@ class SessionManager {
   /**
    * List all sessions
    */
-  list(): SessionRecord[] {
+  list(): Session[] {
     return getAllSessions();
   }
 
   /**
    * Get a specific session
    */
-  get(idOrPhone: string): SessionRecord | null {
-    const sanitized = this.sanitizePhoneNumber(idOrPhone);
-    return getSession(sanitized || idOrPhone);
+  get(idOrPhone: string): Session | null {
+    const i = sanitizePhoneNumber(idOrPhone);
+    return getSession(i || idOrPhone);
   }
 
   /**
@@ -615,31 +404,26 @@ class SessionManager {
 
     log.debug("Session To Be Paused:", activeSession);
 
-    if (isPausedStatus(activeSession.status)) {
-      return { success: false, error: "Session already paused" };
+    if (UserPausedStatus(activeSession.status)) {
+      return { success: false, error: SessionErrorType.SessionPaused };
     }
 
     log.debug(`Pausing session ${sessionId}...`);
 
-    if (activeSession.socket) {
+    if (activeSession.client) {
       try {
-        activeSession.socket.end(undefined);
+        activeSession.client.end(undefined);
       } catch (error) {
-        log.debug(`Error ending socket for session ${sessionId}:`, error);
+        log.debug(`Error ending client for session ${sessionId}:`, error);
       }
-      activeSession.socket = null;
+      activeSession.client = null;
     }
 
-    if (activeSession.pushNameInterval) {
-      clearInterval(activeSession.pushNameInterval);
-      activeSession.pushNameInterval = undefined;
-    }
-
-    activeSession.status = "paused_user";
+    activeSession.status = StatusType.PausedUser;
 
     log.debug("Session Status:", activeSession);
 
-    updateSessionStatus(sessionId, "paused_user");
+    updateSessionStatus(sessionId, StatusType.PausedUser);
 
     log.info(`Session ${sessionId} paused`);
     return { success: true };
@@ -666,24 +450,24 @@ class SessionManager {
 
       activeSession = {
         id: sessionId,
-        phoneNumber: dbSession.phone_number,
-        socket: null,
+        phone_number: dbSession.phone_number,
+        client: null,
         msgRetryCounterCache: new NodeCache() as CacheStore,
-        status: "connecting",
+        status: StatusType.Connecting,
       };
       this.sessions.set(sessionId, activeSession);
     }
 
     if (
-      activeSession.status === "connected" ||
-      activeSession.status === "connecting"
+      activeSession.status === StatusType.Connected ||
+      activeSession.status === StatusType.Connecting
     ) {
-      return { success: false, error: "Session already active" };
+      return { success: false, error: SessionErrorType.SessionAlreadyActive };
     }
 
     log.debug(`Resuming session ${sessionId}...`);
 
-    activeSession.status = "connecting";
+    activeSession.status = StatusType.Connecting;
 
     try {
       await this.initializeSession(activeSession, false);
@@ -691,7 +475,7 @@ class SessionManager {
       return { success: true };
     } catch (error) {
       log.error(`Failed to resume session ${sessionId}:`, error);
-      activeSession.status = "paused_network";
+      activeSession.status = StatusType.PausedNetwork;
       return {
         success: false,
         error:
@@ -704,8 +488,8 @@ class SessionManager {
    * Helper to resolve session ID from ID or phone number
    */
   private resolveSessionId(idOrPhone: string): string | null {
-    const sanitized = this.sanitizePhoneNumber(idOrPhone);
-    const record = getSession(sanitized || idOrPhone);
+    const i = sanitizePhoneNumber(idOrPhone);
+    const record = getSession(i || idOrPhone);
     return record?.id || null;
   }
 
@@ -715,12 +499,10 @@ class SessionManager {
   async restoreAllSessions(): Promise<void> {
     const sessions = getAllSessions();
 
-    // Filter out inactive and user-paused sessions - only restore sessions that should be active
-    // Note: paused_network sessions are restored since network may have recovered
     const sessionsToRestore = sessions.filter(
       (sessionRecord) =>
-        sessionRecord.status !== "inactive" &&
-        sessionRecord.status !== "paused_user",
+        sessionRecord.status !== StatusType.Inactive &&
+        sessionRecord.status !== StatusType.PausedUser,
     );
 
     if (sessionsToRestore.length === 0) {
@@ -731,15 +513,14 @@ class SessionManager {
     const restorationPromises = sessionsToRestore.map(async (sessionRecord) => {
       log.info(`Restoring session ${sessionRecord.id}...`);
 
-      // Initialize user-specific database tables
-      initializeUserTables(sessionRecord.phone_number);
+      initializeSql(sessionRecord.phone_number);
 
-      const activeSession: ActiveSession = {
+      const activeSession: Session = {
         id: sessionRecord.id,
-        phoneNumber: sessionRecord.phone_number,
-        socket: null,
+        phone_number: sessionRecord.phone_number,
+        client: null,
         msgRetryCounterCache: new NodeCache() as CacheStore,
-        status: "connecting",
+        status: StatusType.Connecting,
       };
 
       this.sessions.set(sessionRecord.id, activeSession);
@@ -748,7 +529,7 @@ class SessionManager {
         await this.initializeSession(activeSession, false);
       } catch (error) {
         log.error(`Failed to restore session ${sessionRecord.id}:`, error);
-        activeSession.status = "disconnected";
+        activeSession.status = StatusType.Disconnected;
       }
     });
 
@@ -759,40 +540,9 @@ class SessionManager {
    * Get active session count
    */
   getActiveCount(): number {
-    return [...this.sessions.values()].filter((s) => s.status === "connected")
-      .length;
-  }
-
-  /**
-   * Get pushName for a session from the active socket or database
-   */
-  getPushName(sessionId: string): string | undefined {
-    // First check the active socket
-    const activeSession = this.sessions.get(sessionId);
-    if (activeSession?.socket?.user?.name) {
-      return activeSession.socket.user.name;
-    }
-
-    // Fall back to database
-    const dbSession = getSession(sessionId);
-    return dbSession?.push_name;
-  }
-
-  /**
-   * List all sessions with extended info (including pushName and actual status)
-   */
-  listExtended(): Array<SessionRecord & { pushName?: string }> {
-    const sessions = getAllSessions();
-    return sessions.map((session) => {
-      const activeSession = this.sessions.get(session.id);
-      const isPaused =
-        isPausedStatus(activeSession?.status) || isPausedStatus(session.status);
-      return {
-        ...session,
-        status: isPaused ? "inactive" : session.status,
-        pushName: this.getPushName(session.id) || session.push_name,
-      };
-    });
+    return [...this.sessions.values()].filter(
+      (s) => s.status === StatusType.Connected,
+    ).length;
   }
 }
 

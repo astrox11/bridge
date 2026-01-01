@@ -1,55 +1,34 @@
 import { bunql } from "./_sql";
-import { log } from "../util/logger";
-
-export interface SessionRecord {
-  id: string;
-  phone_number: string;
-  created_at: number;
-  status: "active" | "inactive" | "pairing" | "paused_user" | "paused_network";
-  push_name?: string;
-}
+import { VALID_STATUSES, StatusType, type Session } from "../auth";
+import type { Contact } from "baileys";
 
 const Session = bunql.define("sessions", {
   id: { type: "TEXT", primary: true },
   phone_number: { type: "TEXT", notNull: true },
+  status: { type: "INTEGER", notNull: true },
+  user_info: { type: "TEXT", notNull: false },
   created_at: { type: "INTEGER", notNull: true },
-  status: { type: "TEXT", notNull: true },
-  push_name: { type: "TEXT" },
 });
 
-try {
-  const columns = bunql.query<{ name: string }>(
-    `PRAGMA table_info("sessions")`,
-  );
-  const hasPushName = columns.some((c) => c.name === "push_name");
-  if (!hasPushName) {
-    bunql.exec(`ALTER TABLE "sessions" ADD COLUMN push_name TEXT`);
-    log.info("Added push_name column to sessions table");
-  }
-} catch (error) {
-  log.debug("Session table migration check:", error);
-}
-
-export const createSession = (
-  id: string,
-  phoneNumber: string,
-): SessionRecord => {
-  const record: SessionRecord = {
+export const createSession = (id: string, phoneNumber: string): Session => {
+  const record: Session = {
     id,
     phone_number: phoneNumber,
+    status: StatusType.Pairing,
+    user_info: null,
     created_at: Date.now(),
-    status: "pairing",
   };
   Session.insert({
     id: record.id,
     phone_number: record.phone_number,
-    created_at: record.created_at,
     status: record.status,
+    user_info: typeof record.user_info === "string" ? record.user_info : null,
+    created_at: record.created_at,
   });
   return record;
 };
 
-export const getSession = (idOrPhone: string): SessionRecord | null => {
+export const getSession = (idOrPhone: string): Session | null => {
   const row = Session.query()
     .where("id", "=", idOrPhone)
     .orWhere("phone_number", "=", idOrPhone)
@@ -59,35 +38,26 @@ export const getSession = (idOrPhone: string): SessionRecord | null => {
         id: row.id,
         phone_number: row.phone_number,
         created_at: row.created_at,
-        status: row.status as SessionRecord["status"],
-        push_name: row.push_name,
+        status: row.status,
+        user_info: row.user_info ? JSON.parse(row.user_info) : null,
       }
     : null;
 };
 
-export const getAllSessions = (): SessionRecord[] => {
+export const getAllSessions = (): Session[] => {
   return Session.all().map((row) => ({
     id: row.id,
     phone_number: row.phone_number,
     created_at: row.created_at,
-    status: row.status as SessionRecord["status"],
-    push_name: row.push_name,
+    status: row.status,
+    user_info: row.user_info ? JSON.parse(row.user_info) : null,
   }));
 };
 
-const VALID_STATUSES: SessionRecord["status"][] = [
-  "active",
-  "inactive",
-  "pairing",
-  "paused_user",
-  "paused_network",
-];
-
 export const updateSessionStatus = (
   id: string,
-  status: SessionRecord["status"],
+  status: StatusType,
 ): boolean => {
-  // Validate status parameter
   if (!VALID_STATUSES.includes(status)) {
     return false;
   }
@@ -112,16 +82,15 @@ export const sessionExists = (idOrPhone: string): boolean => {
   return getSession(idOrPhone) !== null;
 };
 
-/**
- * Update pushName for a session
- */
-export const updateSessionPushName = (
+export const updateSessionUserInfo = (
   id: string,
-  pushName: string,
+  userInfo: Contact,
 ): boolean => {
   const exists = Session.find({ id }).run()[0];
   if (exists) {
-    Session.update({ push_name: pushName }).where("id", "=", id).run();
+    Session.update({ user_info: JSON.stringify(userInfo) })
+      .where("id", "=", id)
+      .run();
     return true;
   }
   return false;

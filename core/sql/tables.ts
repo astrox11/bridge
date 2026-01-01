@@ -455,7 +455,7 @@ export function createUserBgmTable(phoneNumber: string): string {
 /**
  * Initialize all tables for a user session
  */
-export function initializeUserTables(phoneNumber: string): void {
+export function initializeSql(phoneNumber: string): void {
   createUserAuthTable(phoneNumber);
   createUserMessagesTable(phoneNumber);
   createUserContactsTable(phoneNumber);
