@@ -36,19 +36,12 @@ function getStatusString(status: number): string {
     case StatusType.PausedUser:
       return "paused_user";
     default:
-      return "inactive";
+      return "active";
   }
 }
 
-// let wsSize = 0;
-
 function BroadCast() {
   if (wsClients.size === 0) return;
-
-  // if (wsClients.size !== wsSize) {
-  //   wsSize = wsClients.size;
-  //   log.info(`WebSocket clients connected: ${wsSize}`);
-  // }
 
   const overallStats = runtimeStats.getOverallStats();
   const sessions = sessionManager.listExtended();
