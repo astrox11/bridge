@@ -3,11 +3,8 @@ services:
     name: whatsaly
     runtime: docker
     branch: master
-    plan: hobby
     repo: https://github.com/astrox11/Whatsaly
     healthCheckPath: /
-    buildCommand: bun install
-    startCommand: bun run start
 
     envVars:
       - key: BOT_NAME
