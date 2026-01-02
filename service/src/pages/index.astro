@@ -734,7 +734,6 @@ import Layout from "../layouts/Layout.astro";
       };
     }>
   ) {
-    console.log(sessions.length, "sessions");
     console.log(JSON.stringify(sessions, null, 2));
 
     sessionsLoaded = true;
@@ -919,7 +918,6 @@ import Layout from "../layouts/Layout.astro";
       statMessages.textContent = overall.totalMessages.toLocaleString();
   }
 
-  // Subscribe to real-time updates via WebSocket
   api.onStats((data) => {
     console.log(JSON.stringify(data, null, 2));
 
@@ -929,7 +927,6 @@ import Layout from "../layouts/Layout.astro";
       }
       const sessionsData = data.data.sessions;
       if (sessionsData && Array.isArray(sessionsData)) {
-        console.log("Rendering", sessionsData.length, "sessions");
         renderSessions(
           sessionsData.map((s: any) => ({
             id: s.id,
