@@ -24,7 +24,7 @@ import type { WsRequest } from "./service/types";
 const wsClients: Set<any> = new Set();
 
 const STATIC_DIR = join(import.meta.dir, "service", "dist", "client");
-const ASTRO_SERVER_URL = "http://localhost:8000";
+const ASTRO_SERVER_URL = "http://localhost:4321";
 
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html",

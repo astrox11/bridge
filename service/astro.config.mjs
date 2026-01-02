@@ -9,7 +9,7 @@ export default defineConfig({
   }),
   integrations: [tailwind()],
   server: {
-    port: 8000,
+    port: 4321,
     host: true,
   },
   vite: {
