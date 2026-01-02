@@ -8,19 +8,15 @@ import Layout from "../layouts/Layout.astro";
     id="desktop-sidebar"
     class="hidden lg:flex fixed left-4 top-1/2 -translate-y-1/2 z-50 flex-col gap-2 bg-gh-bg border border-gh-border rounded-gh p-2 shadow-lg"
   >
-    <a
-      href="https://github.com/astrox11/wa-runtime"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="p-2 text-gh-text-secondary hover:text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors"
-      title="View on GitHub"
+    <button
+      id="sidebar-info"
+      class="p-2 text-gh-text-secondary hover:text-gh-accent hover:bg-gh-bg-tertiary rounded-gh transition-colors"
+      title="Info"
     >
       <svg class="w-5 h-5" viewBox="0 0 16 16" fill="currentColor">
-        <path
-          d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"
-        ></path>
+        <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
       </svg>
-    </a>
+    </button>
     <button
       id="sidebar-settings"
       class="p-2 text-gh-text-secondary hover:text-gh-accent hover:bg-gh-bg-tertiary rounded-gh transition-colors"
@@ -44,17 +40,15 @@ import Layout from "../layouts/Layout.astro";
       </svg>
     </button>
     <div class="h-px bg-gh-border my-1"></div>
-    <a
-      href="mailto:astrodevwork@gmail.com"
-      class="p-2 text-gh-text-secondary hover:text-gh-accent hover:bg-gh-bg-tertiary rounded-gh transition-colors"
-      title="Email Support"
+    <button
+      id="sidebar-report"
+      class="p-2 text-gh-text-secondary hover:text-gh-warning hover:bg-gh-bg-tertiary rounded-gh transition-colors"
+      title="Report"
     >
       <svg class="w-5 h-5" viewBox="0 0 16 16" fill="currentColor">
-        <path
-          d="M1.75 2h12.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0 1 14.25 14H1.75A1.75 1.75 0 0 1 0 12.25v-8.5C0 2.784.784 2 1.75 2ZM1.5 12.251c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V5.809L8.38 9.397a.75.75 0 0 1-.76 0L1.5 5.809v6.442Zm13-8.181v-.32a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25v.32L8 7.88Z"
-        ></path>
+        <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
       </svg>
-    </a>
+    </button>
     <a
       href="https://github.com/astrox11/wa-runtime/pulls"
       target="_blank"
@@ -76,20 +70,16 @@ import Layout from "../layouts/Layout.astro";
     class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-gh-bg border-t border-gh-border shadow-lg"
   >
     <div class="flex items-center justify-around py-2 px-4">
-      <a
-        href="https://github.com/astrox11/wa-runtime"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex flex-col items-center p-2 text-gh-text-secondary hover:text-gh-text transition-colors"
-        title="GitHub"
+      <button
+        id="mobile-info"
+        class="flex flex-col items-center p-2 text-gh-text-secondary hover:text-gh-accent transition-colors"
+        title="Info"
       >
         <svg class="w-5 h-5" viewBox="0 0 16 16" fill="currentColor">
-          <path
-            d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"
-          ></path>
+          <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
         </svg>
-        <span class="text-[10px] mt-0.5">GitHub</span>
-      </a>
+        <span class="text-[10px] mt-0.5">Info</span>
+      </button>
       <button
         id="mobile-settings"
         class="flex flex-col items-center p-2 text-gh-text-secondary hover:text-gh-accent transition-colors"
@@ -114,18 +104,16 @@ import Layout from "../layouts/Layout.astro";
         </svg>
         <span class="text-[10px] mt-0.5">Logs</span>
       </button>
-      <a
-        href="mailto:astrodevwork@gmail.com"
-        class="flex flex-col items-center p-2 text-gh-text-secondary hover:text-gh-accent transition-colors"
-        title="Support"
+      <button
+        id="mobile-report"
+        class="flex flex-col items-center p-2 text-gh-text-secondary hover:text-gh-warning transition-colors"
+        title="Report"
       >
         <svg class="w-5 h-5" viewBox="0 0 16 16" fill="currentColor">
-          <path
-            d="M1.75 2h12.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0 1 14.25 14H1.75A1.75 1.75 0 0 1 0 12.25v-8.5C0 2.784.784 2 1.75 2ZM1.5 12.251c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V5.809L8.38 9.397a.75.75 0 0 1-.76 0L1.5 5.809v6.442Zm13-8.181v-.32a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25v.32L8 7.88Z"
-          ></path>
+          <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
         </svg>
-        <span class="text-[10px] mt-0.5">Support</span>
-      </a>
+        <span class="text-[10px] mt-0.5">Report</span>
+      </button>
       <a
         href="https://github.com/astrox11/wa-runtime/pulls"
         target="_blank"
@@ -497,6 +485,246 @@ import Layout from "../layouts/Layout.astro";
             Continue
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Modal -->
+  <div id="info-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" id="info-modal-backdrop"></div>
+    <div
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-gh-bg border border-gh-border rounded-gh shadow-xl max-h-[90vh] flex flex-col"
+    >
+      <div
+        class="p-4 border-b border-gh-border flex items-center justify-between"
+      >
+        <div class="flex items-center gap-2">
+          <svg
+            class="w-4 h-4 text-gh-accent"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+          >
+            <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
+          </svg>
+          <h2 class="text-sm font-semibold text-gh-text">System Information</h2>
+        </div>
+        <button
+          id="close-info-modal"
+          class="p-1 text-gh-text-secondary hover:text-gh-text transition-colors"
+        >
+          <svg class="w-5 h-5" viewBox="0 0 16 16" fill="currentColor">
+            <path
+              d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"
+            ></path>
+          </svg>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1 space-y-4">
+        <!-- Runtime Section -->
+        <div class="bg-gh-bg-secondary rounded-gh p-3">
+          <h3 class="text-xs font-semibold text-gh-text-muted uppercase tracking-wider mb-2">Runtime</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Runtime</span>
+              <span id="info-runtime" class="text-sm font-mono text-gh-text">Bun</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Version</span>
+              <span id="info-runtime-version" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Platform</span>
+              <span id="info-platform" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Architecture</span>
+              <span id="info-arch" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Browser Section -->
+        <div class="bg-gh-bg-secondary rounded-gh p-3">
+          <h3 class="text-xs font-semibold text-gh-text-muted uppercase tracking-wider mb-2">Browser</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Browser</span>
+              <span id="info-browser" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Language</span>
+              <span id="info-language" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Screen</span>
+              <span id="info-screen" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Online</span>
+              <span id="info-online" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Application Section -->
+        <div class="bg-gh-bg-secondary rounded-gh p-3">
+          <h3 class="text-xs font-semibold text-gh-text-muted uppercase tracking-wider mb-2">Application</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">App Version</span>
+              <span id="info-app-version" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Bot Name</span>
+              <span id="info-bot-name" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Sessions</span>
+              <span id="info-sessions" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Active</span>
+              <span id="info-active" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connection Section -->
+        <div class="bg-gh-bg-secondary rounded-gh p-3">
+          <h3 class="text-xs font-semibold text-gh-text-muted uppercase tracking-wider mb-2">Connection</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Page URL</span>
+              <span id="info-url" class="text-sm font-mono text-gh-text truncate max-w-[200px]">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gh-text-secondary">Timestamp</span>
+              <span id="info-timestamp" class="text-sm font-mono text-gh-text">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Modal -->
+  <div id="report-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" id="report-modal-backdrop"></div>
+    <div
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-gh-bg border border-gh-border rounded-gh shadow-xl max-h-[90vh] flex flex-col"
+    >
+      <div
+        class="p-4 border-b border-gh-border flex items-center justify-between"
+      >
+        <div class="flex items-center gap-2">
+          <svg
+            class="w-4 h-4 text-gh-warning"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+          >
+            <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
+          </svg>
+          <h2 class="text-sm font-semibold text-gh-text">Submit Report</h2>
+        </div>
+        <button
+          id="close-report-modal"
+          class="p-1 text-gh-text-secondary hover:text-gh-text transition-colors"
+        >
+          <svg class="w-5 h-5" viewBox="0 0 16 16" fill="currentColor">
+            <path
+              d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"
+            ></path>
+          </svg>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1">
+        <form id="report-form" class="space-y-4">
+          <!-- Report Type -->
+          <div>
+            <label for="report-type" class="block text-sm font-medium text-gh-text mb-1">
+              Report Type
+            </label>
+            <select
+              id="report-type"
+              required
+              class="w-full px-3 py-1.5 text-sm bg-gh-bg border border-gh-border rounded-gh text-gh-text focus:outline-none focus:border-gh-accent focus:ring-1 focus:ring-gh-accent"
+            >
+              <option value="">-- Select type --</option>
+              <option value="bug">Bug Report</option>
+              <option value="feature">Feature Request</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <!-- Message -->
+          <div>
+            <label for="report-message" class="block text-sm font-medium text-gh-text mb-1">
+              Message <span class="text-gh-text-muted font-normal">(min. 15 words)</span>
+            </label>
+            <textarea
+              id="report-message"
+              required
+              rows="5"
+              placeholder="Please describe your report in detail..."
+              class="w-full px-3 py-1.5 text-sm bg-gh-bg border border-gh-border rounded-gh text-gh-text placeholder-gh-text-muted focus:outline-none focus:border-gh-accent focus:ring-1 focus:ring-gh-accent resize-none"
+            ></textarea>
+            <p id="report-word-count" class="text-xs text-gh-text-muted mt-1">0 words</p>
+          </div>
+
+          <!-- Image Upload (Optional) -->
+          <div>
+            <label for="report-image" class="block text-sm font-medium text-gh-text mb-1">
+              Attachment <span class="text-gh-text-muted font-normal">(optional)</span>
+            </label>
+            <input
+              type="file"
+              id="report-image"
+              accept="image/*"
+              class="w-full text-sm text-gh-text-secondary file:mr-4 file:py-1.5 file:px-3 file:rounded-gh file:border file:border-gh-border file:text-sm file:font-medium file:bg-gh-bg-secondary file:text-gh-text hover:file:bg-gh-bg-tertiary file:cursor-pointer"
+            />
+            <p class="text-xs text-gh-text-muted mt-1">Max 5MB, images only</p>
+          </div>
+
+          <!-- Warning Notice -->
+          <div class="p-3 rounded-gh bg-gh-warning-subtle border border-gh-warning">
+            <div class="flex gap-2">
+              <svg class="w-4 h-4 text-gh-warning flex-shrink-0 mt-0.5" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
+              </svg>
+              <div>
+                <p class="text-xs font-medium text-gh-warning">Privacy Warning</p>
+                <p class="text-xs text-gh-text-secondary mt-0.5">
+                  Do not include sensitive or personal information in your report. Sending private data may result in being blocked from support access.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error Message -->
+          <div
+            id="report-error-message"
+            class="p-3 rounded-gh bg-gh-danger-subtle border border-gh-danger text-gh-danger text-sm hidden"
+          >
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-2 pt-2">
+            <button
+              type="button"
+              id="report-cancel"
+              class="flex-1 py-1.5 px-4 text-sm font-medium rounded-gh bg-gh-bg-secondary border border-gh-border text-gh-text hover:bg-gh-bg-tertiary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              id="report-send"
+              class="flex-1 py-1.5 px-4 text-sm font-medium rounded-gh bg-gh-accent text-white hover:bg-gh-accent-emphasis transition-colors"
+            >
+              Send
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -1590,5 +1818,223 @@ import Layout from "../layouts/Layout.astro";
         user_info: s.user_info,
       }));
     }
+  });
+
+  // Info Modal functionality
+  const infoModal = document.getElementById("info-modal");
+  const infoModalBackdrop = document.getElementById("info-modal-backdrop");
+  const closeInfoModal = document.getElementById("close-info-modal");
+  const sidebarInfo = document.getElementById("sidebar-info");
+  const mobileInfo = document.getElementById("mobile-info");
+
+  // Info display elements
+  const infoRuntimeVersion = document.getElementById("info-runtime-version");
+  const infoPlatform = document.getElementById("info-platform");
+  const infoArch = document.getElementById("info-arch");
+  const infoBrowser = document.getElementById("info-browser");
+  const infoLanguage = document.getElementById("info-language");
+  const infoScreen = document.getElementById("info-screen");
+  const infoOnline = document.getElementById("info-online");
+  const infoAppVersion = document.getElementById("info-app-version");
+  const infoBotName = document.getElementById("info-bot-name");
+  const infoSessions = document.getElementById("info-sessions");
+  const infoActive = document.getElementById("info-active");
+  const infoUrl = document.getElementById("info-url");
+  const infoTimestamp = document.getElementById("info-timestamp");
+
+  function getBrowserInfo(): string {
+    const ua = navigator.userAgent;
+    if (ua.includes("Firefox")) return "Firefox";
+    if (ua.includes("Edg")) return "Edge";
+    if (ua.includes("Chrome")) return "Chrome";
+    if (ua.includes("Safari")) return "Safari";
+    if (ua.includes("Opera")) return "Opera";
+    return "Unknown";
+  }
+
+  async function updateInfoModal() {
+    // Browser info
+    if (infoBrowser) infoBrowser.textContent = getBrowserInfo();
+    if (infoLanguage) infoLanguage.textContent = navigator.language;
+    if (infoScreen) infoScreen.textContent = `${window.screen.width}x${window.screen.height}`;
+    if (infoOnline) infoOnline.textContent = navigator.onLine ? "Yes" : "No";
+    if (infoUrl) infoUrl.textContent = window.location.hostname;
+    if (infoTimestamp) infoTimestamp.textContent = new Date().toLocaleString();
+
+    // Try to get config info from API
+    try {
+      const configResult = await api.getConfig();
+      if (configResult.success && configResult.data) {
+        if (infoAppVersion) infoAppVersion.textContent = configResult.data.version;
+        if (infoBotName) infoBotName.textContent = configResult.data.botName;
+      }
+
+      const statsResult = await api.getOverallStats();
+      if (statsResult.success && statsResult.data) {
+        if (infoSessions) infoSessions.textContent = String(statsResult.data.totalSessions);
+        if (infoActive) infoActive.textContent = String(statsResult.data.activeSessions);
+        if (infoRuntimeVersion) infoRuntimeVersion.textContent = statsResult.data.version || "Bun";
+      }
+    } catch (error) {
+      console.error("Failed to fetch info:", error);
+    }
+
+    // Platform detection from user agent
+    const ua = navigator.userAgent.toLowerCase();
+    let platform = "Unknown";
+    if (ua.includes("win")) platform = "Windows";
+    else if (ua.includes("mac")) platform = "macOS";
+    else if (ua.includes("linux")) platform = "Linux";
+    else if (ua.includes("android")) platform = "Android";
+    else if (ua.includes("iphone") || ua.includes("ipad")) platform = "iOS";
+    if (infoPlatform) infoPlatform.textContent = platform;
+
+    // Architecture estimation
+    let arch = "Unknown";
+    if (ua.includes("x64") || ua.includes("amd64") || ua.includes("win64")) arch = "x86_64";
+    else if (ua.includes("arm64") || ua.includes("aarch64")) arch = "ARM64";
+    else if (ua.includes("x86") || ua.includes("i686")) arch = "x86";
+    if (infoArch) infoArch.textContent = arch;
+  }
+
+  function openInfoModal() {
+    infoModal?.classList.remove("hidden");
+    updateInfoModal();
+  }
+
+  sidebarInfo?.addEventListener("click", openInfoModal);
+  mobileInfo?.addEventListener("click", openInfoModal);
+
+  closeInfoModal?.addEventListener("click", () => {
+    infoModal?.classList.add("hidden");
+  });
+
+  infoModalBackdrop?.addEventListener("click", () => {
+    infoModal?.classList.add("hidden");
+  });
+
+  // Report Modal functionality
+  const reportModal = document.getElementById("report-modal");
+  const reportModalBackdrop = document.getElementById("report-modal-backdrop");
+  const closeReportModal = document.getElementById("close-report-modal");
+  const sidebarReport = document.getElementById("sidebar-report");
+  const mobileReport = document.getElementById("mobile-report");
+  const reportForm = document.getElementById("report-form") as HTMLFormElement;
+  const reportType = document.getElementById("report-type") as HTMLSelectElement;
+  const reportMessage = document.getElementById("report-message") as HTMLTextAreaElement;
+  const reportImage = document.getElementById("report-image") as HTMLInputElement;
+  const reportWordCount = document.getElementById("report-word-count");
+  const reportErrorMessage = document.getElementById("report-error-message");
+  const reportCancel = document.getElementById("report-cancel");
+
+  function countWords(text: string): number {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  }
+
+  function updateWordCount() {
+    const count = countWords(reportMessage?.value || "");
+    if (reportWordCount) {
+      reportWordCount.textContent = `${count} word${count !== 1 ? "s" : ""}`;
+      if (count < 15) {
+        reportWordCount.classList.remove("text-gh-success");
+        reportWordCount.classList.add("text-gh-text-muted");
+      } else {
+        reportWordCount.classList.remove("text-gh-text-muted");
+        reportWordCount.classList.add("text-gh-success");
+      }
+    }
+  }
+
+  reportMessage?.addEventListener("input", updateWordCount);
+
+  function openReportModal() {
+    reportModal?.classList.remove("hidden");
+    reportForm?.reset();
+    updateWordCount();
+    reportErrorMessage?.classList.add("hidden");
+  }
+
+  sidebarReport?.addEventListener("click", openReportModal);
+  mobileReport?.addEventListener("click", openReportModal);
+
+  closeReportModal?.addEventListener("click", () => {
+    reportModal?.classList.add("hidden");
+  });
+
+  reportModalBackdrop?.addEventListener("click", () => {
+    reportModal?.classList.add("hidden");
+  });
+
+  reportCancel?.addEventListener("click", () => {
+    reportModal?.classList.add("hidden");
+  });
+
+  reportForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    reportErrorMessage?.classList.add("hidden");
+
+    const type = reportType?.value;
+    const message = reportMessage?.value || "";
+    const wordCount = countWords(message);
+
+    // Validation
+    if (!type) {
+      if (reportErrorMessage) {
+        reportErrorMessage.textContent = "Please select a report type.";
+        reportErrorMessage.classList.remove("hidden");
+      }
+      return;
+    }
+
+    if (wordCount < 15) {
+      if (reportErrorMessage) {
+        reportErrorMessage.textContent = `Message must contain at least 15 words. Currently: ${wordCount} word${wordCount !== 1 ? "s" : ""}.`;
+        reportErrorMessage.classList.remove("hidden");
+      }
+      return;
+    }
+
+    // Check image size if provided
+    const imageFile = reportImage?.files?.[0];
+    if (imageFile && imageFile.size > 5 * 1024 * 1024) {
+      if (reportErrorMessage) {
+        reportErrorMessage.textContent = "Image file size must be less than 5MB.";
+        reportErrorMessage.classList.remove("hidden");
+      }
+      return;
+    }
+
+    // Build the email content
+    const typeLabels: Record<string, string> = {
+      bug: "Bug Report",
+      feature: "Feature Request",
+      other: "Other"
+    };
+    const typeLabel = typeLabels[type] || "Report";
+
+    let emailBody = `Report Type: ${typeLabel}\n\n`;
+    emailBody += `Message:\n${message}\n\n`;
+    emailBody += `---\n`;
+    emailBody += `Browser: ${getBrowserInfo()}\n`;
+    emailBody += `Screen: ${window.screen.width}x${window.screen.height}\n`;
+    emailBody += `Timestamp: ${new Date().toISOString()}\n`;
+
+    if (imageFile) {
+      emailBody += `\n[Image attached: ${imageFile.name}]\nNote: Please attach the image manually to this email.`;
+    }
+
+    const subject = encodeURIComponent(`[WA Runtime] ${typeLabel}`);
+    const body = encodeURIComponent(emailBody);
+    const mailtoUrl = `mailto:astrodevwork@gmail.com?subject=${subject}&body=${body}`;
+
+    // Open mail client
+    window.location.href = mailtoUrl;
+
+    // Close modal after short delay
+    setTimeout(() => {
+      reportModal?.classList.add("hidden");
+      reportForm?.reset();
+      updateWordCount();
+    }, 500);
   });
 </script>
