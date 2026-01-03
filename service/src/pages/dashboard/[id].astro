@@ -2403,7 +2403,8 @@ const hashedId = hashSessionId(id || "");
             cy="${y.toFixed(1)}" 
             r="3" 
             fill="var(--gh-accent)"
-            class="memory-dot cursor-pointer hover:r-4 transition-all"
+            class="memory-dot cursor-pointer transition-all"
+            style="transform-origin: center; transform-box: fill-box;"
             data-value="${point.value.toFixed(1)}"
             data-time="${new Date(point.timestamp).toLocaleTimeString()}"
           />
