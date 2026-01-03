@@ -157,13 +157,13 @@ export interface GroupActionResult {
 }
 
 export interface ActivitySettings {
-  auto_read_messages: boolean;
-  auto_recover_deleted_messages: boolean;
-  auto_antispam: boolean;
-  auto_typing: boolean;
-  auto_recording: boolean;
-  auto_reject_calls: boolean;
-  auto_always_online: boolean;
+  readmessages: boolean;
+  antidelete: boolean;
+  antispam: boolean;
+  typing: boolean;
+  recording: boolean;
+  anticall: boolean;
+  online: boolean;
 }
 
 interface PendingRequest {
