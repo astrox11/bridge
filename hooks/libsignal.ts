@@ -15,7 +15,11 @@ try {
     content
       .split("\n")
       .filter(
-        (line) => !line.includes('console.info("Closing session:", session)'),
+        (line) =>
+          !line.includes('console.info("Closing session:", session)') &&
+          !line.includes(
+            'console.info("Removing old closed session:", oldestSession)',
+          ),
       )
       .join("\n"),
     "utf8",
