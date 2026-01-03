@@ -107,6 +107,7 @@ export interface GroupsResponse {
 
 export interface GroupParticipant {
   id: string;
+  phoneNumber?: string;
   admin?: "admin" | "superadmin" | null;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
@@ -125,6 +126,7 @@ export interface GroupMetadata {
   memberAddMode?: boolean;
   joinApprovalMode?: boolean;
   isCommunity?: boolean;
+  isBotAdmin?: boolean;
   size?: number;
   participants: GroupParticipant[];
   ephemeralDuration?: number;

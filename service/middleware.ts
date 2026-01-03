@@ -428,11 +428,39 @@ export function getGroupMetadata(sessionId: string, groupId: string) {
     return { success: false, error: "Session not found" };
   }
 
+  // Ensure groupId has proper format with @g.us suffix
+  const normalizedGroupId = groupId.includes("@g.us")
+    ? groupId
+    : `${groupId}@g.us`;
+
   try {
-    const metadata = GetGroupMeta(sessionId, groupId);
+    const metadata = GetGroupMeta(sessionId, normalizedGroupId);
 
     if (!metadata) {
       return { success: false, error: "Group not found" };
+    }
+
+    // Get the client to check if bot is admin
+    const client = sessionManager.getClient(sessionId);
+    const botJid = client?.user?.id
+      ? client.user.id.split(":")[0] + "@s.whatsapp.net"
+      : null;
+
+    // Check if bot is an admin in the group
+    let isBotAdmin = false;
+    if (botJid && metadata.participants) {
+      const botParticipant = metadata.participants.find(
+        (p: { id?: string; phoneNumber?: string }) =>
+          p.id === botJid ||
+          p.phoneNumber === botJid ||
+          p.id?.split("@")[0] === botJid.split("@")[0] ||
+          p.phoneNumber?.split("@")[0] === botJid.split("@")[0],
+      );
+      if (botParticipant) {
+        isBotAdmin =
+          botParticipant.admin === "admin" ||
+          botParticipant.admin === "superadmin";
+      }
     }
 
     return {
@@ -450,15 +478,18 @@ export function getGroupMetadata(sessionId: string, groupId: string) {
         memberAddMode: metadata.memberAddMode,
         joinApprovalMode: metadata.joinApprovalMode,
         isCommunity: metadata.isCommunity,
+        isBotAdmin,
         size: metadata.size || metadata.participants?.length || 0,
         participants: (metadata.participants || []).map(
           (p: {
             id: string;
+            phoneNumber?: string;
             admin?: string | null;
             isAdmin?: boolean;
             isSuperAdmin?: boolean;
           }) => ({
             id: p.id,
+            phoneNumber: p.phoneNumber || p.id?.split("@")[0],
             admin: p.admin,
             isAdmin:
               p.isAdmin || p.admin === "admin" || p.admin === "superadmin",
@@ -502,14 +533,73 @@ export async function executeGroupAction(
     return { success: false, error: "Session not connected" };
   }
 
+  // Ensure groupId has proper format with @g.us suffix
+  const normalizedGroupId = groupId.includes("@g.us")
+    ? groupId
+    : `${groupId}@g.us`;
+
   try {
-    const group = new Group(sessionId, groupId, client);
-    const metadata = GetGroupMeta(sessionId, groupId);
+    const group = new Group(sessionId, normalizedGroupId, client);
+    const metadata = GetGroupMeta(sessionId, normalizedGroupId);
     const isCommunity = metadata?.isCommunity || false;
+
+    // Check if bot is admin before admin-only actions
+    const adminOnlyActions = [
+      "kickAll",
+      "mute",
+      "unmute",
+      "lock",
+      "unlock",
+      "name",
+      "description",
+      "add",
+      "remove",
+      "promote",
+      "demote",
+      "ephemeral",
+      "addMode",
+      "joinMode",
+      "revokeInvite",
+      "linkGroup",
+      "unlinkGroup",
+    ];
+
+    if (adminOnlyActions.includes(action)) {
+      const botJid = client.user?.id
+        ? client.user.id.split(":")[0] + "@s.whatsapp.net"
+        : null;
+
+      if (!botJid) {
+        return { success: false, error: "Bot JID not available" };
+      }
+
+      let isBotAdmin = false;
+      if (metadata?.participants) {
+        const botParticipant = metadata.participants.find(
+          (p: { id?: string; phoneNumber?: string }) =>
+            p.id === botJid ||
+            p.phoneNumber === botJid ||
+            p.id?.split("@")[0] === botJid.split("@")[0] ||
+            p.phoneNumber?.split("@")[0] === botJid.split("@")[0],
+        );
+        if (botParticipant) {
+          isBotAdmin =
+            botParticipant.admin === "admin" ||
+            botParticipant.admin === "superadmin";
+        }
+      }
+
+      if (!isBotAdmin) {
+        return {
+          success: false,
+          error: "Bot is not an admin in this group. Admin privileges required.",
+        };
+      }
+    }
 
     // For community-specific actions, use the Community class
     const community = isCommunity
-      ? new Community(sessionId, groupId, client)
+      ? new Community(sessionId, normalizedGroupId, client)
       : null;
 
     let result: unknown;

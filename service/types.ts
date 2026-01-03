@@ -74,6 +74,7 @@ export interface GroupsData {
 
 export interface GroupParticipantData {
   id: string;
+  phoneNumber?: string;
   admin?: "admin" | "superadmin" | null;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
@@ -92,6 +93,7 @@ export interface GroupMetadataData {
   memberAddMode?: boolean;
   joinApprovalMode?: boolean;
   isCommunity?: boolean;
+  isBotAdmin?: boolean;
   size?: number;
   participants: GroupParticipantData[];
   ephemeralDuration?: number;

@@ -545,6 +545,15 @@ const hashedId = hashSessionId(id || "");
         </div>
         <!-- Actions List -->
         <div id="group-actions-list" class="space-y-3">
+          <!-- Admin Warning Banner -->
+          <div id="admin-warning-banner" class="bg-gh-warning/10 border border-gh-warning/30 rounded-gh p-3 hidden">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-gh-warning flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/>
+              </svg>
+              <span class="text-sm text-gh-warning">Bot is not an admin in this group. Admin actions are disabled.</span>
+            </div>
+          </div>
           <!-- Toggle Actions (hidden for communities) -->
           <div id="group-settings-section" class="bg-gh-bg-secondary rounded-gh p-3">
             <h3 class="text-xs font-semibold text-gh-text-muted uppercase tracking-wider mb-3">Settings</h3>
@@ -592,14 +601,14 @@ const hashedId = hashSessionId(id || "");
           <div id="community-actions-section" class="bg-gh-bg-secondary rounded-gh p-3 hidden">
             <h3 class="text-xs font-semibold text-gh-text-muted uppercase tracking-wider mb-3">Community</h3>
             <div class="space-y-2">
-              <button data-param-action="linkGroup" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-param-action="linkGroup" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-success flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
                   <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
                 </svg>
                 <span>Link Group</span>
               </button>
-              <button data-param-action="unlinkGroup" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-param-action="unlinkGroup" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-danger flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
                   <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
@@ -613,19 +622,19 @@ const hashedId = hashSessionId(id || "");
           <div class="bg-gh-bg-secondary rounded-gh p-3">
             <h3 id="edit-section-title" class="text-xs font-semibold text-gh-text-muted uppercase tracking-wider mb-3">Edit Group</h3>
             <div class="space-y-2">
-              <button data-param-action="name" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-param-action="name" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-text-secondary flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"/>
                 </svg>
                 <span>Change Name</span>
               </button>
-              <button data-param-action="description" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-param-action="description" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-text-secondary flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Z"/>
                 </svg>
                 <span>Change Description</span>
               </button>
-              <button data-param-action="ephemeral" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-param-action="ephemeral" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-text-secondary flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M5.75.75A.75.75 0 0 1 6.5 0h3a.75.75 0 0 1 0 1.5h-.75v1l3.497 5.636a3.003 3.003 0 0 1-5.077 3.206L3.998 8.527a.75.75 0 0 1 .253-1.03l.003-.002a.75.75 0 0 1 1.03.254L7 10.564a1.5 1.5 0 0 0 2.536-1.6L5.75 2.5v-1a.75.75 0 0 1 0-1.5ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0ZM8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Z"/>
                 </svg>
@@ -638,25 +647,25 @@ const hashedId = hashSessionId(id || "");
           <div class="bg-gh-bg-secondary rounded-gh p-3">
             <h3 class="text-xs font-semibold text-gh-text-muted uppercase tracking-wider mb-3">Participants</h3>
             <div class="space-y-2">
-              <button data-param-action="add" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-param-action="add" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-success flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"/>
                 </svg>
                 <span>Add Participant</span>
               </button>
-              <button data-param-action="remove" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-param-action="remove" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-danger flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"/>
                 </svg>
                 <span>Remove Participant</span>
               </button>
-              <button data-param-action="promote" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-param-action="promote" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-warning flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="m4.427.879 1.164-.377a.695.695 0 0 1 .883.586l.108 1.209a.695.695 0 0 0 .587.587l1.21.108a.695.695 0 0 1 .585.883l-.377 1.164a.695.695 0 0 0 .183.81l.861.875a.695.695 0 0 1 0 1.047l-.86.876a.695.695 0 0 0-.184.81l.377 1.164a.695.695 0 0 1-.585.883l-1.21.108a.695.695 0 0 0-.587.587l-.108 1.21a.695.695 0 0 1-.883.585l-1.164-.377a.695.695 0 0 0-.81.183l-.875.861a.695.695 0 0 1-1.047 0l-.875-.86a.695.695 0 0 0-.81-.184l-1.164.377a.695.695 0 0 1-.883-.585l-.108-1.21a.695.695 0 0 0-.587-.587L.879 11.57a.695.695 0 0 1-.585-.883l.377-1.164a.695.695 0 0 0-.183-.81L.08 7.74a.695.695 0 0 1 0-1.047l.408-.415a.695.695 0 0 0 .183-.81L.294 4.305a.695.695 0 0 1 .585-.883l1.21-.108a.695.695 0 0 0 .587-.587l.108-1.21a.695.695 0 0 1 .883-.585l1.164.377a.695.695 0 0 0 .81-.183l.875-.86a.695.695 0 0 1 1.047 0l.875.86a.695.695 0 0 0 .81.183Z"/>
                 </svg>
                 <span>Promote to Admin</span>
               </button>
-              <button data-param-action="demote" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-param-action="demote" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-text-secondary flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L8.5 4.31v7.94a.75.75 0 0 1-1.5 0V4.31L3.53 7.78a.75.75 0 0 1-1.06 0Z"/>
                 </svg>
@@ -676,7 +685,7 @@ const hashedId = hashSessionId(id || "");
                 </svg>
                 <span>Get Invite Link</span>
               </button>
-              <button data-action="revokeInvite" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
+              <button data-action="revokeInvite" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-text hover:bg-gh-bg-tertiary rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 text-gh-warning flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/>
                 </svg>
@@ -689,7 +698,7 @@ const hashedId = hashSessionId(id || "");
           <div class="bg-gh-danger-subtle rounded-gh p-3 border border-gh-danger/20">
             <h3 class="text-xs font-semibold text-gh-danger uppercase tracking-wider mb-3">Danger Zone</h3>
             <div class="space-y-2">
-              <button data-action="kickAll" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-danger hover:bg-gh-danger/10 rounded-gh transition-colors text-left">
+              <button data-action="kickAll" data-admin-only="true" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gh-danger hover:bg-gh-danger/10 rounded-gh transition-colors text-left">
                 <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75Z"/>
                 </svg>
@@ -1326,10 +1335,33 @@ const hashedId = hashSessionId(id || "");
         const metadata = result.data as any;
         currentGroupMetadata = metadata;
         const isCommunity = metadata.isCommunity || false;
+        const isBotAdmin = metadata.isBotAdmin || false;
 
         if (groupActionsTitle) {
           groupActionsTitle.textContent = `Actions: ${escapeHtml(metadata.subject || (isCommunity ? "Community" : "Group"))}`;
         }
+
+        // Show/hide admin warning banner
+        const adminWarningBanner = document.getElementById("admin-warning-banner");
+        if (adminWarningBanner) {
+          if (isBotAdmin) {
+            adminWarningBanner.classList.add("hidden");
+          } else {
+            adminWarningBanner.classList.remove("hidden");
+          }
+        }
+
+        // Disable admin-only actions if bot is not admin
+        const adminOnlyButtons = groupActionsList?.querySelectorAll("[data-admin-only]");
+        adminOnlyButtons?.forEach((btn) => {
+          if (isBotAdmin) {
+            (btn as HTMLElement).classList.remove("opacity-50", "cursor-not-allowed");
+            (btn as HTMLElement).removeAttribute("disabled");
+          } else {
+            (btn as HTMLElement).classList.add("opacity-50", "cursor-not-allowed");
+            (btn as HTMLElement).setAttribute("disabled", "true");
+          }
+        });
 
         // Show/hide sections based on whether it's a community
         if (isCommunity) {
@@ -1349,6 +1381,28 @@ const hashedId = hashSessionId(id || "");
           // Update toggle states
           updateToggle("toggle-mute", metadata.announce);
           updateToggle("toggle-lock", metadata.restrict);
+
+          // Disable toggles if bot is not admin
+          const toggleMute = document.getElementById("toggle-mute");
+          const toggleLock = document.getElementById("toggle-lock");
+          if (toggleMute) {
+            if (isBotAdmin) {
+              toggleMute.classList.remove("opacity-50", "cursor-not-allowed");
+              (toggleMute as HTMLButtonElement).disabled = false;
+            } else {
+              toggleMute.classList.add("opacity-50", "cursor-not-allowed");
+              (toggleMute as HTMLButtonElement).disabled = true;
+            }
+          }
+          if (toggleLock) {
+            if (isBotAdmin) {
+              toggleLock.classList.remove("opacity-50", "cursor-not-allowed");
+              (toggleLock as HTMLButtonElement).disabled = false;
+            } else {
+              toggleLock.classList.add("opacity-50", "cursor-not-allowed");
+              (toggleLock as HTMLButtonElement).disabled = true;
+            }
+          }
         }
 
         // Load all groups for link/unlink functionality
@@ -1418,6 +1472,10 @@ const hashedId = hashSessionId(id || "");
     const paramActionBtn = target.closest("[data-param-action]") as HTMLElement | null;
 
     if (actionBtn) {
+      // Check if button is disabled (admin-only action when bot is not admin)
+      if (actionBtn.hasAttribute("disabled")) {
+        return;
+      }
       const action = actionBtn.getAttribute("data-action");
       if (action) {
         if (action === "leave" || action === "kickAll") {
@@ -1433,6 +1491,10 @@ const hashedId = hashSessionId(id || "");
     }
 
     if (paramActionBtn) {
+      // Check if button is disabled (admin-only action when bot is not admin)
+      if (paramActionBtn.hasAttribute("disabled")) {
+        return;
+      }
       const action = paramActionBtn.getAttribute("data-param-action");
       if (action) {
         openParamInputModal(action);
