@@ -102,8 +102,6 @@ export class Plugins {
   async load() {
     if (Plugins.isLoaded) return;
 
-    // Resolve plugin folder relative to this module's location
-    // This works for both TypeScript (core/class) and compiled JS (dist/core/class)
     const pluginsFolder = join(__dirname, "..", "plugin");
 
     const files = readdirSync(pluginsFolder).filter(

@@ -170,7 +170,6 @@ export function parseId(
     if (resolved) return resolved;
   }
 
-  // Escape special LIKE characters to prevent wildcard injection
   const escapedBase = escapeLikePattern(base);
   const fuzzyRows = bunql.query<{ pn: string; lid: string }>(
     `SELECT pn, lid FROM "${tableName}" WHERE pn LIKE ? ESCAPE '\\' OR lid LIKE ? ESCAPE '\\' LIMIT 1`,
