@@ -73,7 +73,7 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
-        font-family: "Plus Jakarta Sans", sans-serif;
+        font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
       :root {
         --gh-bg: #ffffff;
@@ -108,6 +108,44 @@
         --gh-warning-subtle: #2d2413;
         --gh-danger: #f85149;
         --gh-danger-subtle: #2d1b1b;
+      }
+      /* Fallback styles when Tailwind CDN fails */
+      body {
+        background-color: var(--gh-bg);
+        color: var(--gh-text);
+        min-height: 100vh;
+        line-height: 1.5;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background-color: var(--gh-bg);
+        border-bottom: 1px solid var(--gh-border);
+        padding: 0.5rem 1rem;
+      }
+      main {
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+      button {
+        cursor: pointer;
+        border: none;
+        background: var(--gh-bg-secondary);
+        color: var(--gh-text);
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+      }
+      button:hover {
+        background: var(--gh-bg-tertiary);
+      }
+      a {
+        color: var(--gh-link);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
       }
       ::-webkit-scrollbar {
         width: 8px;
