@@ -232,7 +232,7 @@ func Validate(input string) ValidationResult {
 	if len(cleaned) < 8 || len(cleaned) > 16 {
 		return ValidationResult{
 			Valid: false,
-			Error: "Phone number must be between 7 and 15 digits",
+			Error: "Phone number must be between 8 and 15 digits",
 		}
 	}
 
