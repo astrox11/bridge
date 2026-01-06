@@ -1,5 +1,5 @@
 import { defineConfig } from "astro/config";
-import tailwind from "@astrojs/tailwind";
+import tailwindCss from "@tailwindcss/postcss";
 import node from "@astrojs/node";
 
 export default defineConfig({
@@ -7,28 +7,19 @@ export default defineConfig({
   adapter: node({
     mode: "standalone",
   }),
-  integrations: [tailwind()],
+  integrations: [],
   server: {
     port: 4321,
-    host: "127.0.0.1", // Only listen on localhost (internal)
+    host: "127.0.0.1",
   },
   vite: {
     server: {
       proxy: {
-        "/api": {
-          target: "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/health": {
-          target: "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/ws": {
-          target: "ws://localhost:8000",
-          ws: true,
-          changeOrigin: true,
-        },
+        "/api": { target: "http://localhost:8000", changeOrigin: true },
+        "/health": { target: "http://localhost:8000", changeOrigin: true },
+        "/ws": { target: "ws://localhost:8000", ws: true, changeOrigin: true },
       },
     },
+    plugins: [tailwindCss()],
   },
 });
