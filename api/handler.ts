@@ -22,8 +22,8 @@ import {
   getMessages,
   getConfig,
   getGroups,
-  getActivitySettings,
-  updateActivitySettings,
+  getSessionActivitySettings,
+  updateSessionActivitySettings,
   getGroupMetadata,
   executeGroupAction,
 } from "./middleware";
@@ -85,9 +85,9 @@ const actionHandlers: Record<WsAction, ActionHandler> = {
   pauseSession: (params) => pauseSession(params.id as string),
   resumeSession: (params) => resumeSession(params.id as string),
   getActivitySettings: (params) =>
-    getActivitySettings(params.sessionId as string),
+    getSessionActivitySettings(params.sessionId as string),
   updateActivitySettings: (params) =>
-    updateActivitySettings(
+    updateSessionActivitySettings(
       params.sessionId as string,
       params.settings as Partial<ActivitySettingsData>,
     ),

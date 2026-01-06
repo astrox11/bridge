@@ -13,8 +13,8 @@ export {
   getMessages,
   getConfig,
   getGroups,
-  getActivitySettings,
-  updateActivitySettings,
+  getSessionActivitySettings,
+  updateSessionActivitySettings,
   getGroupMetadata,
   executeGroupAction,
 } from "./middleware";
