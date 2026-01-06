@@ -190,9 +190,23 @@ func (d *Database) UpdateActivitySettings(sessionID string, settings map[string]
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	current, err := d.GetActivitySettingsUnlocked(sessionID)
-	if err != nil {
-		current = &ActivitySettings{SessionID: sessionID}
+	row := d.db.QueryRow(
+		`SELECT session_id, auto_read_messages, auto_recover_deleted_messages, auto_antispam, 
+		        auto_typing, auto_recording, auto_reject_calls, auto_always_online 
+		 FROM activity_settings WHERE session_id = ?`,
+		sessionID,
+	)
+
+	var current ActivitySettings
+	err := row.Scan(
+		&current.SessionID, &current.AutoReadMessages, &current.AutoRecoverDeletedMessages,
+		&current.AutoAntispam, &current.AutoTyping, &current.AutoRecording,
+		&current.AutoRejectCalls, &current.AutoAlwaysOnline,
+	)
+	if err == sql.ErrNoRows {
+		current = ActivitySettings{SessionID: sessionID}
+	} else if err != nil {
+		return err
 	}
 
 	for key, value := range settings {
@@ -224,29 +238,6 @@ func (d *Database) UpdateActivitySettings(sessionID string, settings map[string]
 		current.AutoRejectCalls, current.AutoAlwaysOnline,
 	)
 	return err
-}
-
-func (d *Database) GetActivitySettingsUnlocked(sessionID string) (*ActivitySettings, error) {
-	row := d.db.QueryRow(
-		`SELECT session_id, auto_read_messages, auto_recover_deleted_messages, auto_antispam, 
-		        auto_typing, auto_recording, auto_reject_calls, auto_always_online 
-		 FROM activity_settings WHERE session_id = ?`,
-		sessionID,
-	)
-
-	var s ActivitySettings
-	err := row.Scan(
-		&s.SessionID, &s.AutoReadMessages, &s.AutoRecoverDeletedMessages,
-		&s.AutoAntispam, &s.AutoTyping, &s.AutoRecording,
-		&s.AutoRejectCalls, &s.AutoAlwaysOnline,
-	)
-	if err == sql.ErrNoRows {
-		return &ActivitySettings{SessionID: sessionID}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
 }
 
 func (d *Database) SaveAuthData(sessionID, name, data string) error {
