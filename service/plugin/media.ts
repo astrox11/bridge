@@ -7,8 +7,8 @@ import {
   TrimVideo,
   videoWebp,
   type CommandProperty,
+  log,
 } from "..";
-import { log } from "console";
 
 export default [
   {

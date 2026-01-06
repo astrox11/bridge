@@ -15,7 +15,7 @@ export default {
       return await msg.reply("Please provide a valid TikTok URL.");
     }
     url = match[0];
-    const { tiktok } = await import("core/util/scrapers");
+    const { tiktok } = await import("../util/scrapers");
     url = await tiktok(url);
     if (url) {
       await sock?.sendMessage(msg.chat, { video: { url } });
