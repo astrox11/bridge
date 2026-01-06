@@ -1,5 +1,5 @@
 import { defineConfig } from "astro/config";
-import tailwindCss from "@tailwindcss/postcss";
+import tailwindcss from "@tailwindcss/vite";
 import node from "@astrojs/node";
 
 export default defineConfig({
@@ -20,6 +20,6 @@ export default defineConfig({
         "/ws": { target: "ws://localhost:8000", ws: true, changeOrigin: true },
       },
     },
-    plugins: [tailwindCss()],
+    plugins: [tailwindcss()],
   },
 });
