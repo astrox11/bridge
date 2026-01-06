@@ -641,6 +641,7 @@
     const globalTooltip = document.getElementById('global-tooltip');
     const globalTooltipText = document.getElementById('global-tooltip-text');
     document.addEventListener('mouseenter', (e) => {
+      if (!(e.target instanceof Element)) return;
       const el = e.target.closest('[data-tooltip]');
       if (el && globalTooltip && globalTooltipText) {
         globalTooltipText.textContent = el.getAttribute('data-tooltip');
@@ -652,6 +653,7 @@
       }
     }, true);
     document.addEventListener('mouseleave', (e) => {
+      if (!(e.target instanceof Element)) return;
       if (e.target.closest('[data-tooltip]') && globalTooltip) {
         globalTooltip.style.opacity = '0';
       }
