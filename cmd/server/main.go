@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -24,6 +25,11 @@ import (
 const bunBackendPort = processmanager.BunBackendPort
 
 var serverStartTime = time.Now()
+var requestCount uint64
+var successCount uint64
+var errorCount uint64
+var latencySum uint64
+var latencyCount uint64
 
 var upgrader = gorillaWs.Upgrader{
 	ReadBufferSize:  1024,
@@ -84,6 +90,11 @@ func main() {
 			runtime.ReadMemStats(&m)
 			const bytesToMB = 1024 * 1024
 
+			avgLatency := uint64(0)
+			if lc := atomic.LoadUint64(&latencyCount); lc > 0 {
+				avgLatency = atomic.LoadUint64(&latencySum) / lc
+			}
+
 			data := map[string]interface{}{
 				"memory": map[string]interface{}{
 					"alloc":     m.Alloc / bytesToMB,
@@ -97,6 +108,12 @@ func main() {
 				"platform":   runtime.GOOS,
 				"arch":       runtime.GOARCH,
 				"uptime":     int64(time.Since(serverStartTime).Seconds()),
+				"network": map[string]interface{}{
+					"requests": atomic.LoadUint64(&requestCount),
+					"success":  atomic.LoadUint64(&successCount),
+					"errors":   atomic.LoadUint64(&errorCount),
+					"latency":  avgLatency,
+				},
 				"process": map[string]interface{}{
 					"status":    string(bunManager.GetStatus()),
 					"lastError": bunManager.GetLastError(),
@@ -278,10 +295,34 @@ func waitForBunServer() {
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/go/events") {
+			next.ServeHTTP(w, r)
+			return
+		}
 		start := time.Now()
-		next.ServeHTTP(w, r)
-		log.Printf("%s %s %s %v", r.RemoteAddr, r.Method, r.URL.Path, time.Since(start))
+		sw := &statusWriter{ResponseWriter: w, status: 200}
+		next.ServeHTTP(sw, r)
+		duration := time.Since(start)
+		atomic.AddUint64(&requestCount, 1)
+		atomic.AddUint64(&latencySum, uint64(duration.Milliseconds()))
+		atomic.AddUint64(&latencyCount, 1)
+		if sw.status >= 200 && sw.status < 400 {
+			atomic.AddUint64(&successCount, 1)
+		} else {
+			atomic.AddUint64(&errorCount, 1)
+		}
+		log.Printf("%s %s %s %d %v", r.RemoteAddr, r.Method, r.URL.Path, sw.status, duration)
 	})
+}
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
