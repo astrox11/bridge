@@ -3,7 +3,9 @@ package database
 import (
 	"database/sql"
 	"embed"
+	"fmt"
 	"log"
+	"regexp"
 	"sync"
 	"time"
 
@@ -14,8 +16,10 @@ import (
 var schemaFS embed.FS
 
 type Database struct {
-	db *sql.DB
-	mu sync.RWMutex
+	db            *sql.DB
+	mu            sync.RWMutex
+	createdTables map[string]bool
+	tablesMu      sync.RWMutex
 }
 
 var instance *Database
@@ -32,7 +36,10 @@ func GetDatabase() *Database {
 		db.SetMaxIdleConns(1)
 		db.SetConnMaxLifetime(time.Hour)
 
-		instance = &Database{db: db}
+		instance = &Database{
+			db:            db,
+			createdTables: make(map[string]bool),
+		}
 		if err := instance.initSchema(); err != nil {
 			log.Fatalf("Failed to initialize schema: %v", err)
 		}
@@ -51,6 +58,202 @@ func (d *Database) initSchema() error {
 
 	_, err = d.db.Exec(string(schema))
 	return err
+}
+
+var phoneRegex = regexp.MustCompile(`[^0-9]`)
+
+func sanitizePhoneNumber(phone string) string {
+	return phoneRegex.ReplaceAllString(phone, "")
+}
+
+func (d *Database) GetUserTableName(phone, suffix string) string {
+	return fmt.Sprintf("user_%s_%s", sanitizePhoneNumber(phone), suffix)
+}
+
+func (d *Database) ensureTable(tableName, createSQL string) {
+	d.tablesMu.Lock()
+	defer d.tablesMu.Unlock()
+
+	if d.createdTables[tableName] {
+		return
+	}
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	_, err := d.db.Exec(createSQL)
+	if err != nil {
+		log.Printf("Error creating table %s: %v", tableName, err)
+		return
+	}
+	d.createdTables[tableName] = true
+}
+
+func (d *Database) CreateUserAuthTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "auth")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (name TEXT PRIMARY KEY, data TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserMessagesTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "messages")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (id TEXT PRIMARY KEY, msg TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserContactsTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "contacts")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (pn TEXT PRIMARY KEY, lid TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserGroupsTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "groups")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (id TEXT PRIMARY KEY, data TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserSudoTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "sudo")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (pn TEXT PRIMARY KEY, lid TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserBanTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "ban")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (pn TEXT PRIMARY KEY, lid TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserModeTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "mode")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (id INTEGER PRIMARY KEY CHECK (id = 1), mode TEXT NOT NULL)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserPrefixTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "prefix")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (id INTEGER PRIMARY KEY CHECK (id = 1), prefix TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserAntideleteTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "antidelete")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (id INTEGER PRIMARY KEY CHECK (id = 1), active INTEGER NOT NULL, mode TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserAliveTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "alive")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (id INTEGER PRIMARY KEY CHECK (id = 1), alive_message TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserMentionTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "mention")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (groupId TEXT PRIMARY KEY, message TEXT, type TEXT DEFAULT 'text', data TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserFilterTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "filter")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (trigger TEXT PRIMARY KEY, reply TEXT, status INTEGER)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserAfkTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "afk")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (id INTEGER PRIMARY KEY CHECK (id = 1), status INTEGER, message TEXT, time BIGINT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserGroupEventTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "group_event")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (id INTEGER PRIMARY KEY CHECK (id = 1), status INTEGER)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserStickerTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "sticker")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (name TEXT PRIMARY KEY, sha256 TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserBgmTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "bgm")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (trigger TEXT PRIMARY KEY, audioData TEXT)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserActivitySettingsTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "activity_settings")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (
+		id INTEGER PRIMARY KEY CHECK (id = 1),
+		auto_read_messages INTEGER NOT NULL DEFAULT 0,
+		auto_recover_deleted_messages INTEGER NOT NULL DEFAULT 0,
+		auto_antispam INTEGER NOT NULL DEFAULT 0,
+		auto_typing INTEGER NOT NULL DEFAULT 0,
+		auto_recording INTEGER NOT NULL DEFAULT 0,
+		auto_reject_calls INTEGER NOT NULL DEFAULT 0,
+		auto_always_online INTEGER NOT NULL DEFAULT 0
+	)`, tableName))
+	return tableName
+}
+
+func (d *Database) CreateUserAntilinkTable(phone string) string {
+	tableName := d.GetUserTableName(phone, "antilink")
+	d.ensureTable(tableName, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (groupId TEXT PRIMARY KEY, mode INTEGER NOT NULL DEFAULT 0)`, tableName))
+	return tableName
+}
+
+func (d *Database) InitializeUserTables(phone string) {
+	d.CreateUserAuthTable(phone)
+	d.CreateUserMessagesTable(phone)
+	d.CreateUserContactsTable(phone)
+	d.CreateUserGroupsTable(phone)
+	d.CreateUserSudoTable(phone)
+	d.CreateUserBanTable(phone)
+	d.CreateUserModeTable(phone)
+	d.CreateUserPrefixTable(phone)
+	d.CreateUserAntideleteTable(phone)
+	d.CreateUserAliveTable(phone)
+	d.CreateUserMentionTable(phone)
+	d.CreateUserFilterTable(phone)
+	d.CreateUserAfkTable(phone)
+	d.CreateUserGroupEventTable(phone)
+	d.CreateUserStickerTable(phone)
+	d.CreateUserBgmTable(phone)
+	d.CreateUserActivitySettingsTable(phone)
+	d.CreateUserAntilinkTable(phone)
+	log.Printf("Initialized tables for user %s", phone)
+}
+
+func (d *Database) DeleteUserTables(phone string) {
+	sanitizedPhone := sanitizePhoneNumber(phone)
+	suffixes := []string{"auth", "messages", "contacts", "groups", "sudo", "ban", "mode", "prefix", "antidelete", "alive", "mention", "filter", "afk", "group_event", "sticker", "bgm", "activity_settings", "antilink"}
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.tablesMu.Lock()
+	defer d.tablesMu.Unlock()
+
+	for _, suffix := range suffixes {
+		tableName := fmt.Sprintf("user_%s_%s", sanitizedPhone, suffix)
+		_, err := d.db.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, tableName))
+		if err != nil {
+			log.Printf("Error dropping table %s: %v", tableName, err)
+		}
+		delete(d.createdTables, tableName)
+	}
+	log.Printf("Deleted tables for user %s", phone)
+}
+
+func getPhoneFromSessionID(sessionID string) string {
+	if len(sessionID) > 8 && sessionID[:8] == "session_" {
+		return sessionID[8:]
+	}
+	return sessionID
 }
 
 func (d *Database) Close() error {
@@ -88,11 +291,11 @@ func (d *Database) CreateSession(id, phoneNumber string, status int) error {
 		return err
 	}
 
-	_, err = d.db.Exec(
-		"INSERT OR IGNORE INTO activity_settings (session_id) VALUES (?)",
-		id,
-	)
-	return err
+	d.mu.Unlock()
+	d.InitializeUserTables(phoneNumber)
+	d.mu.Lock()
+
+	return nil
 }
 
 func (d *Database) GetSession(idOrPhone string) (*Session, error) {
@@ -161,19 +364,22 @@ func (d *Database) DeleteSession(id string) error {
 }
 
 func (d *Database) GetActivitySettings(sessionID string) (*ActivitySettings, error) {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserActivitySettingsTable(phone)
+
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	row := d.db.QueryRow(
-		`SELECT session_id, auto_read_messages, auto_recover_deleted_messages, auto_antispam, 
+		fmt.Sprintf(`SELECT auto_read_messages, auto_recover_deleted_messages, auto_antispam, 
 		        auto_typing, auto_recording, auto_reject_calls, auto_always_online 
-		 FROM activity_settings WHERE session_id = ?`,
-		sessionID,
+		 FROM "%s" WHERE id = 1`, tableName),
 	)
 
 	var s ActivitySettings
+	s.SessionID = sessionID
 	err := row.Scan(
-		&s.SessionID, &s.AutoReadMessages, &s.AutoRecoverDeletedMessages,
+		&s.AutoReadMessages, &s.AutoRecoverDeletedMessages,
 		&s.AutoAntispam, &s.AutoTyping, &s.AutoRecording,
 		&s.AutoRejectCalls, &s.AutoAlwaysOnline,
 	)
@@ -187,78 +393,73 @@ func (d *Database) GetActivitySettings(sessionID string) (*ActivitySettings, err
 }
 
 func (d *Database) UpdateActivitySettings(sessionID string, settings map[string]bool) error {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserActivitySettingsTable(phone)
 
-	row := d.db.QueryRow(
-		`SELECT session_id, auto_read_messages, auto_recover_deleted_messages, auto_antispam, 
-		        auto_typing, auto_recording, auto_reject_calls, auto_always_online 
-		 FROM activity_settings WHERE session_id = ?`,
-		sessionID,
-	)
-
-	var current ActivitySettings
-	err := row.Scan(
-		&current.SessionID, &current.AutoReadMessages, &current.AutoRecoverDeletedMessages,
-		&current.AutoAntispam, &current.AutoTyping, &current.AutoRecording,
-		&current.AutoRejectCalls, &current.AutoAlwaysOnline,
-	)
-	if err == sql.ErrNoRows {
-		current = ActivitySettings{SessionID: sessionID}
-	} else if err != nil {
+	currentSettings, err := d.GetActivitySettings(sessionID)
+	if err != nil {
 		return err
 	}
 
 	for key, value := range settings {
 		switch key {
 		case "auto_read_messages":
-			current.AutoReadMessages = value
+			currentSettings.AutoReadMessages = value
 		case "auto_recover_deleted_messages":
-			current.AutoRecoverDeletedMessages = value
+			currentSettings.AutoRecoverDeletedMessages = value
 		case "auto_antispam":
-			current.AutoAntispam = value
+			currentSettings.AutoAntispam = value
 		case "auto_typing":
-			current.AutoTyping = value
+			currentSettings.AutoTyping = value
 		case "auto_recording":
-			current.AutoRecording = value
+			currentSettings.AutoRecording = value
 		case "auto_reject_calls":
-			current.AutoRejectCalls = value
+			currentSettings.AutoRejectCalls = value
 		case "auto_always_online":
-			current.AutoAlwaysOnline = value
+			currentSettings.AutoAlwaysOnline = value
 		}
 	}
 
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	_, err = d.db.Exec(
-		`INSERT OR REPLACE INTO activity_settings 
-		 (session_id, auto_read_messages, auto_recover_deleted_messages, auto_antispam, 
+		fmt.Sprintf(`INSERT OR REPLACE INTO "%s" 
+		 (id, auto_read_messages, auto_recover_deleted_messages, auto_antispam, 
 		  auto_typing, auto_recording, auto_reject_calls, auto_always_online) 
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		sessionID, current.AutoReadMessages, current.AutoRecoverDeletedMessages,
-		current.AutoAntispam, current.AutoTyping, current.AutoRecording,
-		current.AutoRejectCalls, current.AutoAlwaysOnline,
+		 VALUES (1, ?, ?, ?, ?, ?, ?, ?)`, tableName),
+		currentSettings.AutoReadMessages, currentSettings.AutoRecoverDeletedMessages,
+		currentSettings.AutoAntispam, currentSettings.AutoTyping, currentSettings.AutoRecording,
+		currentSettings.AutoRejectCalls, currentSettings.AutoAlwaysOnline,
 	)
 	return err
 }
 
 func (d *Database) SaveAuthData(sessionID, name, data string) error {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserAuthTable(phone)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	_, err := d.db.Exec(
-		"INSERT OR REPLACE INTO auth_data (session_id, name, data) VALUES (?, ?, ?)",
-		sessionID, name, data,
+		fmt.Sprintf(`INSERT OR REPLACE INTO "%s" (name, data) VALUES (?, ?)`, tableName),
+		name, data,
 	)
 	return err
 }
 
 func (d *Database) GetAuthData(sessionID, name string) (string, error) {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserAuthTable(phone)
+
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	var data string
 	err := d.db.QueryRow(
-		"SELECT data FROM auth_data WHERE session_id = ? AND name = ?",
-		sessionID, name,
+		fmt.Sprintf(`SELECT data FROM "%s" WHERE name = ?`, tableName),
+		name,
 	).Scan(&data)
 	if err == sql.ErrNoRows {
 		return "", nil
@@ -267,10 +468,13 @@ func (d *Database) GetAuthData(sessionID, name string) (string, error) {
 }
 
 func (d *Database) GetAllAuthData(sessionID string) (map[string]string, error) {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserAuthTable(phone)
+
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	rows, err := d.db.Query("SELECT name, data FROM auth_data WHERE session_id = ?", sessionID)
+	rows, err := d.db.Query(fmt.Sprintf(`SELECT name, data FROM "%s"`, tableName))
 	if err != nil {
 		return nil, err
 	}
@@ -288,32 +492,41 @@ func (d *Database) GetAllAuthData(sessionID string) (map[string]string, error) {
 }
 
 func (d *Database) DeleteAuthData(sessionID string) error {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserAuthTable(phone)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	_, err := d.db.Exec("DELETE FROM auth_data WHERE session_id = ?", sessionID)
+	_, err := d.db.Exec(fmt.Sprintf(`DELETE FROM "%s"`, tableName))
 	return err
 }
 
 func (d *Database) AddContact(sessionID, phoneNumber, lid string) error {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserContactsTable(phone)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	_, err := d.db.Exec(
-		"INSERT OR REPLACE INTO contacts (session_id, phone_number, lid, created_at) VALUES (?, ?, ?, ?)",
-		sessionID, phoneNumber, lid, time.Now().UnixMilli(),
+		fmt.Sprintf(`INSERT OR REPLACE INTO "%s" (pn, lid) VALUES (?, ?)`, tableName),
+		phoneNumber, lid,
 	)
 	return err
 }
 
 func (d *Database) GetContact(sessionID, phoneNumber string) (string, error) {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserContactsTable(phone)
+
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	var lid string
 	err := d.db.QueryRow(
-		"SELECT lid FROM contacts WHERE session_id = ? AND phone_number = ?",
-		sessionID, phoneNumber,
+		fmt.Sprintf(`SELECT lid FROM "%s" WHERE pn = ?`, tableName),
+		phoneNumber,
 	).Scan(&lid)
 	if err == sql.ErrNoRows {
 		return "", nil
@@ -322,24 +535,30 @@ func (d *Database) GetContact(sessionID, phoneNumber string) (string, error) {
 }
 
 func (d *Database) SaveGroupsCache(sessionID string, groups string) error {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserGroupsTable(phone)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	_, err := d.db.Exec(
-		"INSERT OR REPLACE INTO groups_cache (id, session_id, data, updated_at) VALUES (?, ?, ?, ?)",
-		sessionID+"_all", sessionID, groups, time.Now().UnixMilli(),
+		fmt.Sprintf(`INSERT OR REPLACE INTO "%s" (id, data) VALUES (?, ?)`, tableName),
+		"_all_groups_cache", groups,
 	)
 	return err
 }
 
 func (d *Database) GetGroupsCache(sessionID string) (string, error) {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserGroupsTable(phone)
+
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	var data string
 	err := d.db.QueryRow(
-		"SELECT data FROM groups_cache WHERE session_id = ? AND id = ?",
-		sessionID, sessionID+"_all",
+		fmt.Sprintf(`SELECT data FROM "%s" WHERE id = ?`, tableName),
+		"_all_groups_cache",
 	).Scan(&data)
 	if err == sql.ErrNoRows {
 		return "", nil
@@ -366,13 +585,15 @@ func (d *Database) QueryRow(query string, args ...interface{}) *sql.Row {
 }
 
 func (d *Database) GetAliveMessage(sessionID string) (string, error) {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserAliveTable(phone)
+
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	var message sql.NullString
 	err := d.db.QueryRow(
-		"SELECT alive_message FROM alive_settings WHERE session_id = ?",
-		sessionID,
+		fmt.Sprintf(`SELECT alive_message FROM "%s" WHERE id = 1`, tableName),
 	).Scan(&message)
 	if err == sql.ErrNoRows {
 		return "", nil
@@ -384,12 +605,15 @@ func (d *Database) GetAliveMessage(sessionID string) (string, error) {
 }
 
 func (d *Database) SetAliveMessage(sessionID, message string) error {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserAliveTable(phone)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	_, err := d.db.Exec(
-		"INSERT OR REPLACE INTO alive_settings (session_id, alive_message) VALUES (?, ?)",
-		sessionID, message,
+		fmt.Sprintf(`INSERT OR REPLACE INTO "%s" (id, alive_message) VALUES (1, ?)`, tableName),
+		message,
 	)
 	return err
 }
@@ -401,6 +625,9 @@ type AfkSettings struct {
 }
 
 func (d *Database) GetAfk(sessionID string) (*AfkSettings, error) {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserAfkTable(phone)
+
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
@@ -408,8 +635,7 @@ func (d *Database) GetAfk(sessionID string) (*AfkSettings, error) {
 	var message sql.NullString
 	var timestamp sql.NullInt64
 	err := d.db.QueryRow(
-		"SELECT status, message, time FROM afk_settings WHERE session_id = ?",
-		sessionID,
+		fmt.Sprintf(`SELECT status, message, time FROM "%s" WHERE id = 1`, tableName),
 	).Scan(&status, &message, &timestamp)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -425,12 +651,15 @@ func (d *Database) GetAfk(sessionID string) (*AfkSettings, error) {
 }
 
 func (d *Database) SetAfk(sessionID string, status int, message string, timestamp int64) error {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserAfkTable(phone)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	_, err := d.db.Exec(
-		"INSERT OR REPLACE INTO afk_settings (session_id, status, message, time) VALUES (?, ?, ?, ?)",
-		sessionID, status, message, timestamp,
+		fmt.Sprintf(`INSERT OR REPLACE INTO "%s" (id, status, message, time) VALUES (1, ?, ?, ?)`, tableName),
+		status, message, timestamp,
 	)
 	return err
 }
@@ -442,6 +671,9 @@ type MentionData struct {
 }
 
 func (d *Database) GetMention(sessionID, groupID string) (*MentionData, error) {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserMentionTable(phone)
+
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
@@ -449,8 +681,8 @@ func (d *Database) GetMention(sessionID, groupID string) (*MentionData, error) {
 	var message sql.NullString
 	var data sql.NullString
 	err := d.db.QueryRow(
-		"SELECT type, message, data FROM mention_settings WHERE session_id = ? AND group_id = ?",
-		sessionID, groupID,
+		fmt.Sprintf(`SELECT type, message, data FROM "%s" WHERE groupId = ?`, tableName),
+		groupID,
 	).Scan(&mentionType, &message, &data)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -466,23 +698,29 @@ func (d *Database) GetMention(sessionID, groupID string) (*MentionData, error) {
 }
 
 func (d *Database) SetMention(sessionID, groupID, mentionType, message, data string) error {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserMentionTable(phone)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	_, err := d.db.Exec(
-		"INSERT OR REPLACE INTO mention_settings (session_id, group_id, type, message, data) VALUES (?, ?, ?, ?, ?)",
-		sessionID, groupID, mentionType, message, data,
+		fmt.Sprintf(`INSERT OR REPLACE INTO "%s" (groupId, type, message, data) VALUES (?, ?, ?, ?)`, tableName),
+		groupID, mentionType, message, data,
 	)
 	return err
 }
 
 func (d *Database) DeleteMention(sessionID, groupID string) error {
+	phone := getPhoneFromSessionID(sessionID)
+	tableName := d.CreateUserMentionTable(phone)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	_, err := d.db.Exec(
-		"DELETE FROM mention_settings WHERE session_id = ? AND group_id = ?",
-		sessionID, groupID,
+		fmt.Sprintf(`DELETE FROM "%s" WHERE groupId = ?`, tableName),
+		groupID,
 	)
 	return err
 }
