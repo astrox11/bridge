@@ -31,26 +31,26 @@ export const additionalNodes = [
 ];
 
 export const log = {
-  info(...args: any[]) {
+  info(...args: unknown[]) {
     const prefix = `\x1b[1m${COLORS.info} [INFO]`;
     console.log(prefix, ...args.map(formatArg), COLORS.reset);
   },
-  warn(...args: any[]) {
+  warn(...args: unknown[]) {
     if (!config.DEBUG) return;
     const prefix = `\x1b[1m${COLORS.warn} [WARN]`;
     console.warn(prefix, ...args.map(formatArg), COLORS.reset);
   },
-  error(...args: any[]) {
+  error(...args: unknown[]) {
     if (!config.DEBUG) return;
     const prefix = `\x1b[1m${COLORS.error} [ERROR]`;
     console.error(prefix, ...args.map(formatArg), COLORS.reset);
   },
-  debug(...args: any[]) {
+  debug(...args: unknown[]) {
     if (!config.DEBUG) return;
     const prefix = `\x1b[1m${COLORS.debug} [DEBUG]`;
     console.log(prefix, ...args.map(formatArg), COLORS.reset);
   },
-  trace(...args: any[]) {
+  trace(...args: unknown[]) {
     if (!config.DEBUG) return;
     const prefix = `\x1b[1m${COLORS.trace} [TRACE]`;
     console.log(prefix, ...args.map(formatArg), COLORS.reset);
@@ -92,7 +92,7 @@ export function formatp(bytes: number): string {
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }
 
-function formatArg(a: any): any {
+function formatArg(a: unknown): unknown {
   if (a instanceof Error) return a.stack ?? a.message;
   if (typeof a === "object" && a !== null) {
     try {
@@ -260,12 +260,12 @@ export function ToMp3(inputPath: string): string {
       { stdio: "ignore" },
     );
     return outputPath;
-  } catch (err: any) {
-    throw new Error(err.stderr?.toString() || err.message);
+  } catch (e) {
+    throw new Error(e.stderr?.toString() || e.message);
   }
 }
 
-export function ToMp4(inputPath: string): string {
+export function ToMp4(inputPath: string) {
   const outputPath = join(
     tmpdir(),
     `video-${randomBytes(6).toString("hex")}.mp4`,
@@ -276,16 +276,12 @@ export function ToMp4(inputPath: string): string {
       { stdio: "ignore" },
     );
     return outputPath;
-  } catch (err: any) {
-    throw new Error(err.stderr?.toString() || err.message);
+  } catch (err: unknown) {
+    log.error(err);
   }
 }
 
-export function TrimVideo(
-  inputPath: string,
-  start: string,
-  end: string,
-): string {
+export function TrimVideo(inputPath: string, start: string, end: string) {
   const outputPath = join(
     tmpdir(),
     `trimmed-${randomBytes(6).toString("hex")}.mp4`,
@@ -296,12 +292,13 @@ export function TrimVideo(
       { stdio: "ignore" },
     );
     return outputPath;
-  } catch (err: any) {
-    throw new Error(err.stderr?.toString() || err.message);
+  } catch (err: unknown) {
+    log.error(err);
+    return undefined;
   }
 }
 
-export function ToPTT(inputPath: string): string {
+export function ToPTT(inputPath: string) {
   const outputPath = join(
     tmpdir(),
     `ptt-${randomBytes(6).toString("hex")}.ogg`,
@@ -312,8 +309,8 @@ export function ToPTT(inputPath: string): string {
       { stdio: "ignore" },
     );
     return outputPath;
-  } catch (err: any) {
-    throw new Error(err.stderr?.toString() || err.message);
+  } catch (err: unknown) {
+    log.error(err);
   }
 }
 
@@ -440,7 +437,7 @@ export async function videoWebp(
     try {
       rmSync(dir, { recursive: true, force: true });
       log.debug("Temporary directory cleaned up");
-    } catch (e) {}
+    } catch {}
   }
 }
 

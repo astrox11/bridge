@@ -6,6 +6,7 @@ import makeWASocket, {
   makeCacheableSignalKeyStore,
   type CacheStore,
   type WASocket,
+  type WAMessageKey,
 } from "baileys";
 import { Boom } from "@hapi/boom";
 import MAIN_LOGGER from "pino";
@@ -274,7 +275,7 @@ class Client {
 
     log.debug("Baileys version:", version.join("."));
 
-    const sessionGetMessage = async (key: any) =>
+    const sessionGetMessage = async (key: WAMessageKey) =>
       await getMessage(sessionId, key);
 
     const sessionCachedGroupMetadata = async (id: string) =>

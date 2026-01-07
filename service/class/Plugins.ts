@@ -155,6 +155,8 @@ export class Plugins {
   }
 }
 
+type cmdExecReturn = Promise<unknown> | void;
+
 export interface CommandProperty {
   pattern?: string;
   alias?: Array<string>;
@@ -164,7 +166,7 @@ export interface CommandProperty {
   isGroup?: boolean;
   isAdmin?: boolean;
   isSudo?: boolean;
-  exec: (msg: Message, sock?: WASocket, args?: string) => Promise<any>;
+  exec: (msg: Message, sock?: WASocket, args?: string) => cmdExecReturn;
 }
 
 type CommandCategories =

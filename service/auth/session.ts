@@ -14,6 +14,7 @@ import {
   getPhoneFromSessionId,
   getUserTableName,
   handleLidMapping,
+  type SessionData,
 } from "..";
 
 const mutex = new Mutex();
@@ -27,7 +28,7 @@ function getAuthTable(sessionId: string) {
 export const useSessionAuth = async (sessionId: string) => {
   const tableName = getAuthTable(sessionId);
 
-  const writeData = async (data: any, name: string) =>
+  const writeData = async (data: SessionData, name: string) =>
     mutex.runExclusive(() => {
       const rows = bunql.query<{ name: string }>(
         `SELECT name FROM "${tableName}" WHERE name = ?`,

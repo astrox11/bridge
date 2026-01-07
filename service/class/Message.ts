@@ -12,7 +12,6 @@ import type {
   WAMessage,
   WAMessageKey,
   WAMessageContent,
-  AnyMessageContent,
 } from "baileys";
 import { Quoted } from "./Quoted";
 import {

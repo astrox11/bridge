@@ -1,4 +1,10 @@
-import type { Contact } from "baileys";
+import type {
+  AuthenticationCreds,
+  Contact,
+  KeyPair,
+  LTHashState,
+  proto,
+} from "baileys";
 
 export interface Session {
   id: string;
@@ -27,3 +33,21 @@ export enum SessionErrorType {
   "SessionPaused" = "SessionPaused",
   "SessionAlreadyActive" = "SessionAlreadyActive",
 }
+
+export type SessionData =
+  | string
+  | Uint8Array<ArrayBufferLike>
+  | string[]
+  | KeyPair
+  | {
+      [jid: string]: boolean;
+    }
+  | proto.Message.IAppStateSyncKeyData
+  | LTHashState
+  | {
+      token: Buffer;
+      timestamp?: string;
+    }
+  | AuthenticationCreds
+  | null
+  | undefined;

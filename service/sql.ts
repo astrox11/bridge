@@ -772,7 +772,7 @@ export const getAfk = (
 export const setMentionMessage = (
   sessionId: string,
   groupId: string,
-  content: { message?: string; type: string; data?: any },
+  content: { message?: string; type: string; data?: string | object },
 ) => {
   const tableName = getMentionTable(sessionId);
   const dataStr = content.data ? JSON.stringify(content.data) : null;
@@ -804,7 +804,7 @@ export const deleteMentionMessage = (sessionId: string, groupId: string) => {
 export const getMentionData = (
   sessionId: string,
   groupId: string,
-): { type: string; message?: string; data?: any } | null => {
+): { type: string; message?: string; data?: string | object } | null => {
   const tableName = getMentionTable(sessionId);
   const stmt = db.query<
     { message: string; type: string; data: string },

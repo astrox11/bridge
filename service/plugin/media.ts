@@ -7,7 +7,6 @@ import {
   TrimVideo,
   videoWebp,
   type CommandProperty,
-  log,
 } from "..";
 
 export default [

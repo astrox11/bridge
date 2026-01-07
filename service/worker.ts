@@ -53,9 +53,7 @@ async function reportNetworkError() {
       networkSuspended = true;
       log.warn("Network suspended due to consecutive errors");
     }
-  } catch (e) {
-    // Ignore - Go server might be down too
-  }
+  } catch {}
 }
 
 async function reportNetworkSuccess() {
@@ -66,9 +64,7 @@ async function reportNetworkSuccess() {
         method: "POST",
       });
       networkSuspended = false;
-    } catch (e) {
-      // Ignore
-    }
+    } catch {}
   }
 }
 

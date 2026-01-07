@@ -1,5 +1,5 @@
 import { generateMessageID, isLidUser } from "baileys";
-import { getAlternateId, Group, log, parseId, type CommandProperty } from "..";
+import { getAlternateId, Group, parseId, type CommandProperty } from "..";
 
 export default [
   {

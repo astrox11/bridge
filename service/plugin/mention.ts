@@ -5,7 +5,7 @@ import {
   deleteMentionMessage,
 } from "../sql";
 import config from "../../config";
-import { jidNormalizedUser } from "baileys";
+import { jidNormalizedUser, type WAMessage } from "baileys";
 
 export default [
   {
@@ -93,7 +93,7 @@ export default [
           { quoted: msg },
         );
       } else {
-        await msg.forward(msg.chat, data?.data as any);
+        await msg.forward(msg.chat, data?.data as WAMessage);
       }
     },
   },
