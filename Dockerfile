@@ -1,23 +1,24 @@
 FROM oven/bun:latest
 
 RUN apt-get update && apt-get install -y \
-    curl \
     git \
+    curl \
     ffmpeg \
     libwebp-dev \
     ca-certificates \
-    && curl -fsSL https://deb.nodesource.com/setup_25.x | bash - \
-    && apt-get install -y nodejs \
+    golang \
     && rm -rf /var/lib/apt/lists/*
 
-RUN node -v && npm -v && bun -v
+RUN bun -v && go version
 
 RUN git clone https://github.com/astrox11/Whatsaly /root/Whatsaly
 
 WORKDIR /root/Whatsaly
 
 RUN bun install
+RUN go mod download
+RUN chmod +x ./start.sh
 
-EXPOSE 8000 8000
+EXPOSE 8000
 
-CMD ["sh", "-c", "bun start"]
+CMD ["sh", "./start.sh"]
