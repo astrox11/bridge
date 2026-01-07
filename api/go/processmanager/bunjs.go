@@ -17,6 +17,7 @@ import (
 )
 
 const BunBackendPort = "8001"
+const GoServerPort = "8000"
 
 type ProcessStatus string
 
@@ -168,7 +169,7 @@ func (m *BunJSManager) monitorNetworkForRecovery() {
 // checkNetworkHealth performs a simple health check
 func (m *BunJSManager) checkNetworkHealth() bool {
 	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Get("http://127.0.0.1:8000/health")
+	resp, err := client.Get("http://127.0.0.1:" + GoServerPort + "/health")
 	if err != nil {
 		return false
 	}
