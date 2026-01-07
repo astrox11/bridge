@@ -22,7 +22,6 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@realastrox11/bunql": "^1.2.0",
     "baileys": "https://github.com/WhiskeySockets/Baileys",
     "cheerio": "^1.1.2",
     "libphonenumber-js": "^1.12.33",

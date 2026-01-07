@@ -1,6 +1,6 @@
 export default {
   VERSION: (await import("./package.json")).version,
   BOT_NAME: process.env.BOT_NAME || "Whatsaly",
-  API_PORT: parseInt(process.env.BUN_API_PORT || "8001", 10),
+  SERVER : process.env.SERVER || "http://127.0.0.1:8000",
   DEBUG: process.env.DEBUG === "true" || false,
 };

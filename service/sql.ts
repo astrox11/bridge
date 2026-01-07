@@ -11,7 +11,7 @@ import { Database } from "bun:sqlite";
 import { log } from "./util";
 
 const db = new Database("database.db", { create: true });
-db.exec("PRAGMA journal_mode = WAL;");
+db.run("PRAGMA journal_mode = WAL;");
 
 const createdTables = new Set<string>();
 
@@ -41,22 +41,18 @@ export function queryWithParams<T>(
   return bunql.query<T>(sql, params);
 }
 
-function sanitizePhoneNumber(phone: string): string {
-  return phone.replace(/[^0-9]/g, "");
-}
-
 export function getPhoneFromSessionId(sessionId: string): string {
   return sessionId.replace("session_", "");
 }
 
 export function getUserTableName(phone: string, suffix: string): string {
-  return `user_${sanitizePhoneNumber(phone)}_${suffix}`;
+  return `user_${phone}_${suffix}`;
 }
 
 export function createUserAuthTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "auth");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (name TEXT PRIMARY KEY, data TEXT)`,
     );
     createdTables.add(tableName);
@@ -67,7 +63,7 @@ export function createUserAuthTable(phoneNumber: string): string {
 export function createUserMessagesTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "messages");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (id TEXT PRIMARY KEY, msg TEXT)`,
     );
     createdTables.add(tableName);
@@ -78,7 +74,7 @@ export function createUserMessagesTable(phoneNumber: string): string {
 export function createUserContactsTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "contacts");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (pn TEXT PRIMARY KEY, lid TEXT)`,
     );
     createdTables.add(tableName);
@@ -89,7 +85,7 @@ export function createUserContactsTable(phoneNumber: string): string {
 export function createUserGroupsTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "groups");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (id TEXT PRIMARY KEY, data TEXT)`,
     );
     createdTables.add(tableName);
@@ -100,7 +96,7 @@ export function createUserGroupsTable(phoneNumber: string): string {
 export function createUserSudoTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "sudo");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (pn TEXT PRIMARY KEY, lid TEXT)`,
     );
     createdTables.add(tableName);
@@ -111,7 +107,7 @@ export function createUserSudoTable(phoneNumber: string): string {
 export function createUserBanTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "ban");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (pn TEXT PRIMARY KEY, lid TEXT)`,
     );
     createdTables.add(tableName);
@@ -122,7 +118,7 @@ export function createUserBanTable(phoneNumber: string): string {
 export function createUserModeTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "mode");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (id INTEGER PRIMARY KEY CHECK (id = 1), mode TEXT NOT NULL)`,
     );
     createdTables.add(tableName);
@@ -133,7 +129,7 @@ export function createUserModeTable(phoneNumber: string): string {
 export function createUserPrefixTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "prefix");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (id INTEGER PRIMARY KEY CHECK (id = 1), prefix TEXT)`,
     );
     createdTables.add(tableName);
@@ -144,7 +140,7 @@ export function createUserPrefixTable(phoneNumber: string): string {
 export function createUserAntideleteTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "antidelete");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (id INTEGER PRIMARY KEY CHECK (id = 1), active INTEGER NOT NULL, mode TEXT)`,
     );
     createdTables.add(tableName);
@@ -155,7 +151,7 @@ export function createUserAntideleteTable(phoneNumber: string): string {
 export function createUserAliveTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "alive");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (id INTEGER PRIMARY KEY CHECK (id = 1), alive_message TEXT)`,
     );
     createdTables.add(tableName);
@@ -166,7 +162,7 @@ export function createUserAliveTable(phoneNumber: string): string {
 export function createUserMentionTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "mention");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (groupId TEXT PRIMARY KEY, message TEXT, type TEXT DEFAULT 'text', data TEXT)`,
     );
     createdTables.add(tableName);
@@ -177,7 +173,7 @@ export function createUserMentionTable(phoneNumber: string): string {
 export function createUserFilterTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "filter");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (trigger TEXT PRIMARY KEY, reply TEXT, status INTEGER)`,
     );
     createdTables.add(tableName);
@@ -188,7 +184,7 @@ export function createUserFilterTable(phoneNumber: string): string {
 export function createUserAfkTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "afk");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (id INTEGER PRIMARY KEY CHECK (id = 1), status INTEGER, message TEXT, time BIGINT)`,
     );
     createdTables.add(tableName);
@@ -199,7 +195,7 @@ export function createUserAfkTable(phoneNumber: string): string {
 export function createUserGroupEventTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "group_event");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (id INTEGER PRIMARY KEY CHECK (id = 1), status INTEGER)`,
     );
     createdTables.add(tableName);
@@ -210,7 +206,7 @@ export function createUserGroupEventTable(phoneNumber: string): string {
 export function createUserStickerTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "sticker");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (name TEXT PRIMARY KEY, sha256 TEXT)`,
     );
     createdTables.add(tableName);
@@ -221,7 +217,7 @@ export function createUserStickerTable(phoneNumber: string): string {
 export function createUserBgmTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "bgm");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (trigger TEXT PRIMARY KEY, audioData TEXT)`,
     );
     createdTables.add(tableName);
@@ -232,7 +228,7 @@ export function createUserBgmTable(phoneNumber: string): string {
 export function createUserActivitySettingsTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "activity_settings");
   if (!createdTables.has(tableName)) {
-    db.exec(`CREATE TABLE IF NOT EXISTS "${tableName}" (
+    db.run(`CREATE TABLE IF NOT EXISTS "${tableName}" (
       id INTEGER PRIMARY KEY CHECK (id = 1),
       auto_read_messages INTEGER NOT NULL DEFAULT 0,
       auto_recover_deleted_messages INTEGER NOT NULL DEFAULT 0,
@@ -250,7 +246,7 @@ export function createUserActivitySettingsTable(phoneNumber: string): string {
 export function createUserAntilinkTable(phoneNumber: string): string {
   const tableName = getUserTableName(phoneNumber, "antilink");
   if (!createdTables.has(tableName)) {
-    db.exec(
+    db.run(
       `CREATE TABLE IF NOT EXISTS "${tableName}" (groupId TEXT PRIMARY KEY, mode INTEGER NOT NULL DEFAULT 0)`,
     );
     createdTables.add(tableName);
@@ -280,8 +276,7 @@ export function initializeSql(phoneNumber: string): void {
   log.debug(`Initialized tables for user ${phoneNumber}`);
 }
 
-export function deleteUserTables(phoneNumber: string): void {
-  const sanitizedPhone = sanitizePhoneNumber(phoneNumber);
+export function deleteUserTables(phone: string): void {
   const suffixes = [
     "auth",
     "messages",
@@ -303,11 +298,11 @@ export function deleteUserTables(phoneNumber: string): void {
     "antilink",
   ];
   for (const table of suffixes) {
-    const tableName = `user_${sanitizedPhone}_${table}`;
-    db.exec(`DROP TABLE IF EXISTS "${tableName}"`);
+    const tableName = `user_${phone}_${table}`;
+    db.run(`DROP TABLE IF EXISTS "${tableName}"`);
     createdTables.delete(tableName);
   }
-  log.debug(`Deleted tables for user ${phoneNumber}`);
+  log.debug(`Deleted tables for user ${phone}`);
 }
 
 function getGroupsTable(sessionId: string): string {
@@ -901,7 +896,7 @@ export const getMode = (sessionId: string): Mode => {
 
 export const set_prefix = (session_id: string, prefix?: string) => {
   const tableName = getPrefixTable(session_id);
-  db.exec(`DELETE FROM "${tableName}" WHERE id = 1`);
+  db.run(`DELETE FROM "${tableName}" WHERE id = 1`);
   execWithParams(`INSERT INTO "${tableName}" (id, prefix) VALUES (1, ?)`, [
     prefix || null,
   ]);
@@ -918,7 +913,7 @@ export const get_prefix = (session_id: string): string[] | null => {
 
 export const del_prefix = (session_id: string) => {
   const tableName = getPrefixTable(session_id);
-  db.exec(`DELETE FROM "${tableName}" WHERE id = 1`);
+  db.run(`DELETE FROM "${tableName}" WHERE id = 1`);
 };
 
 export const getMessage = async (sessionId: string, key: WAMessageKey) => {
@@ -1269,7 +1264,7 @@ export const getAllAntilink = (sessionId: string) => {
   return rows;
 };
 
-db.exec(`CREATE TABLE IF NOT EXISTS sessions (
+db.run(`CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
   phone_number TEXT NOT NULL,
   status INTEGER NOT NULL,
@@ -1279,7 +1274,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS sessions (
 
 import { StatusType, type Session } from "./auth/types";
 import { VALID_STATUSES } from "./auth/util";
-import type { SQLQueryBindings } from "@realastrox11/bunql";
+import type { SQLQueryBindings } from "bun:sqlite";
 
 export const createSession = (id: string, phoneNumber: string): Session => {
   // Check if session already exists to prevent overwriting other users' sessions

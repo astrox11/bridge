@@ -35,14 +35,13 @@ import {
   SessionErrorType,
   getAllSessions,
   getActivitySettings,
-  sanitizePhoneNumber,
   updateSessionUserInfo,
   UserPausedStatus,
   type Session,
 } from "..";
 import type { RuntimeSession } from "./types";
 
-const logger = MAIN_LOGGER({ level: "silent" });
+const logger = MAIN_LOGGER({ level: "trace" });
 
 class Client {
   private runtimeData: Map<string, RuntimeSession> = new Map();
@@ -55,15 +54,8 @@ class Client {
     return Client.instance;
   }
 
-  async create(id: string) {
-    const sanitizedId = sanitizePhoneNumber(id);
-
-    if (!sanitizedId) {
-      log.debug("Invalid phone number format:", id);
-      return { success: false, error: "Invalid phone number format" };
-    }
-
-    const sessionId = generateSessionId(sanitizedId);
+  async create(phone: string) {
+    const sessionId = generateSessionId(phone);
 
     log.debug("Creating new session:", sessionId);
 
@@ -75,8 +67,8 @@ class Client {
       };
     }
 
-    initializeSql(sanitizedId);
-    log.debug("Initialized user tables for:", sanitizedId);
+    initializeSql(phone);
+    log.debug("Created session:", phone);
 
     const runtime: RuntimeSession = {
       client: null,
@@ -85,13 +77,13 @@ class Client {
     this.runtimeData.set(sessionId, runtime);
 
     try {
-      const code = await this.init(sessionId, sanitizedId, runtime, true);
-      createSession(sessionId, sanitizedId);
+      const code = await this.init(sessionId, phone, runtime, true);
+      createSession(sessionId, phone);
       log.debug("Session created:", sessionId);
       return { success: true, code, id: sessionId };
     } catch (error) {
       this.runtimeData.delete(sessionId);
-      deleteUserTables(sanitizedId);
+      deleteUserTables(phone);
 
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
@@ -101,9 +93,162 @@ class Client {
     }
   }
 
+  async delete(id: string): Promise<{ success: boolean; error?: string }> {
+    const dbSession = this.get(id);
+    if (!dbSession) {
+      return { success: false, error: SessionErrorType.SessionNotFound };
+    }
+
+    const sessionId = dbSession.id;
+    const phoneNumber = dbSession.phone_number;
+
+    const runtime = this.runtimeData.get(sessionId);
+    if (runtime?.client) {
+      try {
+        await runtime.client.logout();
+      } catch (error) {
+        log.debug(`Error logging out session ${sessionId}:`, error);
+      }
+      runtime.client = null;
+    }
+
+    this.runtimeData.delete(sessionId);
+    deleteSession(sessionId);
+    deleteUserTables(phoneNumber);
+
+    log.info(`Session ${sessionId} deleted`);
+    return { success: true };
+  }
+
+  async pause(id: string): Promise<{ success: boolean; error?: string }> {
+    const dbSession = this.get(id);
+    if (!dbSession) {
+      return { success: false, error: "Session not found" };
+    }
+
+    const sessionId = dbSession.id;
+
+    if (UserPausedStatus(dbSession.status)) {
+      return { success: false, error: SessionErrorType.SessionPaused };
+    }
+
+    log.debug(`Pausing session ${sessionId}...`);
+
+    updateSessionStatus(sessionId, StatusType.PausedUser);
+
+    const runtime = this.runtimeData.get(sessionId);
+    if (runtime?.client) {
+      try {
+        runtime.client.end(undefined);
+      } catch (error) {
+        log.debug(`Error ending client for session ${sessionId}:`, error);
+      }
+      runtime.client = null;
+    }
+
+    log.info(`Session ${sessionId} paused`);
+    return { success: true };
+  }
+
+  async resume(id: string): Promise<{ success: boolean; error?: string }> {
+    const dbSession = this.get(id);
+    if (!dbSession) {
+      return { success: false, error: "Session not found" };
+    }
+
+    const sessionId = dbSession.id;
+
+    if (
+      dbSession.status === StatusType.Connected ||
+      dbSession.status === StatusType.Active ||
+      dbSession.status === StatusType.Connecting
+    ) {
+      return { success: false, error: SessionErrorType.SessionAlreadyActive };
+    }
+
+    log.debug(`Resuming session ${sessionId}...`);
+
+    let runtime = this.runtimeData.get(sessionId);
+    if (!runtime) {
+      runtime = {
+        client: null,
+        msgRetryCounterCache: new NodeCache() as CacheStore,
+      };
+      this.runtimeData.set(sessionId, runtime);
+    }
+
+    if (runtime.client) {
+      try {
+        runtime.client.end(undefined);
+      } catch (error) {
+        log.debug(
+          `Error ending existing client for session ${sessionId}:`,
+          error,
+        );
+      }
+      runtime.client = null;
+    }
+
+    updateSessionStatus(sessionId, StatusType.Connecting);
+
+    try {
+      await this.init(sessionId, dbSession.phone_number, runtime, false);
+      log.info(`Session ${sessionId} resumed`);
+      return { success: true };
+    } catch (error) {
+      log.error(`Failed to resume session ${sessionId}:`, error);
+      updateSessionStatus(sessionId, StatusType.PausedNetwork);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to resume session",
+      };
+    }
+  }
+
+  async restore(): Promise<void> {
+    const sessions = getAllSessions();
+
+    const sessionsToRestore = sessions.filter(
+      (sessionRecord) =>
+        sessionRecord.status !== StatusType.Inactive &&
+        sessionRecord.status !== StatusType.PausedUser,
+    );
+
+    if (sessionsToRestore.length === 0) {
+      return;
+    }
+
+    const restorationPromises = sessionsToRestore.map(async (sessionRecord) => {
+      log.info(`Restoring session ${sessionRecord.id}...`);
+
+      initializeSql(sessionRecord.phone_number);
+
+      const runtime: RuntimeSession = {
+        client: null,
+        msgRetryCounterCache: new NodeCache() as CacheStore,
+      };
+      this.runtimeData.set(sessionRecord.id, runtime);
+
+      try {
+        await this.init(
+          sessionRecord.id,
+          sessionRecord.phone_number,
+          runtime,
+          false,
+        );
+      } catch (error) {
+        log.error(`Failed to restore session ${sessionRecord.id}:`, error);
+        updateSessionStatus(sessionRecord.id, StatusType.Disconnected);
+      }
+    });
+
+    await Promise.allSettled(restorationPromises);
+  }
+
   private async init(
     sessionId: string,
-    phoneNumber: string,
+    phone: string,
     runtime: RuntimeSession,
     requestPairingCode: boolean,
   ): Promise<string | undefined> {
@@ -155,15 +300,39 @@ class Client {
     if (requestPairingCode && !sock.authState.creds.registered) {
       log.debug("Requesting pairing code for session:", sessionId);
       await delay(10000);
-      pairingCode = await sock.requestPairingCode(phoneNumber);
+      pairingCode = await sock.requestPairingCode(phone);
       log.info(
         `Session ${sessionId} pairing code: ${pairingCode.slice(0, 4)}-${pairingCode.slice(4)}`,
       );
     }
 
-    this.events(sessionId, phoneNumber, runtime, sock, saveCreds);
+    this.events(sessionId, phone, runtime, sock, saveCreds);
 
     return pairingCode;
+  }
+
+  list(extend?: boolean): Session[] {
+    if (extend) {
+      const dbSessions = getAllSessions();
+
+      return dbSessions.map((dbSession) => {
+        const runtime = this.runtimeData.get(dbSession.id);
+        return {
+          ...dbSession,
+          user_info: runtime?.client?.user ?? dbSession.user_info ?? null,
+        };
+      });
+    } else {
+      return getAllSessions();
+    }
+  }
+
+  get(id: string): Session | null {
+    return getSession(id);
+  }
+
+  getClient(sessionId: string): WASocket | null {
+    return this.runtimeData.get(sessionId)?.client ?? null;
   }
 
   private events(
@@ -351,183 +520,6 @@ class Client {
         }
       }
     });
-  }
-
-  async delete(id: string): Promise<{ success: boolean; error?: string }> {
-    const dbSession = this.get(id);
-    if (!dbSession) {
-      return { success: false, error: SessionErrorType.SessionNotFound };
-    }
-
-    const sessionId = dbSession.id;
-    const phoneNumber = dbSession.phone_number;
-
-    const runtime = this.runtimeData.get(sessionId);
-    if (runtime?.client) {
-      try {
-        await runtime.client.logout();
-      } catch (error) {
-        log.debug(`Error logging out session ${sessionId}:`, error);
-      }
-      runtime.client = null;
-    }
-
-    this.runtimeData.delete(sessionId);
-    deleteSession(sessionId);
-    deleteUserTables(phoneNumber);
-
-    log.info(`Session ${sessionId} deleted`);
-    return { success: true };
-  }
-  async pause(id: string): Promise<{ success: boolean; error?: string }> {
-    const dbSession = this.get(id);
-    if (!dbSession) {
-      return { success: false, error: "Session not found" };
-    }
-
-    const sessionId = dbSession.id;
-
-    if (UserPausedStatus(dbSession.status)) {
-      return { success: false, error: SessionErrorType.SessionPaused };
-    }
-
-    log.debug(`Pausing session ${sessionId}...`);
-
-    updateSessionStatus(sessionId, StatusType.PausedUser);
-
-    const runtime = this.runtimeData.get(sessionId);
-    if (runtime?.client) {
-      try {
-        runtime.client.end(undefined);
-      } catch (error) {
-        log.debug(`Error ending client for session ${sessionId}:`, error);
-      }
-      runtime.client = null;
-    }
-
-    log.info(`Session ${sessionId} paused`);
-    return { success: true };
-  }
-
-  async resume(id: string): Promise<{ success: boolean; error?: string }> {
-    const dbSession = this.get(id);
-    if (!dbSession) {
-      return { success: false, error: "Session not found" };
-    }
-
-    const sessionId = dbSession.id;
-
-    if (
-      dbSession.status === StatusType.Connected ||
-      dbSession.status === StatusType.Active ||
-      dbSession.status === StatusType.Connecting
-    ) {
-      return { success: false, error: SessionErrorType.SessionAlreadyActive };
-    }
-
-    log.debug(`Resuming session ${sessionId}...`);
-
-    let runtime = this.runtimeData.get(sessionId);
-    if (!runtime) {
-      runtime = {
-        client: null,
-        msgRetryCounterCache: new NodeCache() as CacheStore,
-      };
-      this.runtimeData.set(sessionId, runtime);
-    }
-
-    if (runtime.client) {
-      try {
-        runtime.client.end(undefined);
-      } catch (error) {
-        log.debug(
-          `Error ending existing client for session ${sessionId}:`,
-          error,
-        );
-      }
-      runtime.client = null;
-    }
-
-    updateSessionStatus(sessionId, StatusType.Connecting);
-
-    try {
-      await this.init(sessionId, dbSession.phone_number, runtime, false);
-      log.info(`Session ${sessionId} resumed`);
-      return { success: true };
-    } catch (error) {
-      log.error(`Failed to resume session ${sessionId}:`, error);
-      updateSessionStatus(sessionId, StatusType.PausedNetwork);
-      return {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to resume session",
-      };
-    }
-  }
-
-  async restore_all(): Promise<void> {
-    const sessions = getAllSessions();
-
-    const sessionsToRestore = sessions.filter(
-      (sessionRecord) =>
-        sessionRecord.status !== StatusType.Inactive &&
-        sessionRecord.status !== StatusType.PausedUser,
-    );
-
-    if (sessionsToRestore.length === 0) {
-      return;
-    }
-
-    const restorationPromises = sessionsToRestore.map(async (sessionRecord) => {
-      log.info(`Restoring session ${sessionRecord.id}...`);
-
-      initializeSql(sessionRecord.phone_number);
-
-      const runtime: RuntimeSession = {
-        client: null,
-        msgRetryCounterCache: new NodeCache() as CacheStore,
-      };
-      this.runtimeData.set(sessionRecord.id, runtime);
-
-      try {
-        await this.init(
-          sessionRecord.id,
-          sessionRecord.phone_number,
-          runtime,
-          false,
-        );
-      } catch (error) {
-        log.error(`Failed to restore session ${sessionRecord.id}:`, error);
-        updateSessionStatus(sessionRecord.id, StatusType.Disconnected);
-      }
-    });
-
-    await Promise.allSettled(restorationPromises);
-  }
-
-  listExtended(): Session[] {
-    const dbSessions = getAllSessions();
-
-    return dbSessions.map((dbSession) => {
-      const runtime = this.runtimeData.get(dbSession.id);
-      return {
-        ...dbSession,
-        user_info: runtime?.client?.user ?? dbSession.user_info ?? null,
-      };
-    });
-  }
-
-  list(): Session[] {
-    return getAllSessions();
-  }
-
-  get(idOrPhone: string): Session | null {
-    const i = sanitizePhoneNumber(idOrPhone);
-    return getSession(i || idOrPhone);
-  }
-
-  getClient(sessionId: string): WASocket | null {
-    return this.runtimeData.get(sessionId)?.client ?? null;
   }
 }
 

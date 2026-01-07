@@ -5,9 +5,6 @@ import { join } from "path";
 import { randomBytes } from "crypto";
 import { execSync, spawn } from "child_process";
 import config from "../../config";
-import parsePhoneNumberFromString, {
-  isValidPhoneNumber,
-} from "libphonenumber-js";
 import { addContact } from "../sql";
 
 export const COLORS = {
@@ -144,19 +141,6 @@ export function toSmallCaps(text: string): string {
       return code >= 65 && code <= 90 ? smallCaps[code - 65] : c;
     })
     .join("");
-}
-
-export function sanitizePhoneNumber(pn: string): string | null {
-  let i = pn.replace(/[^\d+]/g, "");
-
-  if (!i.startsWith("+")) i = "+" + i;
-
-  if (!isValidPhoneNumber(i)) return null;
-
-  const parsed = parsePhoneNumberFromString(i);
-  if (!parsed?.number) return null;
-
-  return parsed.number.replace("+", "");
 }
 
 export function handleLidMapping(

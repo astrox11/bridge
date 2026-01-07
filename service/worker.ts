@@ -14,7 +14,7 @@ import {
 } from ".";
 import config from "../config";
 
-const GO_SERVER = process.env.GO_SERVER || "http://127.0.0.1:8000";
+const GO_SERVER = config.SERVER;
 
 log.info("Starting WhatsApp service worker...");
 
@@ -79,7 +79,7 @@ async function pushStatsToGo() {
   }
 
   try {
-    const sessions = sessionManager.listExtended();
+    const sessions = sessionManager.list(true);
     const activeSessions = sessions.filter(
       (s) =>
         s.status === StatusType.Connected || s.status === StatusType.Active,
@@ -114,7 +114,9 @@ async function pushStatsToGo() {
 
     if (res.status >= 500) {
       consecutiveErrors++;
-      log.warn(`Stats push failed with status ${res.status} (error #${consecutiveErrors})`);
+      log.warn(
+        `Stats push failed with status ${res.status} (error #${consecutiveErrors})`,
+      );
       await reportNetworkError();
     } else {
       await reportNetworkSuccess();
@@ -132,7 +134,7 @@ async function handleGoRequest(
 ): Promise<unknown> {
   switch (action) {
     case "getSessions":
-      return sessionManager.listExtended().map((s) => ({
+      return sessionManager.list(true).map((s) => ({
         id: s.id,
         phone_number: s.phone_number,
         status: s.status,
@@ -405,7 +407,7 @@ const server = Bun.serve({
 log.info(`WhatsApp service worker listening on port ${server.port}`);
 
 sessionManager
-  .restore_all()
+  .restore()
   .then(() => {
     log.info("Session restoration complete");
     pushStatsToGo();
