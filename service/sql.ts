@@ -1283,16 +1283,12 @@ import type { SQLQueryBindings } from "@realastrox11/bunql";
 
 export const createSession = (id: string, phoneNumber: string): Session => {
   // Check if session already exists to prevent overwriting other users' sessions
-  const existingById = bunql.query<{ id: string }>(
-    `SELECT id FROM sessions WHERE id = ?`,
-    [id],
-  );
-  const existingByPhone = bunql.query<{ id: string }>(
-    `SELECT id FROM sessions WHERE phone_number = ?`,
-    [phoneNumber],
+  const existing = bunql.query<{ id: string }>(
+    `SELECT id FROM sessions WHERE id = ? OR phone_number = ?`,
+    [id, phoneNumber],
   );
 
-  if (existingById.length > 0 || existingByPhone.length > 0) {
+  if (existing.length > 0) {
     log.warn(
       `Session creation blocked: session already exists for id=${id} or phone=${phoneNumber}`,
     );
