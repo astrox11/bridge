@@ -31,12 +31,23 @@ func (sm *SessionManager) monitorLogs(w *Worker, reader io.ReadCloser) {
 
 func (sm *SessionManager) handleTaggedData(w *Worker, data GoData) {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	switch data.Tag {
 	case "PAIRING_CODE":
 		w.PairingCode = fmt.Sprintf("%v", data.Payload["code"])
+		// We stay in 'pairing' status, but now we have the code
 	case "CONNECTION_UPDATE":
-		w.Status = fmt.Sprintf("%v", data.Payload["status"])
+		newStatus := fmt.Sprintf("%v", data.Payload["status"])
+		switch newStatus {
+		case "connected":
+			w.Status = "active"
+			w.PairingCode = "" // Clear the code once connected
+		case "logged_out":
+			w.Status = "logged_out"
+		default:
+			w.Status = newStatus
+		}
 	}
+	w.mu.Unlock()
+
+	sm.SaveState(w)
 }

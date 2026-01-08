@@ -1,10 +1,12 @@
 package manager
 
 import (
-	"bufio"
+	"api/database"
 	"fmt"
-	"os"
-	"strings"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/mem"
+	"os/exec"
 	"sync"
 )
 
@@ -69,45 +71,82 @@ func (sm *SessionManager) TogglePause(phone string, pause bool) error {
 	}
 	w.mu.Unlock()
 
-	sm.SaveState()
+	sm.SaveState(w)
 	return nil
 }
 
-func (sm *SessionManager) SaveState() {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
+func (sm *SessionManager) SaveState(w *Worker) {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
 
-	file, _ := os.Create("sessions.txt")
-	defer file.Close()
+	// This looks for a session with the phone number.
+	// If found, it updates; if not, it creates.
+	err := database.DB.Where(database.Session{Phone: w.Phone}).
+		Assign(database.Session{
+			Status:      w.Status,
+			PairingCode: w.PairingCode,
+		}).
+		FirstOrCreate(&database.Session{}).Error
 
-	for phone, w := range sm.Workers {
-		w.mu.RLock()
-		fmt.Fprintf(file, "%s:%s\n", phone, w.Status)
-		w.mu.RUnlock()
+	if err != nil {
+		fmt.Printf("Error saving state to DB: %v\n", err)
 	}
 }
 
-func (sm *SessionManager) LoadFromDisk() {
-	file, err := os.Open("sessions.txt")
-	if err != nil {
-		return
-	}
-	defer file.Close()
+func (sm *SessionManager) ResetSession(phone string) error {
+	sm.mu.Lock()
+	w, ok := sm.Workers[phone]
+	sm.mu.Unlock()
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		parts := strings.Split(scanner.Text(), ":")
-		if len(parts) == 2 {
-			phone, status := parts[0], parts[1]
-			// Auto-restart if it wasn't paused or logged out
-			if status != "paused" && status != "logged_out" {
-				sm.StartInstance(phone, "starting")
-			} else {
-				// Still put it in memory so the UI sees it as paused
-				sm.mu.Lock()
-				sm.Workers[phone] = &Worker{Phone: phone, Status: status, IsRunning: false}
-				sm.mu.Unlock()
+	if ok && w.Process != nil && w.Process.Process != nil {
+		w.Process.Process.Kill()
+	}
+
+	cmd := exec.Command("redis-cli", "DEL", fmt.Sprintf("sessions:%s", phone))
+	return cmd.Run()
+}
+
+func (sm *SessionManager) SyncFromDB() {
+	var sessions []database.Session
+	// Load everything that isn't logged out
+	database.DB.Where("status != ?", "logged_out").Find(&sessions)
+
+	for _, s := range sessions {
+		if s.Status != "paused" {
+			// Auto-start active sessions
+			sm.StartInstance(s.Phone, "starting")
+		} else {
+			// Keep paused sessions in memory
+			sm.mu.Lock()
+			sm.Workers[s.Phone] = &Worker{
+				Phone:  s.Phone,
+				Status: "paused",
 			}
+			sm.mu.Unlock()
 		}
+	}
+}
+
+type SystemStats struct {
+	CPU    float64 `json:"cpu"`
+	Memory float64 `json:"memory"`
+	Disk   float64 `json:"disk"`
+}
+
+// GetSystemStats collects all stats once
+func GetSystemStats() SystemStats {
+	c, _ := cpu.Percent(0, false)
+	m, _ := mem.VirtualMemory()
+	d, _ := disk.Usage("C:\\") // Use "/" for Linux
+
+	var cpuVal float64
+	if len(c) > 0 {
+		cpuVal = c[0]
+	}
+
+	return SystemStats{
+		CPU:    cpuVal,
+		Memory: m.UsedPercent,
+		Disk:   d.UsedPercent,
 	}
 }

@@ -26,6 +26,12 @@ func (w *Worker) GetData() map[string]any {
 	}
 }
 
+func (w *Worker) GetStatus() string {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	return w.Status
+}
+
 func (sm *SessionManager) supervisor(w *Worker) {
 	for {
 		w.mu.RLock()

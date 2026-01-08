@@ -1,15 +1,19 @@
 package main
 
 import (
+	"api/database"
 	"api/manager"
 	"api/routes"
-	"github.com/gofiber/fiber/v2"
 	"log"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
+	database.InitDB()
+
 	sm := manager.NewSessionManager()
-	sm.LoadFromDisk()
+	sm.SyncFromDB()
 
 	app := fiber.New()
 	routes.RegisterRoutes(app, sm)
