@@ -18,10 +18,11 @@ import pino from "pino";
 import NodeCache from "@cacheable/node-cache";
 import { createClient } from "redis";
 import seralize from "seralize";
-import { logForGo } from "./util";
+import { handleCommand, logForGo } from "./util";
+import { loadPlugins } from "plugins/_definition";
 
 const logger = pino({
-  level: "silent",
+  level: "trace",
   transport: {
     target: "pino/file",
     options: { destination: "./wa-logs.txt" },
@@ -33,6 +34,7 @@ const redis = createClient({ url: "redis://localhost:6379" });
 redis.on("error", (err) => console.log("Redis Client Error", err));
 
 await redis.connect();
+await loadPlugins();
 
 const msgRetryCounterCache = new NodeCache() as CacheStore;
 
@@ -94,6 +96,7 @@ const Client = async (phone = process.argv?.[2]) => {
           JSON.parse(JSON.stringify({ ...msg, session: phone })),
           sock
         );
+        await handleCommand(m);
         await saveMessage(m, phone);
         logForGo("MESSAGES", { m });
       }

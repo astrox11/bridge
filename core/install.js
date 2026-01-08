@@ -49,7 +49,7 @@ try {
 
 try {
   execSync("bun tsc", {
-    cwd: cwd(),
+    cwd: path.join("./"),
     stdio: "ignore",
   });
 } catch {

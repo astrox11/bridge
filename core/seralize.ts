@@ -8,7 +8,7 @@ import {
   type WASocket,
 } from "baileys";
 
-export default async (
+const serialize = async (
   msg: WAMessage & { session: string },
   client: WASocket
 ) => {
@@ -31,6 +31,7 @@ export default async (
     : key.participant;
 
   return {
+    chat: key.remoteJid, 
     key,
     message,
     type,
@@ -60,5 +61,9 @@ export default async (
               ?.viewOnce,
           }
         : undefined,
+    client,
   };
 };
+
+export type SerializedMessage = Awaited<ReturnType<typeof serialize>>;
+export default serialize;
