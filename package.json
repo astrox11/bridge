@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@cacheable/node-cache": "^1.7.6"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "core",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "latest"
+  },
+  "dependencies": {
+    "baileys": "https://github.com/WhiskeySockets/Baileys",
+    "cheerio": "^1.1.2",
+    "redis": "^5.10.0",
+    "whatsapp-rust-bridge": "https://github.com/WhiskeySockets/whatsapp-rust-bridge"
+  },
+  "scripts": {
+    "postinstall": "bun run install.js"
+  }
+}
