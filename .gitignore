@@ -66,8 +66,7 @@ build/Release/
 .pnp.*
 .tern-port
 
-# Environment files
-.env
+
 .env.*.local
 .env.local
 

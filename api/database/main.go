@@ -2,10 +2,9 @@ package database
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
+	"log"
 )
 
 var DB *gorm.DB
@@ -15,17 +14,23 @@ func InitDB() {
 	path := "../core/whatsaly_dev.sqlite"
 
 	DB, err = gorm.Open(sqlite.Open(path), &gorm.Config{})
-
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
 	DB.Exec("PRAGMA journal_mode=WAL;")
 
-	fmt.Printf("Connected to shared database at %s (Pure-Go Driver)\n", path)
-
-	err = DB.AutoMigrate(&Session{})
+	err = DB.AutoMigrate(&Session{}, &UserSettings{})
 	if err != nil {
 		log.Fatal("Migration failed:", err)
 	}
+
+	var count int64
+	DB.Model(&Session{}).Count(&count)
+	if count == 0 {
+		DB.Exec("DELETE FROM sqlite_sequence WHERE name = 'sessions'")
+		fmt.Println("Sessions table empty, reset ID counter to 1")
+	}
+
+	fmt.Println("Database initialized with UserSettings table and defaults")
 }

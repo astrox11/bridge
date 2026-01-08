@@ -6,7 +6,7 @@ import (
 )
 
 type Session struct {
-	ID          uint   `gorm:"primaryKey"`
+	ID          int64  `gorm:"primaryKey;autoIncrement:false"`
 	Phone       string `gorm:"uniqueIndex;not null"`
 	Status      string `gorm:"default:'starting'"` // active, paused, logged_out
 	PairingCode string
