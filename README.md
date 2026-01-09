@@ -5,12 +5,9 @@ Whatsaly is an open-source WhatsApp client for automated messaging, event schedu
 ## Features
 
 - Multi-session support
-- Pairing authentication
 - Automated session management
 - Live metrics utility
-- Debug mode
 - Go server orchestration with process management
-- SQLite database managed by Go
 - Server-Sent Events for real-time updates
 
 ## Setup Instructions
@@ -21,7 +18,7 @@ Ensure these are installed on your system.
 
 - [Go](https://golang.org)
 - [Bun.js](https://bun.sh)
-- [FFmpeg](https://ffmpeg.org)
+- [Ffmpeg](https://ffmpeg.org)
 - [libwebp](https://developers.google.com/speed/webp)
 
 #### Installation
@@ -37,7 +34,7 @@ go run .
 
 ## Contributing
 
-Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
+Please read the [Guidelines](CONTRIBUTING.md) before submitting pull requests.
 
 ## Acknowledgements
 
