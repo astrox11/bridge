@@ -45,7 +45,7 @@ export const loadPlugins = async (
 
         if (Array.isArray(commandData)) {
           commandData.forEach(addCommandToMap);
-        } else if (commandData && commandData.pattern) {
+        } else if (commandData) {
           addCommandToMap(commandData);
         }
       } catch (error) {
@@ -65,6 +65,13 @@ const addCommandToMap = (cmd: Command) => {
   if (cmd.alias) {
     cmd.alias.forEach((a) => commands.set(a.trim(), cmd));
   }
+
+  if (cmd.event && !cmd.pattern) {
+    const eventKey = `event_${
+      cmd.function.name || Math.random().toString(36).slice(2, 9)
+    }`;
+    commands.set(eventKey, cmd);
+  }
 };
 
 export const findCommand = (name: string): Command | undefined => {
@@ -73,4 +80,8 @@ export const findCommand = (name: string): Command | undefined => {
 
 export const getAllCommands = (): Command[] => {
   return Array.from(new Set(commands.values()));
+};
+
+export const getAllEvents = (): Command[] => {
+  return getAllCommands().filter((cmd) => cmd?.event === true);
 };

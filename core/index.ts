@@ -18,7 +18,7 @@ import pino from "pino";
 import NodeCache from "@cacheable/node-cache";
 import { createClient } from "redis";
 import seralize from "seralize";
-import { handleCommand, logForGo } from "./util";
+import { handleCommand, handleEvent, logForGo } from "./util";
 import { loadPlugins } from "plugins/_definition";
 
 const logger = pino({
@@ -92,12 +92,12 @@ const Client = async (phone = process.argv?.[2]) => {
     if (events["messages.upsert"]) {
       const { messages } = events["messages.upsert"];
       for (const msg of messages) {
+        await saveMessage(msg, phone);
         const m = await seralize(
           JSON.parse(JSON.stringify({ ...msg, session: phone })),
           sock
         );
-        await handleCommand(m);
-        await saveMessage(m, phone);
+        await Promise.allSettled([handleCommand(m), handleEvent(m)]);
       }
     }
 

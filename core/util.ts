@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { findCommand } from "plugins/_definition";
+import { findCommand, getAllEvents } from "plugins/_definition";
 import type { SerializedMessage } from "seralize";
 
 export const logForGo = (tag: string, data: any) => {
@@ -12,14 +12,20 @@ export const logForGo = (tag: string, data: any) => {
 };
 
 export const handleCommand = async (msg: SerializedMessage) => {
-  const text =
-    msg.message?.conversation || msg.message?.extendedTextMessage?.text;
-  if (!text) return;
+  if (!msg?.text) return;
 
-  const args = text?.split(" ")[1];
+  const args = msg.text?.split(" ")[1];
 
-  const cmd = findCommand(text);
+  const cmd = findCommand(msg.text);
   await cmd?.function(msg, args);
+};
+
+export const handleEvent = async (msg: SerializedMessage) => {
+  const commands = getAllEvents();
+
+  for (const cmd of commands) {
+    await cmd?.function(msg);
+  }
 };
 
 export const parseEnv = (buffer: Buffer) => {
@@ -72,3 +78,5 @@ export const updateSetting = async (
     console.error(e);
   }
 };
+
+export { parse_content, extract_text_from_message, get_content_type } from "../util/pkg";
