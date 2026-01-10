@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
-import { findCommand, getAllEvents } from "plugins/_definition";
-import type { SerializedMessage } from "seralize";
+import { findCommand, getAllEvents } from "./plugins/_definition";
+import type { SerializedMessage } from "./seralize";
 
 export const logForGo = (tag: string, data: any) => {
   const output = {
@@ -79,4 +79,8 @@ export const updateSetting = async (
   }
 };
 
-export { parse_content, extract_text_from_message, get_content_type } from "../util/pkg";
+export {
+  parse_content,
+  extract_text_from_message,
+  get_content_type,
+} from "../util/pkg/util.js";

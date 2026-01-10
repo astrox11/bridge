@@ -6,7 +6,7 @@ import {
   cacheGroupMetadata,
   syncGroupMetadata,
   syncGroupParticipantsToContactList,
-} from "auth";
+} from "./auth";
 import makeWASocket, {
   delay,
   DisconnectReason,
@@ -17,9 +17,9 @@ import makeWASocket, {
 import pino from "pino";
 import NodeCache from "@cacheable/node-cache";
 import { createClient } from "redis";
-import seralize from "seralize";
+import seralize from "./seralize";
 import { handleCommand, handleEvent, logForGo } from "./util";
-import { loadPlugins } from "plugins/_definition";
+import { loadPlugins } from "./plugins/_definition";
 
 const logger = pino({
   level: "trace",

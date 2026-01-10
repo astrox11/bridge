@@ -1,4 +1,4 @@
-import { getAlternateId } from "auth";
+import { getAlternateId } from "./auth";
 import {
   jidNormalizedUser,
   normalizeMessageContent,

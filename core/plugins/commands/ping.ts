@@ -1,4 +1,4 @@
-import type { Command } from "../_definition";
+import type { Command } from "../";
 
 export default {
   pattern: "ping",
