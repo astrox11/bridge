@@ -14,3 +14,7 @@ type Session struct {
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
 }
+
+func ClearSession(db *gorm.DB, phone string) error {
+	return db.Where("phone = ?", phone).Delete(&Session{}).Error
+}
