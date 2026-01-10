@@ -170,4 +170,6 @@ func CastRoutes(app *fiber.App, sm *manager.SessionManager) {
 
 		return nil
 	})
+
+	UtilRoutes(app)
 }
