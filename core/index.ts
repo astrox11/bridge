@@ -20,6 +20,7 @@ import { createClient } from "redis";
 import seralize from "./seralize";
 import { handleCommand, handleEvent, logForGo } from "./util";
 import { loadPlugins } from "./plugins/_definition";
+import serialize from "./seralize";
 
 const logger = pino({
   level: "trace",
@@ -93,10 +94,9 @@ const Client = async (phone = process.argv?.[2]) => {
       const { messages } = events["messages.upsert"];
       for (const msg of messages) {
         await saveMessage(msg, phone);
-        const m = await seralize(
-          JSON.parse(JSON.stringify({ ...msg, session: phone })),
-          sock
-        );
+
+        const msgCopy = structuredClone(msg);
+        const m = await serialize({ ...msgCopy, session: phone }, sock);
         await Promise.allSettled([handleCommand(m), handleEvent(m)]);
       }
     }
