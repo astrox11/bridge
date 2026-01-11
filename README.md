@@ -26,20 +26,24 @@ Ensure these are installed on your system.
 
 The easiest way to get Whatsaly running is using Docker Compose. This packages the Go core and the Bun environment into a single deployment.
 
-**Clone the repository:**
+1. **Clone the repository:**
 
 ```bash
 git clone https://github.com/astrox11/Whatsaly
 cd Whatsaly
 ```
 
-**Start the container:**
+2. **Start the container:**
 
 ```bash
 docker-compose up -d
 ```
 
-Access the application: The API will be available at http://localhost:8080 (or your configured port).
+3. **Check container logs:**
+
+```bash
+docker-compose logs -f whatsaly
+```
 
 ## Contributing
 
