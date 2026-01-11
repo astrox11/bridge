@@ -59,7 +59,7 @@ const Client = async (phone = process.argv?.[2]) => {
   if (!sock.authState?.creds?.registered) {
     await delay(5000);
     console.log("Client not registered");
-    const code = await sock.requestPairingCode(phone, "12345678");
+    const code = await sock.requestPairingCode(phone);
     logForGo("PAIRING_CODE", { code });
   }
 
