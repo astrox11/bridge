@@ -19,3 +19,4 @@ dev.sqlite-shm
 dev.sqlite-wal
 
 /util/target
+test.ts

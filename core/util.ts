@@ -1,6 +1,6 @@
-import { readFileSync } from "fs";
 import { findCommand, getAllEvents } from "./plugins/_definition";
 import type { SerializedMessage } from "./seralize";
+import config from "../config"
 
 export const logForGo = (tag: string, data: any) => {
   const output = {
@@ -47,35 +47,40 @@ export const parseEnv = (buffer: Buffer) => {
   return result;
 };
 
-export const updateSetting = async (
-  phone: string,
-  key: string,
-  value: string | number
+export const makeQuery = async (
+  path: string,
+  type: "POST" | "GET",
+  body?: Record<string, any>
 ) => {
-  const env = readFileSync("../.env");
+  const PORT = config.PORT || 8080;
+  const BASE_URL = `http://127.0.0.1:${PORT}/api`;
+
   try {
-    const response = await fetch(
-      `http://127.0.0.1:${
-        parseEnv(env)["PORT"] || "8080"
-      }/api/settings/${phone}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ key, value }),
-      }
-    );
+    const options: RequestInit = {
+      method: type,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
 
-    await response.json();
-
-    if (response.ok) {
-      return true;
-    } else {
-      return false;
+    if (type === "POST" && body) {
+      options.body = JSON.stringify(body);
     }
-  } catch (e) {
-    console.error(e);
+
+    const res = await fetch(`${BASE_URL}/${path.replace(/^\//, "")}`, options);
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return await res.json();
+    }
+
+    return null;
+  } catch (error) {
+    return null;
   }
 };
 

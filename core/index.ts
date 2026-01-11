@@ -17,7 +17,6 @@ import makeWASocket, {
 import pino from "pino";
 import NodeCache from "@cacheable/node-cache";
 import { createClient } from "redis";
-import seralize from "./seralize";
 import { handleCommand, handleEvent, logForGo } from "./util";
 import { loadPlugins } from "./plugins/_definition";
 import serialize from "./seralize";
