@@ -6,7 +6,11 @@ import {
   type WAMessage,
   type WASocket,
 } from "baileys";
-import { extract_text_from_message, get_content_type } from "./util";
+import {
+  extract_text_from_message,
+  get_content_type,
+  parse_content,
+} from "./util";
 
 const serialize = async (
   msg: WAMessage & { session: string },
@@ -43,6 +47,11 @@ const serialize = async (
     isGroup,
     messageTimestamp,
     text: extract_text_from_message(message),
+    image: Boolean(message?.imageMessage),
+    video: Boolean(message?.videoMessage),
+    audio: Boolean(message?.audioMessage),
+    document: Boolean(message?.documentMessage),
+    sticker: Boolean(message?.stickerMessage),
     quoted:
       quoted && quotedMessage && quotedType
         ? {
@@ -74,6 +83,57 @@ const serialize = async (
         { text },
         { quoted: this?.quoted || msg }
       );
+    },
+    send: async function (i: any) {
+      const content = await parse_content(i);
+
+      if (content?.mimeType == "text/plain") {
+        const m = (await client.sendMessage(this.chat!, {
+          text: content.content,
+        })) as WAMessage;
+        return await serialize({ ...m, session: this.session }, client);
+      }
+
+      if (content?.mimeType.startsWith("image/")) {
+        const m = (await client.sendMessage(this.chat!, {
+          image: { url: content.content },
+        })) as WAMessage;
+        return await serialize({ ...m, session: this.session }, client);
+      }
+
+      if (content?.mimeType.startsWith("video/")) {
+        const m = (await client.sendMessage(this.chat!, {
+          video: { url: content.content },
+        })) as WAMessage;
+        return await serialize({ ...m, session: this.session }, client);
+      }
+
+      if (content?.mimeType.startsWith("audio/")) {
+        const m = (await client.sendMessage(this.chat!, {
+          audio: { url: content.content },
+        })) as WAMessage;
+        return await serialize({ ...m, session: this.session }, client);
+      }
+    },
+    edit: async function (text: string) {
+      if (this.image) {
+        return await this.client.sendMessage(this.chat!, {
+          edit: this.key,
+          image: { url: "" },
+          text,
+        });
+      } else if (this.video) {
+        return await this.client.sendMessage(this.chat!, {
+          edit: this.key,
+          video: { url: "" },
+          text,
+        });
+      } else {
+        return await this.client.sendMessage(this.chat!, {
+          edit: this.key,
+          text,
+        });
+      }
     },
     client,
   };

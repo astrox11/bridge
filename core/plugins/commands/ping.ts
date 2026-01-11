@@ -6,14 +6,9 @@ export default {
   fromMe: false,
   function: async (message) => {
     const start = Date.now();
-    const msg = await message.client.sendMessage(message.chat!, {
-      text: "Pong!",
-    });
+    const msg = await message.send("Pong!");
     const end = Date.now();
     const latency = end - start;
-    await message.client.sendMessage(message.chat!, {
-      edit: msg?.key,
-      text: `Latency: ${latency} ms`,
-    });
+    await msg?.edit(`\`\`\`${latency} ms\`\`\``);
   },
 } satisfies Command;
