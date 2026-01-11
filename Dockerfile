@@ -1,4 +1,4 @@
-FROM oven/bun:1.0-slim
+FROM oven/bun:latest
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -7,18 +7,21 @@ RUN apt-get update && apt-get install -y \
     libwebp-dev \
     ca-certificates \
     golang \
+    redis-server \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+RUN bun -v && go version
 
-COPY core/package.json core/bun.lock ./core/
-RUN cd core && bun install || true
+RUN git clone https://github.com/astrox11/Whatsaly /root/Whatsaly
 
-COPY api/go.mod api/go.sum ./api/
+WORKDIR /root/Whatsaly
+
+RUN cd core && bun install && cd ..
+
 RUN cd api && go mod download
 
-COPY . .
+EXPOSE 8000 6379
 
-EXPOSE 8080
+WORKDIR /root/Whatsaly/api
 
-CMD ["sh", "-c", "cd api && go run main.go"]
+CMD redis-server --port 6379 --daemonize yes && go run main.go
