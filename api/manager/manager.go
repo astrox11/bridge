@@ -156,6 +156,10 @@ func (sm *SessionManager) ClearSession(phone string) error {
 		fmt.Printf("Error deleting from auth_data table: %v\n", err)
 	}
 
+	if err := db.Exec("DELETE FROM session WHERE phone = ?", phone).Error; err != nil {
+		fmt.Printf("Error deleting from session table: %v\n", err)
+	}
+
 	// Flush Redis data using KEYS pattern and delete matching keys
 	// We use redis-cli with --scan to safely handle large key sets
 	pattern := fmt.Sprintf("session:%s:*", phone)
