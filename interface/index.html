@@ -3,82 +3,110 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Whatsaly Interface</title>
+    <title>Whatsaly</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link rel="shortcut icon" href="./favicon.png" type="image/png" />
 
     <style>
       :root {
-        /* GitHub White Theme Palette */
         --bg-canvas: #ffffff;
         --bg-subtle: #f6f8fa;
         --border-default: #d0d7de;
         --text-main: #1f2328;
         --text-secondary: #656d76;
-
-        /* Action Colors */
-        --btn-green: #1f883d;
-        --btn-green-hover: #1a7f37;
-        --accent-orange: #d4a017; /* Golden Orange for loaders */
-
-        /* Typography */
+        --btn-blue: #0969da;
+        --btn-blue-hover: #0860ca;
+        --accent-orange: #d4a017;
         --font-family: "Plus Jakarta Sans", sans-serif;
       }
 
+      * {
+        box-sizing: border-box;
+        outline: none;
+      }
       body {
         font-family: var(--font-family);
         background-color: var(--bg-canvas);
         color: var(--text-main);
         margin: 0;
-        padding: 40px;
+        padding: 0;
         line-height: 1.5;
       }
 
-      .container {
+      header {
+        border-bottom: 1px solid var(--border-default);
+        background-color: var(--bg-subtle);
+        padding-top: 20px;
+      }
+      .logo-area {
         max-width: 800px;
         margin: 0 auto;
+        padding: 0 20px 15px 20px;
       }
-
-      /* GitHub Style Header */
       h1 {
-        font-size: 24px;
+        font-size: 20px;
         font-weight: 600;
-        border-bottom: 1px solid var(--border-default);
-        padding-bottom: 10px;
-        margin-bottom: 20px;
+        margin: 0;
+        letter-spacing: -0.02em;
       }
 
-      p {
-        color: var(--text-secondary);
-        font-size: 16px;
+      nav {
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        gap: 8px;
+        padding: 0 20px;
+      }
+      .nav-link {
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-main);
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+      }
+      .nav-link.active {
+        border-bottom: 2px solid #fd8c73;
+        font-weight: 600;
       }
 
-      /* Section Styling */
-      .section {
+      .container {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .content-section {
+        display: none;
+      }
+      .content-section.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .section-card {
         border: 1px solid var(--border-default);
         border-radius: 6px;
         padding: 24px;
-        margin-top: 30px;
-        background-color: var(--bg-canvas);
+        background: white;
       }
-
-      .section-title {
-        font-weight: 600;
-        margin-top: 0;
-        margin-bottom: 16px;
-        font-size: 14px;
-        text-transform: uppercase;
-        color: var(--text-secondary);
-      }
-
-      /* Buttons */
       .btn {
         display: inline-block;
-        background-color: var(--btn-green);
+        background: var(--btn-blue);
         color: white;
         padding: 8px 16px;
         font-size: 14px;
@@ -86,76 +114,272 @@
         border-radius: 6px;
         border: 1px solid rgba(31, 35, 40, 0.15);
         cursor: pointer;
-        transition: background 0.2s;
-        text-decoration: none;
+        text-align: center;
+      }
+      .btn-secondary {
+        background: var(--bg-subtle);
+        color: var(--text-main);
+        border: 1px solid var(--border-default);
       }
 
-      .btn:hover {
-        background-color: var(--btn-green-hover);
+      /* Custom Modal System */
+      .custom-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(31, 35, 40, 0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
       }
-
-      /* Loader Animation */
-      .loader {
-        border: 3px solid var(--bg-subtle);
-        border-top: 3px solid var(--accent-orange);
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        animation: spin 1s linear infinite;
-        display: inline-block;
-        vertical-align: middle;
+      .custom-modal-content {
+        background: white;
+        width: 95%;
+        max-width: 400px;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(149, 157, 165, 0.2);
+        border: 1px solid var(--border-default);
+        animation: slideUp 0.2s ease-out;
       }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
+      @keyframes slideUp {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
         }
-        100% {
-          transform: rotate(360deg);
+        to {
+          transform: translateY(0);
+          opacity: 1;
         }
       }
 
-      /* Utility classes */
-      .mb-2 {
-        margin-bottom: 16px;
+      .modal-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-default);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+      }
+      .modal-body {
+        padding: 20px;
+      }
+      .input-field {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-default);
+        border-radius: 6px;
+        margin-top: 5px;
+        font-family: inherit;
+      }
+      .field-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+        display: block;
+        margin-top: 15px;
+      }
+
+      .pair-result {
+        background: var(--bg-subtle);
+        border: 1px dashed var(--border-default);
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin-top: 15px;
+      }
+      .code-txt {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--btn-blue);
+        letter-spacing: 5px;
+        margin: 10px 0;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>Welcome to Whatsaly Interface</h1>
-      <p>
-        This is the main interface for Whatsaly, utilizing a clean
-        GitHub-inspired aesthetic.
-      </p>
-
-      <div class="section">
-        <h2 class="section-title">Style Guide & Components</h2>
-
-        <div class="mb-2">
-          <p><strong>Primary Button:</strong></p>
-          <button class="btn">Click to Action</button>
+    <header>
+      <div class="logo-area"><h1>Whatsaly</h1></div>
+      <nav>
+        <div class="nav-link active" onclick="switchTab('home', this)">
+          Home
         </div>
+        <div class="nav-link" onclick="switchTab('dashboard', this)">
+          Dashboard
+        </div>
+        <div class="nav-link" onclick="switchTab('pair', this)">Pair</div>
+      </nav>
+    </header>
 
-        <div class="mb-2">
-          <p><strong>Processing State (Loader):</strong></p>
-          <div class="loader"></div>
+    <main class="container">
+      <section id="home" class="content-section active">
+        <div class="section-card">
+          <h2>Welcome</h2>
+          <p>Latest WhatsApp news and updates.</p>
+        </div>
+      </section>
+
+      <section id="dashboard" class="content-section">
+        <div class="section-card">
+          <h2>Dashboard</h2>
+          <p>Overview of your active instances.</p>
+        </div>
+      </section>
+
+      <section id="pair" class="content-section">
+        <div class="section-card">
+          <h2 style="margin-top: 0">Pair Device</h2>
+          <p>Link your account using a pairing code for automated features.</p>
+          <button class="btn" onclick="toggleModal(true)">Link Account</button>
+        </div>
+      </section>
+    </main>
+
+    <div
+      class="custom-modal-overlay"
+      id="modalOverlay"
+      onclick="handleOutsideClick(event)"
+    >
+      <div class="custom-modal-content">
+        <div class="modal-header">
+          <span>Link Account</span>
           <span
-            style="
-              color: var(--accent-orange);
-              margin-left: 8px;
-              font-weight: 500;
-            "
-            >Loading data...</span
+            style="cursor: pointer; font-size: 20px"
+            onclick="toggleModal(false)"
+            >&times;</span
           >
         </div>
+        <div class="modal-body">
+          <div id="setupView">
+            <span class="field-label">Select Country</span>
+            <select id="countryCode" class="input-field">
+              <option value="234">Nigeria (+234)</option>
+              <option value="1">United States (+1)</option>
+              <option value="44">United Kingdom (+44)</option>
+              <option value="91">India (+91)</option>
+            </select>
 
-        <div class="mb-2">
-          <p><strong>Typography:</strong></p>
-          <p style="font-weight: 700">Bold Jakarta Sans</p>
-          <p style="font-weight: 400">Regular Jakarta Sans</p>
+            <span class="field-label">Phone Number</span>
+            <input
+              type="text"
+              id="phoneNum"
+              class="input-field"
+              placeholder="08061234567"
+            />
+
+            <button
+              class="btn"
+              style="width: 100%; margin-top: 20px"
+              onclick="initiatePairing()"
+            >
+              Generate Code
+            </button>
+          </div>
+
+          <div
+            id="waitView"
+            style="display: none; text-align: center; padding: 20px 0"
+          >
+            <p>Requesting code...</p>
+            <h2
+              id="countdown"
+              style="font-size: 32px; color: var(--accent-orange)"
+            >
+              10
+            </h2>
+          </div>
+
+          <div id="resultView" style="display: none">
+            <div class="pair-result">
+              <span style="font-size: 12px; color: var(--text-secondary)"
+                >Your Pairing Code</span
+              >
+              <div class="code-txt" id="displayCode">---- ----</div>
+            </div>
+            <button
+              class="btn btn-secondary"
+              style="width: 100%; margin-top: 15px"
+              onclick="toggleModal(false)"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
+    <script>
+      function switchTab(id, el) {
+        document
+          .querySelectorAll(".content-section")
+          .forEach((s) => s.classList.remove("active"));
+        document
+          .querySelectorAll(".nav-link")
+          .forEach((l) => l.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        el.classList.add("active");
+      }
+
+      function toggleModal(show) {
+        const modal = document.getElementById("modalOverlay");
+        modal.style.display = show ? "flex" : "none";
+        if (!show) resetModalViews();
+      }
+
+      function handleOutsideClick(e) {
+        if (e.target.id === "modalOverlay") toggleModal(false);
+      }
+
+      function resetModalViews() {
+        document.getElementById("setupView").style.display = "block";
+        document.getElementById("waitView").style.display = "none";
+        document.getElementById("resultView").style.display = "none";
+        document.getElementById("countdown").innerText = "10";
+      }
+
+      async function initiatePairing() {
+        const prefix = document.getElementById("countryCode").value;
+        let num = document.getElementById("phoneNum").value.trim();
+
+        // Remove leading 0 logic (e.g. 0806 -> 806)
+        if (num.startsWith("0")) num = num.substring(1);
+        const finalPhone = prefix + num;
+
+        try {
+          // Post to Go Backend
+          await fetch(`/instances/${finalPhone}/pair`, { method: "POST" });
+
+          document.getElementById("setupView").style.display = "none";
+          document.getElementById("waitView").style.display = "block";
+
+          runTimer(finalPhone);
+        } catch (e) {
+          alert("Connection failed");
+        }
+      }
+
+      function runTimer(phone) {
+        let count = 10;
+        const timerLabel = document.getElementById("countdown");
+
+        const clock = setInterval(async () => {
+          count--;
+          timerLabel.innerText = count;
+
+          if (count <= 0) {
+            clearInterval(clock);
+            const res = await fetch(`/instances/${phone}`);
+            const worker = await res.json();
+
+            document.getElementById("waitView").style.display = "none";
+            document.getElementById("resultView").style.display = "block";
+            document.getElementById("displayCode").innerText =
+              worker.pairing_code || "EXPIRED";
+          }
+        }, 1000);
+      }
+    </script>
   </body>
 </html>
