@@ -1,4 +1,4 @@
-import { findCommand, getAllEvents } from "./plugins";
+import { findCommand, getAllEvents, type Command } from "./plugins";
 import type { SerializedMessage } from "./seralize";
 import config from "./config";
 
@@ -17,7 +17,19 @@ export const handleCommand = async (msg: SerializedMessage) => {
   const args = msg.text?.split(" ")[1];
 
   const cmd = findCommand(msg.text);
-  await cmd?.function(msg, args);
+
+  if (!cmd) return;
+
+  return commandVaildator(cmd, msg) || (await cmd?.function(msg, args));
+};
+
+const commandVaildator = function (cmd: Command, msg: SerializedMessage) {
+  if (cmd?.isGroup && !msg.isGroup) return msg.send("```For Groups Only```");
+
+  if (cmd?.isAdmin && !msg.isAdmin) return msg.send("```For Admins Only```");
+
+  if (cmd?.fromMe && !msg.key.fromMe)
+    return msg.send("```For Bot Owner Only```");
 };
 
 export const handleEvent = async (msg: SerializedMessage) => {
@@ -89,3 +101,56 @@ export {
   extract_text_from_message,
   get_content_type,
 } from "../util/pkg/util.js";
+
+export const additionalNodes = [
+  {
+    tag: "biz",
+    attrs: {},
+    content: [
+      {
+        tag: "interactive",
+        attrs: { type: "native_flow", v: "1" },
+        content: [{ tag: "native_flow", attrs: { v: "9", name: "mixed" } }],
+      },
+    ],
+  },
+];
+
+export function toSmallCaps(text: string): string {
+  const smallCaps = [
+    "ᴀ",
+    "ʙ",
+    "ᴄ",
+    "ᴅ",
+    "ᴇ",
+    "ғ",
+    "ɢ",
+    "ʜ",
+    "ɪ",
+    "ᴊ",
+    "ᴋ",
+    "ʟ",
+    "ᴍ",
+    "ɴ",
+    "ᴏ",
+    "ᴘ",
+    "ǫ",
+    "ʀ",
+    "s",
+    "ᴛ",
+    "ᴜ",
+    "ᴠ",
+    "ᴡ",
+    "x",
+    "ʏ",
+    "ᴢ",
+  ];
+  return text
+    .toUpperCase()
+    .split("")
+    .map((c) => {
+      const code = c.charCodeAt(0);
+      return code >= 65 && code <= 90 ? smallCaps[code - 65] : c;
+    })
+    .join("");
+}

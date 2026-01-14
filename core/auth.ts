@@ -49,14 +49,14 @@ export const getDb = () => {
       `CREATE INDEX IF NOT EXISTS idx_user_messages_timestamp ON user_messages (timestamp);`
     );
     sqlite.run(`
-  CREATE TABLE IF NOT EXISTS group_metadata (
-    id TEXT, 
-    session_phone TEXT, 
-    metadata TEXT, 
-    updated_at TEXT, 
-    PRIMARY KEY (id, session_phone)
-  );
-`);
+      CREATE TABLE IF NOT EXISTS group_metadata (
+        id TEXT, 
+        session_phone TEXT, 
+        metadata TEXT, 
+        updated_at TEXT, 
+        PRIMARY KEY (id, session_phone)
+      );
+    `);
     return sqlite;
   }
 };
@@ -298,6 +298,38 @@ export const cacheGroupMetadata = async (
       [metadata.id, sessionPhone, data, now]
     );
   }
+};
+
+export const isAdmin = async (
+  chat: string,
+  participantId: string
+): Promise<boolean> => {
+  let raw: any;
+
+  if (isProd) {
+    raw = await (db as any)`
+      SELECT metadata FROM group_metadata 
+      WHERE id = ${chat} 
+      LIMIT 1
+    `;
+    raw = raw[0]?.metadata;
+  } else {
+    const result = (db as Database)
+      .query("SELECT metadata FROM group_metadata WHERE id = ? LIMIT 1")
+      .get(chat) as { metadata: string } | undefined;
+    raw = result?.metadata;
+  }
+
+  if (!raw) return false;
+
+  const metadata: GroupMetadata =
+    typeof raw === "string" ? JSON.parse(raw) : raw;
+
+  const participant = metadata.participants.find(
+    (p) => p.id === participantId || p.phoneNumber === participantId
+  );
+
+  return !!participant?.admin;
 };
 
 export const syncGroupParticipantsToContactList = async (

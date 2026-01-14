@@ -8,6 +8,7 @@ export interface Command {
   pattern?: string;
   alias?: Array<string>;
   fromMe?: boolean;
+  isAdmin?: boolean;
   isGroup?: boolean;
   category?: CommandCategory;
   event?: boolean;

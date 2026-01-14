@@ -2,8 +2,6 @@
 
 <a href="https://golang.org/"><img src="./interface/logo.png" width="250" height="150" /></a>
 
-WhatsApp client for automated account management.
-
 ## Features
 
 - Multi-session support

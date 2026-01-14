@@ -1,4 +1,4 @@
-import { getAlternateId } from "./auth";
+import { cachedGroupMetadata, getAlternateId, isAdmin } from "./auth";
 import {
   jidNormalizedUser,
   normalizeMessageContent,
@@ -35,6 +35,7 @@ const serialize = async (
 
   const senderAlt = await getAlternateId(sender!, msg.session);
   const session = msg.session;
+  const admin = isGroup ? await isAdmin(key.remoteJid!, sender!) : null;
 
   return {
     chat: key.remoteJid,
@@ -45,6 +46,7 @@ const serialize = async (
     senderAlt,
     session,
     isGroup,
+    isAdmin: admin,
     messageTimestamp,
     text: extract_text_from_message(message),
     image: Boolean(message?.imageMessage),
