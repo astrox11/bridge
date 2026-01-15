@@ -49,7 +49,7 @@ func (sm *SessionManager) supervisor(w *Worker) {
 			continue
 		}
 
-		cmd := exec.Command("bun", "run", "./index.js", w.Phone)
+		cmd := exec.Command("bun", "start", w.Phone)
 		cmd.Dir = "../core"
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {

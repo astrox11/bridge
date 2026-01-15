@@ -1,16 +1,12 @@
-import { cachedGroupMetadata, getAlternateId, isAdmin } from "./auth";
+import { jidNormalizedUser, normalizeMessageContent } from "baileys";
+import type { WAMessage, WAContextInfo, WASocket } from "baileys";
 import {
-  jidNormalizedUser,
-  normalizeMessageContent,
-  type WAContextInfo,
-  type WAMessage,
-  type WASocket,
-} from "baileys";
-import {
-  extract_text_from_message,
-  get_content_type,
+  isAdmin as is_admin,
   parse_content,
-} from "./util";
+  getAlternateId,
+  get_content_type,
+  extract_text_from_message,
+} from "../util";
 
 const serialize = async (
   msg: WAMessage & { session: string },
@@ -35,7 +31,8 @@ const serialize = async (
 
   const senderAlt = await getAlternateId(sender!, msg.session);
   const session = msg.session;
-  const admin = isGroup ? await isAdmin(key.remoteJid!, sender!) : null;
+  const isAdmin = isGroup ? await is_admin(key.remoteJid!, sender!) : null;
+  const text = extract_text_from_message(message);
 
   return {
     chat: key.remoteJid,
@@ -46,9 +43,9 @@ const serialize = async (
     senderAlt,
     session,
     isGroup,
-    isAdmin: admin,
+    isAdmin,
     messageTimestamp,
-    text: extract_text_from_message(message),
+    text,
     image: Boolean(message?.imageMessage),
     video: Boolean(message?.videoMessage),
     audio: Boolean(message?.audioMessage),

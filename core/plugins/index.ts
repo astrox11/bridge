@@ -2,7 +2,7 @@ import { join, isAbsolute } from "path";
 import { readdirSync } from "fs";
 import { cwd } from "process";
 import { pathToFileURL } from "url";
-import type { SerializedMessage } from "../seralize";
+import type { SerializedMessage } from "../client/seralize";
 
 export interface Command {
   pattern?: string;
@@ -31,12 +31,12 @@ type CommandCategory =
 export const commands = new Map<string, Command>();
 
 export const loadPlugins = async (
-  directory: string = join(cwd(), "plugins", "commands")
+  directory: string = join(cwd(), "plugins")
 ) => {
   try {
-    const files = readdirSync(directory).filter(
-      (file) => file.endsWith(".ts") || file.endsWith(".js")
-    );
+    const files = readdirSync(directory)
+      .filter((file) => file.endsWith(".ts") || file.endsWith(".js"))
+      .filter((file) => !file.startsWith("index."));
 
     for (const file of files) {
       try {

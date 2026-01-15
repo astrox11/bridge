@@ -1,4 +1,4 @@
-import type { Command } from "..";
+import type { Command } from ".";
 
 export default {
   pattern: "uptime",

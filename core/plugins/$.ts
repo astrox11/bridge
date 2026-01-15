@@ -1,5 +1,5 @@
 import { inspect } from "bun";
-import type { Command } from "../";
+import type { Command } from ".";
 
 export default {
   event: true,

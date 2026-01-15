@@ -1,6 +1,6 @@
-import { findCommand, getAllEvents, type Command } from "./plugins";
-import type { SerializedMessage } from "./seralize";
-import config from "./config";
+import { findCommand, getAllEvents, type Command } from "../plugins";
+import type { SerializedMessage } from "../client/seralize";
+import config from "../config";
 
 export const logForGo = (tag: string, data: any) => {
   const output = {
@@ -38,6 +38,12 @@ export const handleEvent = async (msg: SerializedMessage) => {
   for (const cmd of commands) {
     await cmd?.function(msg);
   }
+};
+
+export const parseId = function (msg: SerializedMessage, args?: string) {
+  if (args) return args; /// sominbrr
+
+  if (msg?.quoted) return msg?.quoted?.sender;
 };
 
 export const parseEnv = (buffer: Buffer) => {
@@ -95,12 +101,6 @@ export const makeQuery = async (
     return null;
   }
 };
-
-export {
-  parse_content,
-  extract_text_from_message,
-  get_content_type,
-} from "../util/pkg/util.js";
 
 export const additionalNodes = [
   {

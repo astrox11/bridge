@@ -1,12 +1,3 @@
-import {
-  useHybridAuthState,
-  getMessage,
-  saveMessage,
-  cachedGroupMetadata,
-  cacheGroupMetadata,
-  syncGroupMetadata,
-  syncGroupParticipantsToContactList,
-} from "./auth";
 import makeWASocket, {
   delay,
   DisconnectReason,
@@ -17,9 +8,20 @@ import makeWASocket, {
 import pino from "pino";
 import NodeCache from "@cacheable/node-cache";
 import { createClient } from "redis";
-import { handleCommand, handleEvent, logForGo } from "./util";
-import { loadPlugins } from "./plugins";
-import serialize from "./seralize";
+import { loadPlugins } from "../plugins/index.ts";
+import serialize from "./seralize.ts";
+import {
+  logForGo,
+  getMessage,
+  saveMessage,
+  handleEvent,
+  handleCommand,
+  syncGroupMetadata,
+  useHybridAuthState,
+  cacheGroupMetadata,
+  cachedGroupMetadata,
+  syncGroupParticipantsToContactList,
+} from "../util/index.ts";
 
 const logger = pino({
   level: "trace",

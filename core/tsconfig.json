@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "ESNext",
+    "module": "esnext",
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,
     "strict": true,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "outDir": ".",
-    "skipDefaultLibCheck": true
+    "outDir": "./out",
+    "skipDefaultLibCheck": true,
+    "rewriteRelativeImportExtensions": true
   },
-  "include": ["src/**/*", "**/*"],
   "exclude": ["node_modules"]
 }
