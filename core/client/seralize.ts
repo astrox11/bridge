@@ -38,7 +38,7 @@ const serialize = async (
   const device = getDevice(key.id!)
 
   return {
-    chat: key.remoteJid,
+    chat: key.remoteJid as string,
     key,
     message,
     type,

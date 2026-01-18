@@ -1,6 +1,7 @@
 import { findCommand, getAllEvents, type Command } from "../plugins";
 import type { SerializedMessage } from "../client/seralize";
 import config from "../config";
+import { getAlternateId } from "../sql/auth";
 
 export const logForGo = (tag: string, data: any) => {
   const output = {
@@ -14,9 +15,11 @@ export const logForGo = (tag: string, data: any) => {
 export const handleCommand = async (msg: SerializedMessage) => {
   if (!msg?.text) return;
 
-  const args = msg.text?.split(" ")[1];
+  const prefix = null;
 
-  const cmd = findCommand(msg.text);
+  const args = msg.text?.split(" ").slice(1).join(" ");
+
+  const cmd = findCommand(msg.text.split(" ")[0]);
 
   if (!cmd) return;
 
@@ -40,10 +43,42 @@ export const handleEvent = async (msg: SerializedMessage) => {
   }
 };
 
-export const parseId = function (msg: SerializedMessage, args?: string) {
-  if (args) return args; /// sominbrr
+export const parseId = async function (
+  msg: SerializedMessage,
+  args?: string,
+): Promise<string | undefined> {
+  console.log("parseId initiated", {
+    hasArgs: !!args,
+    hasQuoted: !!msg?.quoted,
+  });
 
-  if (msg?.quoted) return msg?.quoted?.sender;
+  if (args) {
+    const cleanArgs = args.replace(/\D/g, "");
+    if (!cleanArgs) return undefined;
+
+    try {
+      const [jidResult, lidResult] = await Promise.all([
+        getAlternateId(msg.session, `${cleanArgs}@s.whatsapp.net`).catch(
+          (e) => {
+            console.error("JID Lookup Error:", e.message);
+            return null;
+          },
+        ),
+        getAlternateId(msg.session, `${cleanArgs}@lid`).catch((e) => {
+          console.error("LID Lookup Error:", e.message);
+          return null;
+        }),
+      ]);
+      return jidResult || lidResult || undefined;
+    } catch (e) {
+      console.error("Critical error during lookup block:", e);
+      return undefined;
+    }
+  }
+
+  if (msg?.quoted) return msg.quoted?.sender ?? undefined;
+
+  return undefined;
 };
 
 export const parseEnv = (buffer: Buffer) => {
@@ -68,7 +103,7 @@ export const parseEnv = (buffer: Buffer) => {
 export const makeQuery = async (
   path: string,
   type: "POST" | "GET",
-  body?: Record<string, any>
+  body?: Record<string, any>,
 ) => {
   const PORT = config.PORT || 8080;
   const BASE_URL = `http://127.0.0.1:${PORT}/api`;
