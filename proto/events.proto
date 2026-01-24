@@ -1,0 +1,20 @@
+syntax = "proto3";
+package whatsaly;
+
+option go_package = "github.com/astrox11/whatsaly/api/pb";
+
+// Current Connection State Information
+message ConnectionUpdate {
+  string          phone        = 1;
+  string          status       = 2;
+  optional string qr           = 3;
+  optional string pairing_code = 4;
+}
+
+// Received Events from Worker
+message WorkerEvent {
+  oneof event {
+    ConnectionUpdate connection = 1;
+    string           raw_log    = 2;
+  }
+}

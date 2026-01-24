@@ -1,0 +1,17 @@
+name: PR Comment
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: "const author = context.payload.pull_request.user.login; const prNumber = context.payload.pull_request.number; const repo = context.repo.repo; const owner = context.repo.owner; const comment = '**Thank you for your Pull Request**\\n\\nHi @' + author + ', thanks for contributing to **Whatsaly**. Your pull request has been received and will be reviewed by the maintainers.\\n\\nA few reminders while your PR is under review:\\n* Make sure your changes follow the [Contributing Guidelines](CONTRIBUTING.md).\\n* Ensure code is secure, tested, and free of any backdoors or malicious behavior.\\n* Provide sufficient context, logs, or screenshots if your PR fixes a bug.\\n* If this PR involves a security concern, do **not** disclose it publicly. Report it through [SECURITY.md](SECURITY.md).\\n\\nThank you for helping make **Whatsaly** safe, stable, and reliable.'; await github.rest.issues.createComment({owner, repo, issue_number: prNumber, body: comment});"
