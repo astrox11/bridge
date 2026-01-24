@@ -23,6 +23,6 @@ RUN make all
 
 EXPOSE 8000 6379
 
-WORKDIR /root/Whatsaly/api
+WORKDIR /root/Whatsaly
 
-CMD redis-server --port 6379 --daemonize yes && go run main.go
+CMD redis-server --port 6379 --daemonize yes && ./start.sh
