@@ -52,7 +52,7 @@ async fn main() {
         state.sm.start_instance(&session.id, state.clone()).await;
     }
 
-    let static_service = ServeDir::new("../interface");
+    let static_service = ServeDir::new("../ui");
     let app = routes::create_routes()
         .layer(CorsLayer::permissive())
         .with_state(state)

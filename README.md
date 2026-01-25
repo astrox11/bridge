@@ -9,7 +9,7 @@
 - Multi-session support
 - Automated session management
 - Live metrics utility
-- Powerfull service orchestration with process management
+- Powerful service orchestration with process management
 - Server-Sent Events for real-time updates
 
 ## Setup Instructions
@@ -48,11 +48,3 @@ docker-compose logs -f whatsaly
 ## Contributing
 
 Please read the [Guidelines](CONTRIBUTING.md) before submitting pull requests.
-
-## Acknowledgements
-
-This project uses the Baileys library:
-
-- [Baileys](https://github.com/WhiskeySockets/Baileys) - WhatsApp Web API
-
-Special thanks to all contributors and the open-source community.
