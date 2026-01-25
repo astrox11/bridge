@@ -2,9 +2,6 @@
 
 all: setup build-util build-src
 
-setup:
-	cd api && go mod download && go mod tidy
-
 build-util:
 	$(MAKE) -C util build
 

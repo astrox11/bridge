@@ -12,7 +12,7 @@ import NodeCache from "@cacheable/node-cache";
 import { createClient } from "redis";
 import serialize from "./seralize";
 import { loadPlugins } from "./plugins";
-import { logForGo, handleEvent, handleCommand } from "./util";
+import { socketOut, handleEvent, handleCommand } from "./util";
 import {
   cachedGroupMetadata,
   cacheGroupMetadata,
@@ -26,6 +26,8 @@ import {
   syncGroupParticipantsToContactList,
   useHybridAuthState,
 } from "./sql";
+
+import { Socket } from "net";
 
 const logger = pino({
   level: "silent",
@@ -65,7 +67,8 @@ const Client = async (phone = process.argv?.[2]) => {
     await delay(5000);
     console.log("Client not registered");
     const code = await sock.requestPairingCode(phone);
-    logForGo("PAIRING_CODE", { code });
+    console.log("PAIR CODE:", code);
+    socketOut("PAIRING_CODE", { code });
   }
 
   sock.ev.process(async (events) => {
@@ -74,7 +77,7 @@ const Client = async (phone = process.argv?.[2]) => {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
-        logForGo("QR_CODE", { status: "qr_code", qr, phone });
+        socketOut("QR_CODE", { status: "qr_code", qr, phone });
       }
 
       if (connection === "close") {
@@ -82,16 +85,16 @@ const Client = async (phone = process.argv?.[2]) => {
           (lastDisconnect?.error as any)?.output?.statusCode !==
           DisconnectReason.loggedOut
         ) {
-          logForGo("CONNECTION_UPDATE", { status: "needs_restart", phone });
+          socketOut("CONNECTION_UPDATE", { status: "needs_restart", phone });
           await delay(10000);
           Client();
         } else {
-          logForGo("CONNECTION_UPDATE", { status: "logged_out", phone });
+          socketOut("CONNECTION_UPDATE", { status: "logged_out", phone });
           console.log("Connection closed. You are logged out.");
         }
       }
       if (connection === "open") {
-        logForGo("CONNECTION_UPDATE", { status: "connected", phone });
+        socketOut("CONNECTION_UPDATE", { status: "connected", phone });
         await delay(15000);
         await syncGroupMetadata(phone, sock);
         await SessionManager.set({

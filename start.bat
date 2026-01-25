@@ -2,6 +2,6 @@
 cd /d "api"
 
 :: Execute the Service
-go run .
+cargo run --release
 
 pause

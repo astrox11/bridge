@@ -7,20 +7,17 @@ import * as net from "net";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { WorkerEventSchema } from "./gen/events_pb";
 
-const socketPath = process.argv[3];
+const port = parseInt(process.argv[3]);
 let socket: net.Socket | null = null;
 
-if (socketPath) {
-  socket = net.createConnection(socketPath);
-  socket.on("error", (e) => console.error("Socket Error:", e.message));
+if (port) {
+  socket = net.createConnection({ port: port, host: "127.0.0.1" });
+  socket.on("error", (e) => console.error("TCP Connection Error:", e.message));
+  socket.on("connect", () => console.log(`Connected to Rust on port ${port}`));
 }
 
-/**
- * Encodes a message using Protobuf and sends it over the socket with a
- * 4-byte BigEndian length prefix.
- */
-export const logForGo = (tag: string, data: any) => {
-  if (!socket) return;
+export const socketOut = (tag: string, data: any) => {
+  if (!socket || socket.destroyed) return;
 
   let event;
   if (
@@ -49,12 +46,13 @@ export const logForGo = (tag: string, data: any) => {
   }
 
   const bytes = toBinary(WorkerEventSchema, event);
+
+  // Keep your length prefix logic so Rust can read it correctly
   const header = Buffer.alloc(4);
   header.writeUInt32BE(bytes.length, 0);
 
   socket.write(Buffer.concat([header, bytes]));
 };
-
 export const handleCommand = async (msg: SerializedMessage) => {
   if (!msg?.text) return;
 
