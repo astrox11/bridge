@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y \
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
+RUN rustup target add wasm32-unknown-unknown
+
+RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 RUN git clone https://github.com/astrox11/Whatsaly /root/Whatsaly
 
@@ -28,4 +31,4 @@ EXPOSE 8080 6379
 
 WORKDIR /root/Whatsaly
 
-CMD redis-server --port 6379 --daemonize yes && ./start.sh
+CMD ["sh", "-c", "redis-server --port 6379 --daemonize yes && ./start.sh"]
