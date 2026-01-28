@@ -59,7 +59,7 @@ async fn main() {
         .fallback_service(static_service);
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 8080));
-    println!("Whatsaly listening on http://{}", addr);
+    println!("Service on http://localhost:{}", addr.port());
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
