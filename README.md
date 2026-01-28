@@ -16,8 +16,6 @@ Install the following on your system.
 
 ## Installation
 
-The easiest way to get Whatsaly running is using Docker Compose. This packages the Go core and the Bun environment into a single deployment.
-
 1. **Clone the repository:**
 
 ```bash
