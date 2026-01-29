@@ -1,6 +1,6 @@
 import os from "os";
 import { Command, getAllCommands } from "./index";
-import { toSmallCaps } from "../util";
+import { toSmallCaps } from "../utility";
 
 export default {
   pattern: "menu",

@@ -1,11 +1,11 @@
-import { findCommand, getAllEvents, type Command } from "./plugins";
+import { findCommand, getAllEvents, type Command } from "../plugins";
 import type { SerializedMessage } from "./seralize";
-import { getAlternateId } from "./sql";
-import { to_small_caps } from "./pkg";
+import { getAlternateId } from "../sql";
+import { to_small_caps } from "../pkg";
 
 import * as net from "net";
 import { create, toBinary } from "@bufbuild/protobuf";
-import { WorkerEventSchema } from "./gen/events_pb";
+import { WorkerEventSchema } from "../proto";
 
 const port = parseInt(process.argv[3]);
 let socket: net.Socket | null = null;

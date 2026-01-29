@@ -66,6 +66,7 @@ export const useRedisAuthState = async (
     state: {
       creds,
       keys: {
+        //@ts-ignore
         get: async (type, ids) => {
           //@ts-ignore
           const data: { [_: string]: SignalDataTypeMap[typeof type] } = {};
@@ -80,6 +81,7 @@ export const useRedisAuthState = async (
           );
           return data;
         },
+        //@ts-ignore
         set: async (data) => {
           const tasks: Promise<void>[] = [];
           for (const category in data) {

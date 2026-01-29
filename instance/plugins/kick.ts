@@ -1,5 +1,5 @@
 import type { Command } from ".";
-import { parseId } from "../util";
+import { parseId } from "../utility";
 
 export default {
   pattern: "kick",

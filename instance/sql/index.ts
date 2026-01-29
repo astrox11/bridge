@@ -9,35 +9,35 @@ import type {
   SessionMessages,
   SessionGroups,
 } from "./types";
-import { readFileSync } from "fs";
 import { join } from "path";
+import { readFileSync } from "fs";
 
-const dbUrl = process.env.DATABASE_URL || "sqlite://../dev.sqlite";
+const url = process.env.DATABASE_URL || "sqlite://../dev.sqlite";
 
 const db = new SQL({
-  url: dbUrl,
+  url,
 });
 
-export async function initSql(fileName: string) {
+export async function initSql() {
   try {
-    const folderPath = join(process.cwd(), "..", "store");
-    const sqlPath = join(folderPath, fileName);
-    const sqlContent = readFileSync(sqlPath, "utf8");
+    const sqlContent = readFileSync(
+      join(join(process.cwd(), "..", "store"), "main.sql"),
+      "utf8",
+    );
 
-    const isSQLite = dbUrl.startsWith("sqlite://") || !dbUrl.includes("://");
+    const isSQLite = url.startsWith("sqlite://") || !url.includes("://");
 
     if (isSQLite) {
-      const filePath = dbUrl.replace("sqlite://", "");
-      const nativeDb = new Database(filePath);
+      const instance = new Database(url.replace("sqlite://", ""));
 
-      nativeDb.run(sqlContent);
-      nativeDb.close();
+      instance.run(sqlContent);
+      instance.close();
     } else {
       await db`${sqlContent}`.simple();
     }
-  } catch (error) {
-    console.error(`Initialization Error:`, error);
-    throw error;
+  } catch (e) {
+    console.error(`Initialization Error:`, e);
+    throw e;
   }
 }
 
@@ -67,10 +67,10 @@ export const DevicesManager = {
     await db`
       INSERT INTO devices (sessionId, User, deviceInfo, lastSeenAt, createdAt)
       VALUES (
-        ${data.sessionId}, 
-        ${data.User}, 
-        ${data.deviceInfo}, 
-        ${data.lastSeenAt.toISOString()}, 
+        ${data.sessionId},
+        ${data.User},
+        ${data.deviceInfo},
+        ${data.lastSeenAt.toISOString()},
         ${data.createdAt.toISOString()}
       )
       -- Update ONLY if the same user exists in the same session
@@ -141,10 +141,10 @@ export const ContactManager = {
       await db`
         INSERT INTO session_contacts (sessionId, contactPn, contactLid, addedAt, createdAt)
         VALUES (
-          ${data.sessionId}, 
-          ${data.contactPn}, 
-          ${data.contactLid}, 
-          ${data.addedAt.toISOString()}, 
+          ${data.sessionId},
+          ${data.contactPn},
+          ${data.contactLid},
+          ${data.addedAt.toISOString()},
           ${data.createdAt.toISOString()}
         )
         ON CONFLICT (sessionId, contactPn) DO UPDATE SET
@@ -166,7 +166,7 @@ export const ContactManager = {
 
   async del(sessionId: string, contactPn: string): Promise<void> {
     await db`
-      DELETE FROM session_contacts 
+      DELETE FROM session_contacts
       WHERE sessionId = ${sessionId} AND contactPn = ${contactPn}
     `;
   },
@@ -198,10 +198,10 @@ export const GroupManager = {
     await db`
       INSERT INTO session_groups (sessionId, groupId, groupInfo, updatedAt, createdAt)
       VALUES (
-        ${data.sessionId}, 
-        ${data.groupId}, 
-        ${data.groupInfo}, 
-        ${data.updatedAt.toISOString()}, 
+        ${data.sessionId},
+        ${data.groupId},
+        ${data.groupInfo},
+        ${data.updatedAt.toISOString()},
         ${data.createdAt.toISOString()}
       )
       ON CONFLICT (groupId) DO UPDATE SET

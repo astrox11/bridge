@@ -1,7 +1,7 @@
 import type { proto, WAMessage, WASocket } from "baileys";
 import { downloadMediaMessage, jidNormalizedUser } from "baileys";
-import { isAdmin as admin, getAlternateId } from "./sql";
-import { serialize_full, parse_content } from "./pkg";
+import { isAdmin as admin, getAlternateId } from "../sql";
+import { serialize_full, parse_content } from "../pkg";
 
 const serialize = async (
   msg: WAMessage & { session: string },

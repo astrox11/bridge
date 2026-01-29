@@ -1,6 +1,6 @@
 import type { Command } from ".";
 import { isAdmin } from "../sql";
-import { parseId } from "../util";
+import { parseId } from "../utility";
 
 export default {
   pattern: "demote",

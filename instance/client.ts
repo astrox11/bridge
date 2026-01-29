@@ -10,9 +10,8 @@ import makeWASocket, {
 import pino from "pino";
 import NodeCache from "@cacheable/node-cache";
 import { createClient } from "redis";
-import serialize from "./seralize";
 import { loadPlugins } from "./plugins";
-import { socketOut, handleEvent, handleCommand } from "./util";
+import serialize, { socketOut, handleEvent, handleCommand } from "./utility";
 import {
   cachedGroupMetadata,
   cacheGroupMetadata,
@@ -27,8 +26,6 @@ import {
   useHybridAuthState,
 } from "./sql";
 
-import { Socket } from "net";
-
 const logger = pino({
   level: "silent",
 });
@@ -36,7 +33,7 @@ const logger = pino({
 const redis = createClient({ url: "redis://localhost:6379" });
 redis.on("error", (err) => console.log("Redis Client Error", err));
 
-await initSql("main.sql");
+await initSql();
 await redis.connect();
 await loadPlugins();
 
