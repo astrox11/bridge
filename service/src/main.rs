@@ -3,6 +3,7 @@ mod routes;
 mod sql;
 
 use crate::sql::Session;
+use dotenv::dotenv;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
@@ -15,6 +16,13 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
+    let port = env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(8080);
+
     let pool = sql::sync_db().await;
     let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
     let (tx, _rx) = tokio::sync::broadcast::channel::<String>(1024);
@@ -58,7 +66,7 @@ async fn main() {
         .with_state(state)
         .fallback_service(static_service);
 
-    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 8080));
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
     println!("Service on http://localhost:{}", addr.port());
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

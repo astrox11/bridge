@@ -2,7 +2,7 @@ import { join, isAbsolute } from "path";
 import { readdirSync } from "fs";
 import { cwd } from "process";
 import { pathToFileURL } from "url";
-import type { SerializedMessage } from "../seralize";
+import type { SerializedMessage } from "../utility";
 
 export interface Command {
   pattern?: string;

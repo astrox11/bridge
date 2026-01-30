@@ -27,7 +27,7 @@
   },
   "scripts": {
     "start": "bun run client.ts",
-    "db:push": "drizzle-kit push"
+    "db:push": "bun x drizzle-kit push"
   },
   "files": [
     "bin"
