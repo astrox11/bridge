@@ -60,7 +60,7 @@ export const handleCommand = async (msg: SerializedMessage) => {
 
   const args = msg.text?.split(" ").slice(1).join(" ");
 
-  const cmd = findCommand(msg.text.split(" ")[0]);
+  const cmd = findCommand(msg.text.split(" ")[0]?.toLowerCase());
 
   if (!cmd) return;
 
