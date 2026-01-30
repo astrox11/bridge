@@ -18,7 +18,7 @@ export interface Sessions {
 export interface Devices {
   sessionId: string;
   User?: string | null;
-  deviceInfo?: string;
+  deviceInfo?: string | null;
   lastSeenAt: Date;
   createdAt: Date;
 }
@@ -33,7 +33,7 @@ export interface AuthTokens {
 export interface SessionContacts {
   sessionId: string;
   contactPn: string;
-  contactLid?: string;
+  contactLid?: string | null;
   addedAt: Date;
   createdAt: Date;
 }
@@ -41,21 +41,21 @@ export interface SessionContacts {
 export interface SessionMessages {
   sessionId: string;
   messageId: string;
-  messageContent?: string;
+  messageContent?: string | null;
   createdAt: Date;
 }
 
 export interface SessionConfigurations {
   sessionId: string;
   configKey: string;
-  configValue?: string;
+  configValue?: string | null;
   createdAt: Date;
 }
 
 export interface SessionGroups {
   sessionId: string;
   groupId: string;
-  groupInfo: string;
+  groupInfo: string | null;
   updatedAt: Date;
   createdAt: Date;
 }

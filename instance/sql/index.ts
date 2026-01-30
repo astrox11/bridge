@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/bun-sqlite";
 import { Database } from "bun:sqlite";
+import { drizzle } from "drizzle-orm/bun-sqlite";
 import { eq, and } from "drizzle-orm";
 import * as schema from "./schema";
 import config from "../config";
@@ -109,7 +109,7 @@ export const AuthTokenManager = {
       });
   },
   async get(sessionId: string): Promise<AuthTokensType | null> {
-    const res = await db
+    const res = db
       .select()
       .from(authTokens)
       .where(eq(authTokens.sessionId, sessionId))
