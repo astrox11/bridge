@@ -32,7 +32,7 @@ pub async fn run(phone: String, state: Arc<AppState>) {
         let mut child = tokio::process::Command::new("bun")
             .args(["run", "client.ts", &phone, &port.to_string()])
             .env("NODE_OPTIONS", "--max-old-space-size=1024")
-            .current_dir("../src")
+            .current_dir("../instance")
             .kill_on_drop(true)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
