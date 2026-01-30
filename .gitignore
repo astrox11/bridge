@@ -15,8 +15,8 @@ bun.lockb
 vendor/
 core/wa-logs.txt
 api/sessions.txt
-dev.sqlite-shm
-dev.sqlite-wal
+database.db-shm
+database.db-wal
 
 /util/target
 test.ts
