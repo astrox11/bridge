@@ -13,17 +13,16 @@ import { createClient } from "redis";
 import { loadPlugins } from "./plugins";
 import serialize, { socketOut, handleEvent, handleCommand } from "./utility";
 import {
-  cachedGroupMetadata,
-  cacheGroupMetadata,
-  DevicesManager,
   getMessage,
-  initSql,
   saveMessage,
-  SessionManager,
   SessionStatus,
+  SessionManager,
+  DevicesManager,
   syncGroupMetadata,
-  syncGroupParticipantsToContactList,
   useHybridAuthState,
+  cacheGroupMetadata,
+  cachedGroupMetadata,
+  syncGroupParticipantsToContactList,
 } from "./sql";
 
 const logger = pino({
@@ -33,7 +32,6 @@ const logger = pino({
 const redis = createClient({ url: "redis://localhost:6379" });
 redis.on("error", (err) => console.log("Redis Client Error", err));
 
-await initSql();
 await redis.connect();
 await loadPlugins();
 
