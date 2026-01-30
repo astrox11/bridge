@@ -1,25 +1,25 @@
 import { Database } from "bun:sqlite";
-import { drizzle } from "drizzle-orm/bun-sqlite";
-import { eq, and } from "drizzle-orm";
-import * as schema from "./schema";
 import config from "../config";
+import * as schema from "./schema";
+import { eq, and } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/bun-sqlite";
 import {
-  sessions,
   devices,
+  sessions,
   authTokens,
+  sessionGroups,
   sessionMessages,
   sessionContacts,
   sessionConfigurations,
-  sessionGroups,
 } from "./schema";
 import type {
-  Sessions,
   Devices,
-  AuthTokens as AuthTokensType,
+  Sessions,
+  SessionGroups,
   SessionContacts,
   SessionMessages,
   SessionConfigurations,
-  SessionGroups,
+  AuthTokens as AuthTokensType,
 } from "./types";
 
 const url = config.DATABASE_URL;
@@ -45,11 +45,7 @@ export const SessionManager = {
       });
   },
   async get(id: string): Promise<Sessions | null> {
-    const res = await db
-      .select()
-      .from(sessions)
-      .where(eq(sessions.id, id))
-      .get();
+    const res = db.select().from(sessions).where(eq(sessions.id, id)).get();
     // @ts-ignore - Drizzle types vs local types compatibility
     return res || null;
   },

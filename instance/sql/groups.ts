@@ -7,7 +7,7 @@ export async function cachedGroupMetadata(session: string, jid: string) {
 
   if (res != null) {
     for (const group of res) {
-      const metadata: GroupMetadata = JSON.parse(group.groupInfo);
+      const metadata: GroupMetadata = JSON.parse(group.groupInfo || "{}");
       if (metadata.id === jid) {
         return metadata;
       }
