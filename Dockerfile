@@ -31,4 +31,4 @@ EXPOSE 8080 6379
 
 WORKDIR /root/Whatsaly
 
-CMD ["sh", "-c", "redis-server --port 6379 --daemonize yes && ./start.sh"]
+CMD ["sh", "-c", "redis-server --port 6379 --daemonize yes && ./process.sh"]
