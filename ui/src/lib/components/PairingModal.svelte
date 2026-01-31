@@ -52,25 +52,35 @@
 		navigator.clipboard.writeText(pairingCode);
 		alert('Code copied!');
 	}
+
+	/**
+	 * @param {KeyboardEvent} e
+	 */
+	function handleBackdropKeydown(e) {
+		if (e.key === 'Escape') close();
+	}
 </script>
 
 {#if open}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div 
 		class="modal-backdrop"
 		onclick={close}
-		onkeydown={(e) => e.key === 'Escape' && close()}
+		onkeydown={handleBackdropKeydown}
 		role="dialog"
 		aria-modal="true"
+		aria-label="Link device dialog"
+		tabindex="-1"
 	>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div 
 			class="modal-card"
 			onclick={(e) => e.stopPropagation()}
-			onkeydown={() => {}}
-			role="document"
+			onkeydown={(e) => e.stopPropagation()}
 		>
 			<div class="card-header flex justify-between items-center">
 				<span>Link Device</span>
-				<button onclick={close} class="close-btn">
+				<button onclick={close} class="close-btn" aria-label="Close dialog">
 					<i class="fi fi-rr-cross-small"></i>
 				</button>
 			</div>

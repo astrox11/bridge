@@ -57,10 +57,19 @@
 						</div>
 					</div>
 					<div class="flex gap-2">
-						<button onclick={() => handleAction(session.id, session.status === 'paused' ? 'resume' : 'pause')} class="btn btn-secondary py-2 px-3">
+						<button 
+							onclick={() => handleAction(session.id, session.status === 'paused' ? 'resume' : 'pause')} 
+							class="btn btn-secondary py-2 px-3"
+							aria-label={session.status === 'paused' ? 'Resume session' : 'Pause session'}
+						>
 							<i class="fi fi-rr-{session.status === 'paused' ? 'play' : 'pause'}"></i>
 						</button>
-						<button onclick={() => handleAction(session.id, 'reset')} class="btn btn-secondary py-2 px-3" style="color: hsl(var(--danger));">
+						<button 
+							onclick={() => handleAction(session.id, 'reset')} 
+							class="btn btn-secondary py-2 px-3" 
+							style="color: hsl(var(--danger));"
+							aria-label="Delete session"
+						>
 							<i class="fi fi-rr-trash"></i>
 						</button>
 					</div>

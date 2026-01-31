@@ -1,11 +1,11 @@
 <script>
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 
 	/** @type {'light' | 'dark' | 'auto'} */
 	let mode = $state('auto');
 
-	// Load saved preference on mount
-	if (browser) {
+	onMount(() => {
 		const saved = localStorage.getItem('theme');
 		if (saved === 'light' || saved === 'dark' || saved === 'auto') {
 			mode = saved;
@@ -13,12 +13,13 @@
 		applyTheme(mode);
 
 		// Listen for system theme changes
-		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		mediaQuery.addEventListener('change', () => {
 			if (mode === 'auto') {
 				applyTheme('auto');
 			}
 		});
-	}
+	});
 
 	/**
 	 * @param {'light' | 'dark' | 'auto'} newMode
@@ -57,7 +58,7 @@
 		onclick={() => setMode('light')} 
 		class="theme-btn" 
 		class:active={mode === 'light'}
-		title="Light mode"
+		aria-label="Light mode"
 	>
 		<i class="fi fi-rr-sun text-sm"></i>
 	</button>
@@ -65,7 +66,7 @@
 		onclick={() => setMode('dark')} 
 		class="theme-btn" 
 		class:active={mode === 'dark'}
-		title="Dark mode"
+		aria-label="Dark mode"
 	>
 		<i class="fi fi-rr-moon text-sm"></i>
 	</button>
@@ -73,7 +74,7 @@
 		onclick={() => setMode('auto')} 
 		class="theme-btn" 
 		class:active={mode === 'auto'}
-		title="Auto (system)"
+		aria-label="Auto theme (system)"
 	>
 		<i class="fi fi-rr-computer text-sm"></i>
 	</button>
