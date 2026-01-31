@@ -7,7 +7,7 @@ function PairingModal($$renderer, $$props) {
     let phone = "";
     if (open) {
       $$renderer2.push("<!--[-->");
-      $$renderer2.push(`<div class="modal-backdrop" role="dialog" aria-modal="true"><div class="modal-card" role="document"><div class="card-header flex justify-between items-center"><span>Link Device</span> <button class="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" style="color: hsl(var(--text-muted));"><i class="fi fi-rr-cross-small"></i></button></div> `);
+      $$renderer2.push(`<div class="modal-backdrop" role="dialog" aria-modal="true"><div class="modal-card" role="document"><div class="card-header flex justify-between items-center"><span>Link Device</span> <button class="close-btn svelte-1i7yvjj"><i class="fi fi-rr-cross-small"></i></button></div> `);
       {
         $$renderer2.push("<!--[-->");
         $$renderer2.push(`<div class="p-5 space-y-4"><div><label for="country-select" class="label">Region</label> `);

@@ -30,7 +30,7 @@ const page = {
 function ThemeToggle($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
     let mode = "auto";
-    $$renderer2.push(`<div class="flex items-center gap-1 p-1 rounded-lg border" style="background: hsl(var(--bg)); border-color: hsl(var(--border));"><button${attr_class("theme-btn", void 0, { "active": mode === "light" })} title="Light mode"><i class="fi fi-rr-sun"></i></button> <button${attr_class("theme-btn", void 0, { "active": mode === "dark" })} title="Dark mode"><i class="fi fi-rr-moon"></i></button> <button${attr_class("theme-btn", void 0, { "active": mode === "auto" })} title="Auto (system)"><i class="fi fi-rr-computer"></i></button></div>`);
+    $$renderer2.push(`<div class="flex items-center gap-0.5 p-1 rounded-lg" style="background: hsl(var(--bg)); border: 1px solid hsl(var(--border));"><button${attr_class("theme-btn", void 0, { "active": mode === "light" })} title="Light mode"><i class="fi fi-rr-sun text-sm"></i></button> <button${attr_class("theme-btn", void 0, { "active": mode === "dark" })} title="Dark mode"><i class="fi fi-rr-moon text-sm"></i></button> <button${attr_class("theme-btn", void 0, { "active": mode === "auto" })} title="Auto (system)"><i class="fi fi-rr-computer text-sm"></i></button></div>`);
   });
 }
 function Header($$renderer, $$props) {

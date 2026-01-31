@@ -1,0 +1,28 @@
+# Build outputs
+/build
+/.svelte-kit
+
+# Dependencies
+node_modules
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor directories
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package manager locks (optional - uncomment if using bun)
+# bun.lockb
