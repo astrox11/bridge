@@ -24,6 +24,11 @@ WORKDIR /root/Whatsaly
 
 RUN make all
 
+# Build Svelte UI
+WORKDIR /root/Whatsaly/ui
+RUN bun install && bun run build
+
+# Build Rust service
 WORKDIR /root/Whatsaly/service
 RUN cargo build --release
 
