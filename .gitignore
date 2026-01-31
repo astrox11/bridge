@@ -20,3 +20,4 @@ database.db-wal
 
 /util/target
 test.ts
+*.db
