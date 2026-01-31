@@ -1,237 +1,157 @@
-import { Database } from "bun:sqlite";
-import config from "../config";
-import * as schema from "./schema";
-import { eq, and } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/bun-sqlite";
 import {
-  devices,
-  sessions,
-  authTokens,
-  sessionGroups,
-  sessionMessages,
-  sessionContacts,
-  sessionConfigurations,
-} from "./schema";
+  sequelize,
+  Session,
+  Device,
+  AuthToken,
+  SessionContact,
+  SessionMessage,
+  SessionConfiguration,
+  SessionGroup,
+  initDb,
+} from './models.mjs';
+import { Op } from 'sequelize';
 
-const url = config.DATABASE_URL;
-const sqlite = new Database(url.replace("sqlite://", ""));
-const db = drizzle(sqlite, { schema });
+// Initialize on import
+await initDb();
 
 export const SessionStatus = {
-  ACTIVE: "active",
-  CONNECTED: "connected",
-  PAUSED: "paused",
-  LOGGED_OUT: "logged_out",
-  PAIRING: "pairing",
-}
+  ACTIVE: 'active',
+  CONNECTED: 'connected',
+  PAUSED: 'paused',
+  LOGGED_OUT: 'logged_out',
+  PAIRING: 'pairing',
+};
 
 export const SessionManager = {
   async set(data) {
-    await db
-      .insert(sessions)
-      .values({
-        ...data,
-        isBusinessAccount: data.isBusinessAccount,
-      })
-      .onConflictDoUpdate({
-        target: sessions.id,
-        set: {
-          status: data.status,
-          name: data.name,
-          profileUrl: data.profileUrl,
-          isBusinessAccount: data.isBusinessAccount,
-        },
-      });
+    await Session.upsert({
+      id: data.id,
+      status: data.status,
+      name: data.name,
+      profileUrl: data.profileUrl,
+      isBusinessAccount: data.isBusinessAccount,
+      createdAt: data.createdAt || new Date(),
+    });
   },
   async get(id) {
-    const res = db.select().from(sessions).where(eq(sessions.id, id)).get();
-    return res || null;
+    return await Session.findByPk(id);
   },
   async del(id) {
-    await db.delete(sessions).where(eq(sessions.id, id));
+    await Session.destroy({ where: { id } });
   },
 };
 
 export const DevicesManager = {
   async set(data) {
-    await db
-      .insert(devices)
-      .values({
-        sessionId: data.sessionId,
-        user: data.User || "", // Map User to user column
-        deviceInfo: data.deviceInfo,
-        lastSeenAt: data.lastSeenAt,
-        createdAt: data.createdAt,
-      })
-      .onConflictDoUpdate({
-        target: [devices.sessionId, devices.user],
-        set: {
-          deviceInfo: data.deviceInfo,
-          lastSeenAt: data.lastSeenAt,
-        },
-      });
+    await Device.upsert({
+      sessionId: data.sessionId,
+      User: data.User || '',
+      deviceInfo: data.deviceInfo,
+      lastSeenAt: data.lastSeenAt || new Date(),
+      createdAt: data.createdAt || new Date(),
+    });
   },
-
   async get(sessionId) {
-    const res = db
-      .select()
-      .from(devices)
-      .where(eq(devices.sessionId, sessionId))
-      .get();
-    if (!res) return null;
-    return {
-      ...res,
-      User: res.user,
-    };
+    return await Device.findOne({ where: { sessionId } });
   },
-
   async del(sessionId) {
-    await db.delete(devices).where(eq(devices.sessionId, sessionId));
+    await Device.destroy({ where: { sessionId } });
   },
 };
 
 export const AuthTokenManager = {
   async set(data) {
-    await db
-      .insert(authTokens)
-      .values(data)
-      .onConflictDoUpdate({
-        target: [authTokens.sessionId, authTokens.token],
-        set: {
-          value: data.value,
-        },
-      });
+    await AuthToken.upsert({
+      sessionId: data.sessionId,
+      token: data.token,
+      value: data.value,
+      createdAt: data.createdAt || new Date(),
+    });
   },
   async get(sessionId) {
-    const res = db
-      .select()
-      .from(authTokens)
-      .where(eq(authTokens.sessionId, sessionId))
-      .get();
-    return res || null;
+    return await AuthToken.findOne({ where: { sessionId } });
   },
   async del(sessionId) {
-    await db.delete(authTokens).where(eq(authTokens.sessionId, sessionId));
+    await AuthToken.destroy({ where: { sessionId } });
   },
 };
 
 export const MessageManager = {
   async set(data) {
-    await db
-      .insert(sessionMessages)
-      .values(data)
-      .onConflictDoUpdate({
-        target: sessionMessages.messageId,
-        set: {
-          messageContent: data.messageContent,
-        },
-      });
+    await SessionMessage.upsert({
+      sessionId: data.sessionId,
+      messageId: data.messageId,
+      messageContent: data.messageContent,
+      createdAt: data.createdAt || new Date(),
+    });
   },
   async get(sessionId) {
-    const res = await db
-      .select()
-      .from(sessionMessages)
-      .where(eq(sessionMessages.sessionId, sessionId));
+    const res = await SessionMessage.findAll({ where: { sessionId } });
     return res.length ? res : null;
   },
   async del(sessionId) {
-    await db
-      .delete(sessionMessages)
-      .where(eq(sessionMessages.sessionId, sessionId));
+    await SessionMessage.destroy({ where: { sessionId } });
   },
 };
 
 export const ContactManager = {
   async set(data) {
-    await db
-      .insert(sessionContacts)
-      .values(data)
-      .onConflictDoUpdate({
-        target: [sessionContacts.sessionId, sessionContacts.contactPn],
-        set: {
-          contactLid: data.contactLid,
-          addedAt: data.addedAt,
-        },
-      });
+    await SessionContact.upsert({
+      sessionId: data.sessionId,
+      contactPn: data.contactPn,
+      contactLid: data.contactLid,
+      addedAt: data.addedAt || new Date(),
+      createdAt: data.createdAt || new Date(),
+    });
   },
-
   async get(sessionId) {
-    const res = await db
-      .select()
-      .from(sessionContacts)
-      .where(eq(sessionContacts.sessionId, sessionId));
+    const res = await SessionContact.findAll({ where: { sessionId } });
     return res.length ? res : null;
   },
-
   async del(sessionId, contactPn) {
-    await db
-      .delete(sessionContacts)
-      .where(
-        and(
-          eq(sessionContacts.sessionId, sessionId),
-          eq(sessionContacts.contactPn, contactPn),
-        ),
-      );
+    await SessionContact.destroy({
+      where: { sessionId, contactPn },
+    });
   },
 };
 
 export const ConfigManager = {
   async set(data) {
-    await db
-      .insert(sessionConfigurations)
-      .values(data)
-      .onConflictDoUpdate({
-        target: sessionConfigurations.sessionId,
-        set: {
-          configKey: data.configKey,
-          configValue: data.configValue,
-        },
-      });
+    await SessionConfiguration.upsert({
+      sessionId: data.sessionId,
+      configKey: data.configKey,
+      configValue: data.configValue,
+      createdAt: data.createdAt || new Date(),
+    });
   },
   async get(sessionId) {
-    const res = db
-      .select()
-      .from(sessionConfigurations)
-      .where(eq(sessionConfigurations.sessionId, sessionId))
-      .get();
-    return res || null;
+    return await SessionConfiguration.findByPk(sessionId);
   },
   async del(sessionId) {
-    await db
-      .delete(sessionConfigurations)
-      .where(eq(sessionConfigurations.sessionId, sessionId));
+    await SessionConfiguration.destroy({ where: { sessionId } });
   },
 };
 
 export const GroupManager = {
   async set(data) {
-    await db
-      .insert(sessionGroups)
-      .values(data)
-      .onConflictDoUpdate({
-        target: sessionGroups.groupId,
-        set: {
-          groupInfo: data.groupInfo,
-          updatedAt: data.updatedAt,
-          sessionId: data.sessionId,
-        },
-      });
+    await SessionGroup.upsert({
+      groupId: data.groupId,
+      sessionId: data.sessionId,
+      groupInfo: data.groupInfo,
+      updatedAt: data.updatedAt || new Date(),
+      createdAt: data.createdAt || new Date(),
+    });
   },
-
   async get(sessionId) {
-    const res = await db
-      .select()
-      .from(sessionGroups)
-      .where(eq(sessionGroups.sessionId, sessionId));
+    const res = await SessionGroup.findAll({ where: { sessionId } });
     return res.length ? res : null;
   },
-
   async del(groupId) {
-    await db.delete(sessionGroups).where(eq(sessionGroups.groupId, groupId));
+    await SessionGroup.destroy({ where: { groupId } });
   },
 };
 
-export * from "./session.mjs";
-export * from "./contacts.mjs";
-export * from "./groups.mjs";
-export * from "./messages.mjs";
+export * from './session.mjs';
+export * from './contacts.mjs';
+export * from './groups.mjs';
+export * from './messages.mjs';

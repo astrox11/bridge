@@ -24,16 +24,6 @@ WORKDIR /root/Whatsaly
 
 RUN make all
 
-# Build Svelte UI
-WORKDIR /root/Whatsaly/ui
-RUN bun install && bun run build
-
-# Build Rust service
-WORKDIR /root/Whatsaly/service
-RUN cargo build --release
-
 EXPOSE 8080 6379
-
-WORKDIR /root/Whatsaly
 
 CMD ["sh", "-c", "redis-server --port 6379 --daemonize yes && ./process.sh"]

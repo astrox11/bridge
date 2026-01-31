@@ -24,20 +24,32 @@ import {
   syncGroupParticipantsToContactList,
 } from "./sql";
 
-const logger = pino({
-  level: "silent",
-});
+// Logging helper (respects LOGS env)
+const DEBUG = process.env.LOGS === 'true';
+const log = (...args) => {
+  if (DEBUG) {
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+    console.log(`  ${time}`, ...args);
+  }
+};
+
+const logger = pino({ level: "silent" });
 
 const redis = createClient({ url: "redis://localhost:6379" });
-redis.on("error", (err) => console.log("Redis Client Error", err));
+redis.on("error", (err) => log("[REDIS] Error:", err.message));
 
 await redis.connect();
+log("[REDIS] Connected");
+
 await loadPlugins();
+log("[PLUGINS] Loaded");
 
 const msgRetryCounterCache = new NodeCache();
 
 const Client = async (phone = process.argv?.[2]) => {
   if (!phone) throw new Error("Phone number is required");
+
+  log("[CLIENT]", phone, "initializing...");
 
   const { state, saveCreds } = await useHybridAuthState(redis, phone);
 
@@ -59,9 +71,9 @@ const Client = async (phone = process.argv?.[2]) => {
 
   if (!sock.authState?.creds?.registered) {
     await delay(5000);
-    console.log("Client not registered");
+    log("[CLIENT]", phone, "not registered, requesting pairing code...");
     const code = await sock.requestPairingCode(phone);
-    console.log("PAIR CODE:", code);
+    log("[CLIENT]", phone, "PAIR CODE:", code);
     socketOut("PAIRING_CODE", { code });
   }
 
@@ -76,15 +88,17 @@ const Client = async (phone = process.argv?.[2]) => {
           DisconnectReason.loggedOut
         ) {
           socketOut("CONNECTION_UPDATE", { status: "needs_restart", phone });
+          log("[CLIENT]", phone, "disconnected, restarting in 10s...");
           await delay(10000);
           Client();
         } else {
           socketOut("CONNECTION_UPDATE", { status: "logged_out", phone });
-          console.log("Connection closed. You are logged out.");
+          log("[CLIENT]", phone, "logged out");
         }
       }
       if (connection === "open") {
         socketOut("CONNECTION_UPDATE", { status: "connected", phone });
+        log("[CLIENT]", phone, "connected");
         await delay(15000);
         await syncGroupMetadata(phone, sock);
         await SessionManager.set({
@@ -150,7 +164,7 @@ const Client = async (phone = process.argv?.[2]) => {
           const metadata = await sock.groupMetadata(group.id);
           await cacheGroupMetadata(phone, metadata);
         } catch (e) {
-          console.error(e);
+          log("[ERROR]", phone, "groups.upsert:", e.message);
         }
       }
     }
@@ -165,7 +179,7 @@ const Client = async (phone = process.argv?.[2]) => {
             await syncGroupParticipantsToContactList(phone, metadata);
           }
         } catch (e) {
-          console.error(e);
+          log("[ERROR]", phone, "groups.update:", e.message);
         }
       }
     }

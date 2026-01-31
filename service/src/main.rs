@@ -1,3 +1,4 @@
+mod logger;
 mod manager;
 mod routes;
 mod sql;
@@ -17,13 +18,17 @@ pub struct AppState {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
+    logger::init();
 
-    let port = env::var("PORT")
+    let port = std::env::var("PORT")
         .ok()
         .and_then(|p| p.parse::<u16>().ok())
         .unwrap_or(8080);
 
+    logger::debug("INIT", "Connecting to SQLite database...");
     let pool = sql::sync_db().await;
+    
+    logger::debug("INIT", "Connecting to Redis...");
     let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
     let (tx, _rx) = tokio::sync::broadcast::channel::<String>(1024);
 
@@ -38,10 +43,14 @@ async fn main() {
         sm: manager,
     });
 
+    logger::debug("INIT", "Loading existing sessions...");
     let sessions: Vec<Session> = sqlx::query_as::<_, Session>("SELECT * FROM sessions")
         .fetch_all(&pool)
         .await
         .unwrap_or_default();
+
+    let active_count = sessions.iter().filter(|s| s.status != "paused").count();
+    let paused_count = sessions.len() - active_count;
 
     for session in sessions {
         if session.status == "paused" {
@@ -55,20 +64,29 @@ async fn main() {
                     is_running: false,
                 },
             );
+            logger::debug("SESSION", &format!("{} (paused)", session.id));
             continue;
         }
+        logger::info("SESSION", &format!("Starting {}", session.id));
         state.sm.start_instance(&session.id, state.clone()).await;
     }
 
-    let static_service = ServeDir::new("../ui");
+    if active_count > 0 || paused_count > 0 {
+        logger::success(
+            "READY",
+            &format!("{} active, {} paused", active_count, paused_count),
+        );
+    }
+
+    let static_service = ServeDir::new("../ui/build");
     let app = routes::create_routes()
         .layer(CorsLayer::permissive())
         .with_state(state)
         .fallback_service(static_service);
 
-    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
-    println!("Service on http://localhost:{}", addr.port());
+    logger::banner(port);
 
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
