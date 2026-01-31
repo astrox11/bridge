@@ -4,17 +4,9 @@
   </a>
 </div>
 
-# Setup Instructions
+# Getting Started
 
-## Prerequisites
-
-Install the following on your system.
-
-- [Docker](https://www.docker.com/get-started)
-
-- [Docker Compose](https://docs.docker.com/compose/install/)
-
-## Installation
+Please ensure [Docker](https://www.docker.com/get-started) is already installed.
 
 1. **Clone the repository:**
 
