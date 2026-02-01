@@ -1,22 +1,33 @@
 use colored::Colorize;
 use std::sync::OnceLock;
+use tokio::sync::broadcast;
 
 static DEBUG_ENABLED: OnceLock<bool> = OnceLock::new();
+static LOG_TX: OnceLock<broadcast::Sender<String>> = OnceLock::new();
 
-/// Initialize the logger. Call this once at startup.
 pub fn init() {
     let logs_enabled = std::env::var("LOGS")
         .map(|v| v.to_lowercase() == "true" || v == "1")
         .unwrap_or(false);
-    
+
     DEBUG_ENABLED.set(logs_enabled).ok();
-    
+
     if logs_enabled {
         debug("Logger", "Debug logging enabled");
     }
 }
 
-/// Check if debug logging is enabled
+pub fn set_broadcast(tx: broadcast::Sender<String>) {
+    LOG_TX.set(tx).ok();
+}
+
+fn broadcast(level: &str, tag: &str, message: &str) {
+    if let Some(tx) = LOG_TX.get() {
+        let log_line = format!("{}|{}|{}", level, tag, message);
+        let _ = tx.send(log_line);
+    }
+}
+
 pub fn is_debug() -> bool {
     *DEBUG_ENABLED.get().unwrap_or(&false)
 }
@@ -25,7 +36,6 @@ fn timestamp() -> String {
     chrono::Local::now().format("%H:%M:%S").to_string()
 }
 
-/// Log an info message (always shown)
 pub fn info(tag: &str, message: &str) {
     println!(
         "  {} {} {}",
@@ -33,9 +43,9 @@ pub fn info(tag: &str, message: &str) {
         format!("[{}]", tag).cyan().bold(),
         message
     );
+    broadcast("INFO", tag, message);
 }
 
-/// Log a success message (always shown)
 pub fn success(tag: &str, message: &str) {
     println!(
         "  {} {} {}",
@@ -43,9 +53,9 @@ pub fn success(tag: &str, message: &str) {
         format!("[{}]", tag).green().bold(),
         message.green()
     );
+    broadcast("SUCCESS", tag, message);
 }
 
-/// Log a warning message (always shown)
 pub fn warn(tag: &str, message: &str) {
     println!(
         "  {} {} {}",
@@ -53,9 +63,9 @@ pub fn warn(tag: &str, message: &str) {
         format!("[{}]", tag).yellow().bold(),
         message.yellow()
     );
+    broadcast("WARN", tag, message);
 }
 
-/// Log an error message (always shown)
 pub fn error(tag: &str, message: &str) {
     eprintln!(
         "  {} {} {}",
@@ -63,9 +73,9 @@ pub fn error(tag: &str, message: &str) {
         format!("[{}]", tag).red().bold(),
         message.red()
     );
+    broadcast("ERROR", tag, message);
 }
 
-/// Log a debug message (only when LOGS=true)
 pub fn debug(tag: &str, message: &str) {
     if is_debug() {
         println!(
@@ -74,10 +84,10 @@ pub fn debug(tag: &str, message: &str) {
             format!("[{}]", tag).magenta(),
             message.dimmed()
         );
+        broadcast("DEBUG", tag, message);
     }
 }
 
-/// Log a startup banner
 pub fn banner(port: u16) {
     println!();
     println!(

@@ -2,12 +2,12 @@ import { Sequelize, DataTypes, Model } from 'sequelize';
 import { resolve } from 'path';
 import config from '../config.mjs';
 
-const dbPath = resolve(config.DATABASE_URL.replace('sqlite://', ''));
+const storage = resolve(config.DATABASE_URL.replace('sqlite://', ''));
 
 export const sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: dbPath,
-    logging: process.env.LOGS === 'true' ? console.log : false,
+    storage,
+    logging: false,
     define: {
         timestamps: false,
         freezeTableName: true,

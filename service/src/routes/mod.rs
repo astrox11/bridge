@@ -1,4 +1,5 @@
 pub mod instance;
+pub mod logs;
 pub mod pair;
 pub mod settings;
 pub mod system;
@@ -35,9 +36,7 @@ pub fn create_routes() -> Router<Arc<AppState>> {
         .route("/api/instances/:phone/pair", post(pair::pair_instance))
         .route("/api/settings/:phone", get(settings::get_settings))
         .route("/api/settings/:phone", patch(settings::update_setting))
-        .route(
-            "/api/system/stream",
-            get(crate::routes::system::system_stream),
-        )
+        .route("/api/system/stream", get(system::system_stream))
+        .route("/api/logs/stream", get(logs::logs_stream))
         .route("/util/whatsapp-news", get(util::get_whatsapp_news))
 }

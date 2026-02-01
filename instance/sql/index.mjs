@@ -1,5 +1,4 @@
 import {
-  sequelize,
   Session,
   Device,
   AuthToken,
@@ -9,9 +8,7 @@ import {
   SessionGroup,
   initDb,
 } from './models.mjs';
-import { Op } from 'sequelize';
 
-// Initialize on import
 await initDb();
 
 export const SessionStatus = {

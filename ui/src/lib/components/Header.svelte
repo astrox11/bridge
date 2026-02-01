@@ -4,6 +4,7 @@
 	
 	const navItems = [
 		{ href: '/', label: 'Dashboard', mobileLabel: 'Overview', icon: 'fi-rr-apps' },
+		{ href: '/logs', label: 'Logs', mobileLabel: 'Logs', icon: 'fi-rr-document' },
 		{ href: '/news', label: 'Updates', mobileLabel: 'Updates', icon: 'fi-rr-bell' },
 		{ href: '/pair', label: 'Link', mobileLabel: 'Connect', icon: 'fi-rr-add' }
 	];

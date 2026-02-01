@@ -13,6 +13,7 @@ pub struct AppState {
     pub db: sqlx::SqlitePool,
     pub redis: redis::Client,
     pub sm: manager::SessionManager,
+    pub log_tx: tokio::sync::broadcast::Sender<String>,
 }
 
 #[tokio::main]
@@ -30,7 +31,25 @@ async fn main() {
 
     logger::debug("INIT", "Connecting to Redis...");
     let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
+
+    // Check if Redis is available
+    match redis_client.get_connection() {
+        Ok(mut conn) => {
+            if redis::cmd("PING").query::<String>(&mut conn).is_ok() {
+                logger::success("REDIS", "Connected");
+            }
+        }
+        Err(e) => {
+            logger::error("REDIS", &format!("Not running: {}", e));
+            logger::error("REDIS", "Please start Redis manually");
+            std::process::exit(1);
+        }
+    }
+
     let (tx, _rx) = tokio::sync::broadcast::channel::<String>(1024);
+
+    let (log_tx, _) = tokio::sync::broadcast::channel::<String>(256);
+    logger::set_broadcast(log_tx.clone());
 
     let manager = manager::SessionManager {
         workers: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
@@ -41,6 +60,7 @@ async fn main() {
         db: pool.clone(),
         redis: redis_client,
         sm: manager,
+        log_tx,
     });
 
     logger::debug("INIT", "Loading existing sessions...");

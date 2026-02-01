@@ -47,8 +47,8 @@ pub async fn run(phone: String, state: Arc<AppState>) {
             .env("NODE_OPTIONS", "--max-old-space-size=1024")
             .current_dir("instance")
             .kill_on_drop(true)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .spawn()
             .expect("Failed to spawn bun");
 
