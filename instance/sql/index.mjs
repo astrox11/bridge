@@ -6,6 +6,7 @@ import {
   SessionMessage,
   SessionConfiguration,
   SessionGroup,
+  Economy,
   initDb,
 } from './models.mjs';
 
@@ -146,6 +147,27 @@ export const GroupManager = {
   async del(groupId) {
     await SessionGroup.destroy({ where: { groupId } });
   },
+};
+
+export const EconomyManager = {
+  async get(sessionId, userId) {
+    const [eco] = await Economy.findOrCreate({
+      where: { sessionId, userId },
+      defaults: {
+        sessionId,
+        userId,
+        balance: 5000,
+        bank: 0
+      }
+    });
+    return eco;
+  },
+  async update(sessionId, userId, data) {
+    await Economy.update(data, { where: { sessionId, userId } });
+  },
+  async reset(sessionId, userId) {
+    await Economy.destroy({ where: { sessionId, userId } });
+  }
 };
 
 export * from './session.mjs';

@@ -125,6 +125,24 @@ SessionMessage.belongsTo(Session, { foreignKey: 'sessionId' });
 SessionConfiguration.belongsTo(Session, { foreignKey: 'sessionId' });
 SessionGroup.belongsTo(Session, { foreignKey: 'sessionId' });
 
+export class Economy extends Model { }
+Economy.init(
+    {
+        sessionId: { type: DataTypes.TEXT, allowNull: false, primaryKey: true },
+        userId: { type: DataTypes.TEXT, allowNull: false, primaryKey: true },
+        balance: { type: DataTypes.BIGINT, defaultValue: 5000 },
+        bank: { type: DataTypes.BIGINT, defaultValue: 0 },
+        lastDaily: { type: DataTypes.DATE },
+        lastWork: { type: DataTypes.DATE },
+        lastRob: { type: DataTypes.DATE },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    },
+    { sequelize, modelName: 'economy' }
+);
+
+Session.hasMany(Economy, { foreignKey: 'sessionId', onDelete: 'CASCADE' });
+Economy.belongsTo(Session, { foreignKey: 'sessionId' });
+
 export async function initDb() {
     await sequelize.authenticate();
 
