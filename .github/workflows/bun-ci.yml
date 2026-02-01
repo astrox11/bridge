@@ -2,12 +2,12 @@ name: Bun CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["master"]
     paths:
       - "instance/**"
       - "ui/**"
   pull_request:
-    branches: ["main"]
+    branches: ["master"]
     paths:
       - "instance/**"
       - "ui/**"
