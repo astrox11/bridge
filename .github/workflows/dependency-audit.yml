@@ -1,0 +1,32 @@
+name: Dependency Audit
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # Every Monday at midnight
+  workflow_dispatch:
+
+jobs:
+  security_audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Rust Audit
+        run: cargo audit
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Bun Audit (Instance)
+        working-directory: ./instance
+        run: bun audit
+
+      - name: Bun Audit (UI)
+        working-directory: ./ui
+        run: bun audit

@@ -1,0 +1,25 @@
+service:
+  - changed-files:
+      - any-glob-to-any-file: "service/**"
+
+ui:
+  - changed-files:
+      - any-glob-to-any-file: "ui/**"
+
+instance:
+  - changed-files:
+      - any-glob-to-any-file: "instance/**"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.md"
+          - "docs/**"
+
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "docker-compose.yml"
+          - "Dockerfile"
+          - "Makefile"

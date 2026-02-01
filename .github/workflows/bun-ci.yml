@@ -1,0 +1,37 @@
+name: Bun CI
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "instance/**"
+      - "ui/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "instance/**"
+      - "ui/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Instance - Install dependencies
+        working-directory: ./instance
+        run: bun install
+
+      - name: UI - Install dependencies
+        working-directory: ./ui
+        run: bun install
+
+      - name: UI - Build
+        working-directory: ./ui
+        run: bun run build

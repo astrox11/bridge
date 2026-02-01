@@ -1,0 +1,29 @@
+name: Issue Greeting
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Welcome new issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const author = context.payload.issue.user.login;
+            const issueNumber = context.payload.issue.number;
+            const repo = context.repo.repo;
+            const owner = context.repo.owner;
+
+            const message = `**Welcome to Whatsaly!** 🚀\n\nHi @${author}, thanks for opening an issue. We appreciate your feedback and contributions to making **Whatsaly** better and safer.\n\nA maintainer will review your issue soon. In the meantime, please make sure you've provided enough context and follow the [Contributing Guidelines](CONTRIBUTING.md).`;
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              body: message
+            });
