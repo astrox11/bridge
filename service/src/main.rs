@@ -78,7 +78,7 @@ async fn main() {
         );
     }
 
-    let static_service = ServeDir::new("../ui/build");
+    let static_service = ServeDir::new("ui/build");
     let app = routes::create_routes()
         .layer(CorsLayer::permissive())
         .with_state(state)

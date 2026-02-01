@@ -12,9 +12,16 @@ export const sequelize = new Sequelize({
         timestamps: false,
         freezeTableName: true,
     },
+    dialectOptions: {
+        mode: 2,
+    },
+    pool: {
+        max: 1,
+        min: 1,
+        idle: 10000,
+    },
 });
 
-// Session model
 export class Session extends Model { }
 Session.init(
     {
@@ -28,7 +35,7 @@ Session.init(
     { sequelize, modelName: 'sessions' }
 );
 
-// Device model
+
 export class Device extends Model { }
 Device.init(
     {
@@ -41,7 +48,7 @@ Device.init(
     { sequelize, modelName: 'devices' }
 );
 
-// AuthToken model
+
 export class AuthToken extends Model { }
 AuthToken.init(
     {
@@ -53,7 +60,7 @@ AuthToken.init(
     { sequelize, modelName: 'auth_tokens' }
 );
 
-// SessionContact model
+
 export class SessionContact extends Model { }
 SessionContact.init(
     {
@@ -66,7 +73,7 @@ SessionContact.init(
     { sequelize, modelName: 'session_contacts' }
 );
 
-// SessionMessage model
+
 export class SessionMessage extends Model { }
 SessionMessage.init(
     {
@@ -78,7 +85,7 @@ SessionMessage.init(
     { sequelize, modelName: 'session_messages' }
 );
 
-// SessionConfiguration model
+
 export class SessionConfiguration extends Model { }
 SessionConfiguration.init(
     {
@@ -90,7 +97,7 @@ SessionConfiguration.init(
     { sequelize, modelName: 'session_configurations' }
 );
 
-// SessionGroup model
+
 export class SessionGroup extends Model { }
 SessionGroup.init(
     {
@@ -103,7 +110,7 @@ SessionGroup.init(
     { sequelize, modelName: 'session_groups' }
 );
 
-// Associations
+
 Session.hasMany(Device, { foreignKey: 'sessionId', onDelete: 'CASCADE' });
 Session.hasMany(AuthToken, { foreignKey: 'sessionId', onDelete: 'CASCADE' });
 Session.hasMany(SessionContact, { foreignKey: 'sessionId', onDelete: 'CASCADE' });
@@ -118,9 +125,14 @@ SessionMessage.belongsTo(Session, { foreignKey: 'sessionId' });
 SessionConfiguration.belongsTo(Session, { foreignKey: 'sessionId' });
 SessionGroup.belongsTo(Session, { foreignKey: 'sessionId' });
 
-// Initialize database
 export async function initDb() {
     await sequelize.authenticate();
-    // Run migrations or sync if needed
-    // await sequelize.sync();
+
+    await sequelize.query("PRAGMA journal_mode = WAL;");
+    await sequelize.query("PRAGMA synchronous = OFF;");
+    await sequelize.query("PRAGMA temp_store = MEMORY;");
+    await sequelize.query("PRAGMA mmap_size = 268435456;");
+    await sequelize.query("PRAGMA cache_size = -64000;");
+
+    await sequelize.sync();
 }

@@ -36,7 +36,11 @@ pub async fn sync_db() -> SqlitePool {
     let opts = SqliteConnectOptions::from_str(database_url)
         .expect("Invalid database URL")
         .create_if_missing(true)
-        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+        .synchronous(sqlx::sqlite::SqliteSynchronous::Off)
+        .pragma("temp_store", "MEMORY")
+        .pragma("mmap_size", "268435456")
+        .pragma("cache_size", "-64000");
 
     let pool = SqlitePool::connect_with(opts)
         .await

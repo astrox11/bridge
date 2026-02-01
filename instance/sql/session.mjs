@@ -1,9 +1,15 @@
 import { proto, initAuthCreds, BufferJSON } from "baileys";
-import { AuthTokenManager } from "./index.mjs";
+import { AuthTokenManager, SessionManager, SessionStatus } from "./index.mjs";
 import { handleLidMapping } from "./contacts.mjs";
 
 export const useHybridAuthState = async (sock, phone) => {
   const keyPrefix = `session:${phone}:`;
+
+  await SessionManager.set({
+    id: phone,
+    status: SessionStatus.PAIRING,
+    createdAt: new Date(),
+  });
 
   const saveToSQL = async (key, value) => {
     await AuthTokenManager.set({

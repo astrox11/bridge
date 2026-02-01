@@ -18,11 +18,17 @@ pub async fn run(phone: String, state: Arc<AppState>) {
         .expect("Failed to bind TCP");
     let port = listener.local_addr().unwrap().port();
 
-    logger::debug("SUPERVISOR", &format!("{} listening on port {}", phone, port));
+    logger::debug(
+        "SUPERVISOR",
+        &format!("{} listening on port {}", phone, port),
+    );
 
     loop {
         if is_paused {
-            logger::debug("SUPERVISOR", &format!("{} waiting for resume signal", phone));
+            logger::debug(
+                "SUPERVISOR",
+                &format!("{} waiting for resume signal", phone),
+            );
             while let Ok(msg) = rx.recv().await {
                 let parts: Vec<&str> = msg.splitn(2, ':').collect();
                 if parts.get(0) == Some(&phone.as_str()) && parts.get(1) == Some(&"resume") {
@@ -39,7 +45,7 @@ pub async fn run(phone: String, state: Arc<AppState>) {
         let mut child = tokio::process::Command::new("bun")
             .args(["run", "client.mjs", &phone, &port.to_string()])
             .env("NODE_OPTIONS", "--max-old-space-size=1024")
-            .current_dir("../instance")
+            .current_dir("instance")
             .kill_on_drop(true)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -157,20 +163,27 @@ async fn handle_event(event: WorkerEvent, state: Arc<AppState>, phone: &str) {
         match inner_event {
             Event::Connection(conn) => {
                 logger::debug("EVENT", &format!("{} status: {}", conn.phone, conn.status));
-                
+
                 // Handle logged_out - kill instance and flush data
                 if conn.status == "logged_out" {
-                    logger::warn("SESSION", &format!("{} logged out, clearing data...", conn.phone));
-                    
+                    logger::warn(
+                        "SESSION",
+                        &format!("{} logged out, clearing data...", conn.phone),
+                    );
+
                     // Clear session (kills process, flushes Redis, deletes from DB)
-                    if let Err(e) = state.sm.clear_session(&conn.phone, &state.db, &state.redis).await {
+                    if let Err(e) = state
+                        .sm
+                        .clear_session(&conn.phone, &state.db, &state.redis)
+                        .await
+                    {
                         logger::error("SESSION", &format!("{} failed to clear: {}", conn.phone, e));
                     } else {
                         logger::success("SESSION", &format!("{} data cleared", conn.phone));
                     }
                     return;
                 }
-                
+
                 // Update worker status
                 let mut workers = state.sm.workers.write().await;
                 if let Some(w) = workers.get_mut(&conn.phone) {
@@ -182,7 +195,7 @@ async fn handle_event(event: WorkerEvent, state: Arc<AppState>, phone: &str) {
                         w.pairing_code = Some(conn.qr.clone());
                     }
                 }
-                
+
                 if conn.status == "connected" {
                     logger::success("SESSION", &format!("{} connected", conn.phone));
                 }

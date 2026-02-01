@@ -1,5 +1,5 @@
 TARGET = nodejs
-OUT = ../src/pkg
+OUT = ../instance/pkg
 PROFILE = release
 
 export RUSTFLAGS = -C opt-level=z -C lto -C embed-bitcode=yes
@@ -7,7 +7,7 @@ export RUSTFLAGS = -C opt-level=z -C lto -C embed-bitcode=yes
 .PHONY: build clean
 
 build:
-	wasm-pack build --$(PROFILE) --target $(TARGET) --out-dir $(OUT)
+	wasm-pack build --$(PROFILE) --target $(TARGET) --out-dir $(OUT) --no-typescript
 
 clean:
 	rm -rf target $(OUT)
