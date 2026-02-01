@@ -51,10 +51,13 @@ export const socketOut = (tag, data) => {
 };
 
 export const handleCommand = async (msg) => {
+  log("[CMD]", msg);
   if (!msg?.text) return;
 
   const args = msg.text?.split(" ").slice(1).join(" ");
+  log("[CMD]", args);
   const cmd = findCommand(msg.text.split(" ")[0]?.toLowerCase());
+  log("[CMD]", cmd);
 
   if (!cmd) return;
 

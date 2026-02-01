@@ -10,7 +10,7 @@ export const loadPlugins = async (
 ) => {
   try {
     const files = readdirSync(directory)
-      .filter((file) => file.endsWith(".ts") || file.endsWith(".js"))
+      .filter((file) => file.endsWith(".ts") || file.endsWith(".js") || file.endsWith(".mjs"))
       .filter((file) => !file.startsWith("index."));
 
     for (const file of files) {

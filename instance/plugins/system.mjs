@@ -1,5 +1,5 @@
 import os from "os";
-import { Command, getAllCommands } from ".";
+import { getAllCommands } from ".";
 import { toSmallCaps } from "../utility";
 
 export default [
