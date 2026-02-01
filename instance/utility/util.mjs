@@ -1,5 +1,6 @@
 import { findCommand, getAllEvents } from "../plugins/index.mjs";
 import { getAlternateId } from "../sql";
+import { Configuration } from "../sql/configuration.mjs";
 import { to_small_caps } from "../pkg/util";
 
 import * as net from "net";
@@ -53,12 +54,30 @@ export const socketOut = (tag, data) => {
 export const handleCommand = async (msg) => {
   if (!msg?.text) return;
 
-  const args = msg.text?.split(" ").slice(1).join(" ");
-  const cmd = findCommand(msg.text.split(" ")[0]?.toLowerCase());
+  const config = new Configuration(msg.session);
+  const prefixes = await config.getPrefix();
+
+  let commandName;
+  let args;
+
+  if (prefixes && prefixes.length > 0) {
+    const firstChar = msg.text.charAt(0);
+    if (prefixes.includes(firstChar)) {
+      commandName = msg.text.slice(1).split(" ")[0]?.toLowerCase();
+      args = msg.text.split(" ").slice(1).join(" ");
+    } else {
+      return;
+    }
+  } else {
+    commandName = msg.text.split(" ")[0]?.toLowerCase();
+    args = msg.text.split(" ").slice(1).join(" ");
+  }
+
+  const cmd = findCommand(commandName);
 
   if (!cmd) return;
 
-  const validation = vaildateCmd(cmd, msg);
+  const validation = await vaildateCmd(cmd, msg, config);
   if (validation) return validation;
 
   try {
@@ -70,11 +89,22 @@ export const handleCommand = async (msg) => {
   }
 };
 
-const vaildateCmd = function (cmd, msg) {
+const vaildateCmd = async function (cmd, msg, config) {
   if (cmd?.isGroup && !msg.isGroup) return msg.send("```For Groups Only```");
   if (cmd?.isAdmin && !msg.isAdmin) return msg.send("```For Admins Only```");
   if (cmd?.fromMe && !msg.key.fromMe)
     return msg.send("```For Bot Owner Only```");
+
+  const mode = await config.getMode();
+  if (mode === 'private' && !msg.key.fromMe) {
+    const sudoUsers = await config.getSudo();
+    const sender = msg.sender?.replace(/[^0-9]/g, '');
+    const isSudo = sudoUsers.some(id => sender.includes(id));
+
+    if (!isSudo) {
+      return msg.send("```Bot is in Private Mode```");
+    }
+  }
 };
 
 export const handleEvent = async (msg) => {

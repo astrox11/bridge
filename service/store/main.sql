@@ -24,7 +24,7 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    IF NOT EXISTS auth_tokens (
+    IF NOT EXISTS tokens (
         sessionId TEXT NOT NULL,
         token TEXT NOT NULL,
         value TEXT NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    IF NOT EXISTS session_contacts (
+    IF NOT EXISTS contacts (
         sessionId TEXT NOT NULL,
         contactPn TEXT NOT NULL,
         contactLid TEXT,
@@ -44,10 +44,10 @@ CREATE TABLE
         FOREIGN KEY (sessionId) REFERENCES sessions (id) ON DELETE CASCADE
     );
 
-CREATE INDEX IF NOT EXISTS idx_session_contacts_sessionId ON session_contacts (sessionId);
+CREATE INDEX IF NOT EXISTS idx_contacts_sessionId ON contacts (sessionId);
 
 CREATE TABLE
-    IF NOT EXISTS session_messages (
+    IF NOT EXISTS messages (
         sessionId TEXT NOT NULL,
         messageId TEXT PRIMARY KEY,
         messageContent TEXT,
@@ -56,7 +56,7 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    IF NOT EXISTS session_configurations (
+    IF NOT EXISTS configurations (
         sessionId TEXT PRIMARY KEY,
         configKey TEXT NOT NULL,
         configValue TEXT,
@@ -65,7 +65,7 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    IF NOT EXISTS session_groups (
+    IF NOT EXISTS groups (
         groupId TEXT PRIMARY KEY,
         sessionId TEXT NOT NULL,
         groupInfo TEXT,

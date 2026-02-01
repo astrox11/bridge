@@ -89,7 +89,7 @@ impl SessionManager {
             .bind(phone)
             .execute(&mut *tx)
             .await?;
-        sqlx::query("DELETE FROM session_configurations WHERE sessionId = ?")
+        sqlx::query("DELETE FROM configurations WHERE sessionId = ?")
             .bind(phone)
             .execute(&mut *tx)
             .await?;

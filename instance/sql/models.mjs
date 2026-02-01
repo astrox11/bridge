@@ -57,7 +57,7 @@ AuthToken.init(
         value: { type: DataTypes.TEXT, allowNull: false },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     },
-    { sequelize, modelName: 'auth_tokens' }
+    { sequelize, modelName: 'tokens' }
 );
 
 
@@ -70,7 +70,7 @@ SessionContact.init(
         addedAt: { type: DataTypes.DATE, allowNull: false },
         createdAt: { type: DataTypes.DATE, allowNull: false },
     },
-    { sequelize, modelName: 'session_contacts' }
+    { sequelize, modelName: 'contacts' }
 );
 
 
@@ -82,7 +82,7 @@ SessionMessage.init(
         messageContent: { type: DataTypes.TEXT },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     },
-    { sequelize, modelName: 'session_messages' }
+    { sequelize, modelName: 'messages' }
 );
 
 
@@ -90,11 +90,11 @@ export class SessionConfiguration extends Model { }
 SessionConfiguration.init(
     {
         sessionId: { type: DataTypes.TEXT, primaryKey: true },
-        configKey: { type: DataTypes.TEXT, allowNull: false },
+        configKey: { type: DataTypes.TEXT, allowNull: false, primaryKey: true },
         configValue: { type: DataTypes.TEXT },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     },
-    { sequelize, modelName: 'session_configurations' }
+    { sequelize, tableName: 'session_configurations' }
 );
 
 
@@ -107,7 +107,7 @@ SessionGroup.init(
         updatedAt: { type: DataTypes.DATE, allowNull: false },
         createdAt: { type: DataTypes.DATE, allowNull: false },
     },
-    { sequelize, modelName: 'session_groups' }
+    { sequelize, modelName: 'groups' }
 );
 
 

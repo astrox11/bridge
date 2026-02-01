@@ -18,16 +18,15 @@ pub async fn get_settings(
     Path(phone): Path<String>,
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, StatusCode> {
-    let settings: Vec<UserSettings> = sqlx::query_as::<_, UserSettings>(
-        "SELECT * FROM session_configurations WHERE sessionId = ?",
-    )
-    .bind(&phone)
-    .fetch_all(&state.db)
-    .await
-    .map_err(|e| {
-        eprintln!("Settings fetch error: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let settings: Vec<UserSettings> =
+        sqlx::query_as::<_, UserSettings>("SELECT * FROM configurations WHERE sessionId = ?")
+            .bind(&phone)
+            .fetch_all(&state.db)
+            .await
+            .map_err(|e| {
+                eprintln!("Settings fetch error: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
 
     Ok(Json(json!({
         "status": "success",
@@ -50,7 +49,7 @@ pub async fn update_setting(
     };
 
     sqlx::query(
-        "INSERT INTO session_configurations (sessionId, configKey, configValue) 
+        "INSERT INTO configurations (sessionId, configKey, configValue) 
          VALUES (?, ?, ?) 
          ON CONFLICT(sessionId, configKey) DO UPDATE SET configValue = excluded.configValue",
     )

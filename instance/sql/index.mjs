@@ -122,11 +122,18 @@ export const ConfigManager = {
       createdAt: data.createdAt || new Date(),
     });
   },
-  async get(sessionId) {
-    return await SessionConfiguration.findByPk(sessionId);
+  async get(sessionId, configKey) {
+    return await SessionConfiguration.findOne({ where: { sessionId, configKey } });
   },
-  async del(sessionId) {
-    await SessionConfiguration.destroy({ where: { sessionId } });
+  async getAll(sessionId) {
+    return await SessionConfiguration.findAll({ where: { sessionId } });
+  },
+  async del(sessionId, configKey) {
+    if (configKey) {
+      await SessionConfiguration.destroy({ where: { sessionId, configKey } });
+    } else {
+      await SessionConfiguration.destroy({ where: { sessionId } });
+    }
   },
 };
 
