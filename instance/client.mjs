@@ -24,7 +24,6 @@ import {
   syncGroupParticipantsToContactList,
 } from "./sql";
 
-// Logging helper (respects LOGS env)
 const DEBUG = process.env.LOGS === 'true';
 const log = (...args) => {
   if (DEBUG) {

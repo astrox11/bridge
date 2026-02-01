@@ -3,9 +3,7 @@ import { join } from "path";
 
 const env = join(process.cwd(), "..", ".env");
 
-config({ debug: false });
-
-config({ path: env, debug: false });
+config({ path: env, quiet: true });
 
 export default {
   PORT: process.env.PORT || "8080",

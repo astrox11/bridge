@@ -1,7 +1,8 @@
 import { Sequelize, DataTypes, Model } from 'sequelize';
+import { resolve } from 'path';
 import config from '../config.mjs';
 
-const dbPath = config.DATABASE_URL.replace('sqlite://', '');
+const dbPath = resolve(config.DATABASE_URL.replace('sqlite://', ''));
 
 export const sequelize = new Sequelize({
     dialect: 'sqlite',

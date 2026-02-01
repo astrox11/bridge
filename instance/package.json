@@ -13,11 +13,11 @@
     "baileys": "https://github.com/WhiskeySockets/Baileys",
     "cheerio": "^1.2.0",
     "dotenv": "^17.2.3",
-    "pino": "^9.0.0",
-    "protobufjs": "^7.4.0",
+    "pino": "^9.14.0",
+    "protobufjs": "^7.5.4",
     "redis": "^5.10.0",
-    "sequelize": "^6.37.0",
-    "better-sqlite3": "^12.6.2"
+    "sequelize": "^6.37.7",
+    "sqlite3": "^5.1.7"
   },
   "scripts": {
     "start": "bun run client.mjs",
