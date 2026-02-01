@@ -1,4 +1,4 @@
-.PHONY: all setup util instance ui service clean
+.PHONY: all setup util instance ui service
 
 all: setup util instance ui service
 
@@ -15,11 +15,3 @@ ui:
 
 service:
 	cd service && cargo build --release
-
-clean:
-	-rm -rf ui/build ui/.svelte-kit ui/node_modules
-	-rm -rf instance/node_modules
-	-rm -rf service/target
-
-dev:
-	cd ui && bun dev
