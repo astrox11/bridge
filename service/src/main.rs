@@ -32,16 +32,46 @@ async fn main() {
     logger::debug("INIT", "Connecting to Redis...");
     let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
 
-    // Check if Redis is available
-    match redis_client.get_connection() {
-        Ok(mut conn) => {
-            if redis::cmd("PING").query::<String>(&mut conn).is_ok() {
-                logger::success("REDIS", "Connected");
+    let redis_connected = match redis_client.get_connection() {
+        Ok(mut conn) => redis::cmd("PING").query::<String>(&mut conn).is_ok(),
+        Err(_) => false,
+    };
+
+    if redis_connected {
+        logger::success("REDIS", "Connected");
+    } else {
+        if cfg!(windows) {
+            logger::info("REDIS", "Starting WSL...");
+
+            tokio::spawn(async {
+                loop {
+                    let _ = tokio::process::Command::new("wsl")
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
+                        .status()
+                        .await;
+                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                }
+            });
+
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+
+            match redis_client.get_connection() {
+                Ok(mut conn) => {
+                    if redis::cmd("PING").query::<String>(&mut conn).is_ok() {
+                        logger::success("REDIS", "Connected via WSL");
+                    } else {
+                        logger::error("REDIS", "Failed to connect after starting WSL");
+                        std::process::exit(1);
+                    }
+                }
+                Err(e) => {
+                    logger::error("REDIS", &format!("Failed to connect: {}", e));
+                    std::process::exit(1);
+                }
             }
-        }
-        Err(e) => {
-            logger::error("REDIS", &format!("Not running: {}", e));
-            logger::error("REDIS", "Please start Redis manually");
+        } else {
+            logger::error("REDIS", "Not running, please start Redis manually");
             std::process::exit(1);
         }
     }

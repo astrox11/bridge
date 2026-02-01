@@ -34,14 +34,21 @@ const log = (...args) => {
 
 const logger = pino({ level: "silent" });
 
-const redis = createClient({ url: "redis://localhost:6379" });
-redis.on("error", (err) => log("[REDIS] Error:", err.message));
+const redis = await createClient({
+  url: "redis://localhost:6379",
+  socket: {
+    connectTimeout: 10000,
+    keepAlive: 5000,
+    reconnectStrategy: (retries) => {
+      if (retries > 20) return new Error("Max retries reached");
+      return Math.min(retries * 100, 3000);
+    }
+  }
+}).on("error", (err) => log("[REDIS] Error:", err.message)).connect().catch(console.error);
 
-await redis.connect();
 log("[REDIS] Connected");
 
 await loadPlugins();
-log("[PLUGINS] Loaded");
 
 const msgRetryCounterCache = new NodeCache();
 
