@@ -18,7 +18,6 @@ It serves as a standalone TypeScript application powered by the [Bun](https://bu
 
 ```bash
 bun install
-bun run db:push
 ```
 
 **Execution**
