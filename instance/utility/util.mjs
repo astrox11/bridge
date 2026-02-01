@@ -59,7 +59,17 @@ export const handleCommand = async (msg) => {
   if (!cmd) return;
 
   log("[CMD]", msg.text.split(" ")[0]);
-  return vaildateCmd(cmd, msg) || (await cmd?.function(msg, args));
+
+  const validation = vaildateCmd(cmd, msg);
+  if (validation) return validation;
+
+  try {
+    return await cmd?.function(msg, args);
+  } catch (error) {
+    log("[CMD ERROR]", error.message);
+    const errorText = "```Error\n" + (error.message || String(error)) + "```";
+    return await msg.client.sendMessage(msg.client.user.id, { text: errorText });
+  }
 };
 
 const vaildateCmd = function (cmd, msg) {

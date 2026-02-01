@@ -31,7 +31,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 pub async fn sync_db() -> SqlitePool {
-    let database_url = "sqlite://../database.db";
+    let database_url = "sqlite://database.db";
 
     let opts = SqliteConnectOptions::from_str(database_url)
         .expect("Invalid database URL")
@@ -42,7 +42,7 @@ pub async fn sync_db() -> SqlitePool {
         .await
         .expect("Failed to initialize SQLite database");
 
-    let schema_path = "../store/main.sql";
+    let schema_path = "store/main.sql";
 
     if Path::new(schema_path).exists() {
         match fs::read_to_string(schema_path) {

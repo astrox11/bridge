@@ -1,3 +1,1 @@
-Set-Location -Path "service"
-cargo run --release
-Pause
+./service/target/release/whatsaly-api.exe

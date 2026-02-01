@@ -1,5 +1,5 @@
 #!/bin/bash
 
-cd "$(dirname "$0")/service" || {  exit 1; }
+cd "$(dirname "$0")" || exit 1
 
-cargo run --release
+./service/target/release/whatsaly-api

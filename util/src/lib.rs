@@ -4,50 +4,42 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{RequestInit, Response};
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct QuotedKey {
-    pub remoteJid: String,
+    pub remote_jid: String,
     pub id: String,
     pub participant: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct MediaFlags {
-    pub image: bool,
-    pub video: bool,
-    pub audio: bool,
-    pub document: bool,
-    pub sticker: bool,
-}
-
-#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct QuotedMessage {
     pub key: QuotedKey,
     pub stanza_id: String,
     pub sender: String,
-    pub m_type: String,
+    pub mtype: String,
     pub text: Option<String>,
-    pub is_view_once: bool,
-    pub media_flags: MediaFlags,
+    pub viewonce: bool,
     #[serde(with = "serde_wasm_bindgen::preserve")]
     pub message: JsValue,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FullSerializedResponse {
     pub chat: String,
     pub sender: String,
     pub device: String,
-    pub m_type: String,
+    pub mtype: String,
     pub text: Option<String>,
-    pub isGroup: bool,
-    pub media_flags: MediaFlags,
+    pub is_group: bool,
     pub quoted: Option<QuotedMessage>,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ParsedResult {
-    #[serde(rename = "mimeType")]
-    pub mime_type: String,
+    pub mimetype: String,
     pub content: Option<String>,
     #[serde(with = "serde_wasm_bindgen::preserve")]
     pub buffer: JsValue,
@@ -140,16 +132,15 @@ pub fn serialize_full(msg: JsValue) -> Result<JsValue, JsValue> {
 
             quoted = Some(QuotedMessage {
                 key: QuotedKey {
-                    remoteJid: remote_jid.clone(),
+                    remote_jid: remote_jid.clone(),
                     id: stanza_id.clone(),
                     participant: participant.clone(),
                 },
                 stanza_id,
                 sender: participant.unwrap_or_default(),
-                m_type: q_type,
+                mtype: q_type,
                 text: extract_text_from_message(quoted_msg.clone()),
-                is_view_once: false, // Can be refined if needed
-                media_flags: extract_media_flags(&quoted_msg),
+                viewonce: false,
                 message: quoted_msg,
             });
         }
@@ -164,10 +155,9 @@ pub fn serialize_full(msg: JsValue) -> Result<JsValue, JsValue> {
                 .and_then(|v| v.as_string())
                 .unwrap_or_default(),
         ),
-        m_type,
+        mtype: m_type,
         text: extract_text_from_message(content.clone()),
-        isGroup: remote_jid.ends_with("@g.us"),
-        media_flags: extract_media_flags(&content),
+        is_group: remote_jid.ends_with("@g.us"),
         quoted,
     };
 
@@ -236,17 +226,6 @@ fn extract_normalized_sender(key: &JsValue, remote_jid: &str) -> String {
         return format!("{}@{}", user, server);
     }
     raw
-}
-
-fn extract_media_flags(content: &JsValue) -> MediaFlags {
-    let h = |p: &str| js_sys::Reflect::has(content, &p.into()).unwrap_or(false);
-    MediaFlags {
-        image: h("imageMessage"),
-        video: h("videoMessage"),
-        audio: h("audioMessage"),
-        document: h("documentMessage"),
-        sticker: h("stickerMessage"),
-    }
 }
 
 #[wasm_bindgen]
@@ -328,7 +307,7 @@ pub async fn parse_content(input: JsValue) -> Result<JsValue, JsValue> {
             None,
         ))?);
     }
-    Err(JsValue::from_str("Unsupported type"))
+    Ok(JsValue::NULL)
 }
 
 fn create_result_from_bytes(bytes: Vec<u8>, hint: Option<String>) -> ParsedResult {
@@ -357,7 +336,7 @@ fn create_result_from_bytes(bytes: Vec<u8>, hint: Option<String>) -> ParsedResul
         })
         .unwrap_or_else(|| u8a.into());
     ParsedResult {
-        mime_type: mime,
+        mimetype: mime,
         content,
         buffer,
     }

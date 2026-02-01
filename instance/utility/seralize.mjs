@@ -7,7 +7,7 @@ const serialize = async (msg, client) => {
 
   const [senderAlt, isAdmin] = await Promise.all([
     getAlternateId(msg.session, core.sender),
-    core.is_group ? admin(msg.session, core.chat, core.sender) : null,
+    core.isGroup ? admin(msg.session, core.chat, core.sender) : null,
   ]);
 
   if (core.quoted) {
@@ -16,6 +16,9 @@ const serialize = async (msg, client) => {
       await getAlternateId(msg.session, core.quoted.sender),
     ].includes(jidNormalizedUser(client.user.id));
   }
+
+  const isMedia = (mtype) =>
+    ["imageMessage", "videoMessage", "audioMessage", "documentMessage", "stickerMessage"].includes(mtype);
 
   return {
     ...core,
@@ -26,18 +29,7 @@ const serialize = async (msg, client) => {
     isAdmin,
     pushName: msg.pushName,
     messageTimestamp: msg.messageTimestamp,
-
-    image: core.media_flags.image,
-    video: core.media_flags.video,
-    audio: core.media_flags.audio,
-    document: core.media_flags.document,
-    sticker: core.media_flags.sticker,
-    media:
-      core.media_flags.image ||
-      core.media_flags.video ||
-      core.media_flags.audio ||
-      core.media_flags.document ||
-      core.media_flags.sticker,
+    media: isMedia(core.mtype),
 
     reply: async function (text) {
       return await client.sendMessage(this.chat, { text }, { quoted: msg });
@@ -46,26 +38,32 @@ const serialize = async (msg, client) => {
     send: async function (input) {
       const content = await parse_content(input);
 
+      if (!content) {
+        return await this.reply("```Error: Failed to parse content```");
+      }
+
       const sendMap = {
         "text/plain": { text: content.content },
-        "image/": { image: { url: content.content } },
-        "video/": { video: { url: content.content } },
-        "audio/": { audio: { url: content.content } },
+        "image/": { image: content.buffer },
+        "video/": { video: content.buffer },
+        "audio/": { audio: content.buffer },
       };
 
       for (const [mime, body] of Object.entries(sendMap)) {
-        if (content?.mimeType.startsWith(mime)) {
-          const m = (await client.sendMessage(this.chat, body));
+        if (content.mimetype?.startsWith(mime)) {
+          const m = await client.sendMessage(this.chat, body);
           return await serialize({ ...m, session: this.session }, client);
         }
       }
+
+      return await this.reply("```Error: Unsupported media type```");
     },
 
     edit: async function (text) {
       const editContent =
-        this?.quoted?.image || this.image
+        this.mtype === "imageMessage"
           ? { image: { url: "" }, text }
-          : this?.quoted?.video || this.video
+          : this.mtype === "videoMessage"
             ? { video: { url: "" }, text }
             : { text };
       return await client.sendMessage(this.chat, {

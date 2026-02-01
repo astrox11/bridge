@@ -27,7 +27,7 @@ async fn main() {
 
     logger::debug("INIT", "Connecting to SQLite database...");
     let pool = sql::sync_db().await;
-    
+
     logger::debug("INIT", "Connecting to Redis...");
     let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
     let (tx, _rx) = tokio::sync::broadcast::channel::<String>(1024);
