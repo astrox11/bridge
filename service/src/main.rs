@@ -40,9 +40,47 @@ async fn main() {
             }
         }
         Err(e) => {
-            logger::error("REDIS", &format!("Not running: {}", e));
-            logger::error("REDIS", "Please start Redis manually");
-            std::process::exit(1);
+            // On Windows, try to start Redis via WSL
+            #[cfg(target_os = "windows")]
+            {
+                logger::info("REDIS", "Not running, attempting to start via WSL...");
+                match std::process::Command::new("wsl")
+                    .args(["--", "redis-server", "--daemonize", "yes"])
+                    .spawn()
+                {
+                    Ok(_) => {
+                        // Wait for Redis to start
+                        const REDIS_STARTUP_WAIT_SECS: u64 = 2;
+                        std::thread::sleep(std::time::Duration::from_secs(REDIS_STARTUP_WAIT_SECS));
+
+                        // Retry connection
+                        match redis_client.get_connection() {
+                            Ok(mut conn) => {
+                                if redis::cmd("PING").query::<String>(&mut conn).is_ok() {
+                                    logger::success("REDIS", "Started via WSL and connected");
+                                }
+                            }
+                            Err(retry_err) => {
+                                logger::error("REDIS", &format!("Still not running: {}", retry_err));
+                                logger::error("REDIS", "Please ensure Redis is installed in WSL");
+                                std::process::exit(1);
+                            }
+                        }
+                    }
+                    Err(wsl_err) => {
+                        logger::error("REDIS", &format!("Failed to start WSL: {}", wsl_err));
+                        logger::error("REDIS", "Please start Redis manually via WSL");
+                        std::process::exit(1);
+                    }
+                }
+            }
+
+            #[cfg(not(target_os = "windows"))]
+            {
+                logger::error("REDIS", &format!("Not running: {}", e));
+                logger::error("REDIS", "Please start Redis manually");
+                std::process::exit(1);
+            }
         }
     }
 
