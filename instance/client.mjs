@@ -40,11 +40,30 @@ const redis = await createClient({
     connectTimeout: 10000,
     keepAlive: 5000,
     reconnectStrategy: (retries) => {
-      if (retries > 20) return new Error("Max retries reached");
-      return Math.min(retries * 100, 3000);
+      if (retries > 50) {
+        log("[REDIS] Max retries reached, giving up");
+        return new Error("Max retries reached");
+      }
+      const delay = Math.min(retries * 200, 5000);
+      if (retries % 10 === 0) {
+        log("[REDIS] Reconnecting... attempt", retries);
+      }
+      return delay;
     }
-  }
-}).on("error", (err) => log("[REDIS] Error:", err.message)).connect().catch(console.error);
+  },
+  pingInterval: 30000,
+}).on("error", async () => {
+  log("[REDIS] Error:", "Redis server has crashed");
+  await delay(5000);
+}).on("reconnecting", async () => {
+  log("[REDIS] Reconnecting...");
+  await delay(5000);
+}).on("ready", () => {
+  log("[REDIS] Connection restored");
+}).connect().catch((err) => {
+  console.error("[REDIS] Failed to connect:", err?.message || err);
+  process.exit(1);
+});
 
 log("[REDIS] Connected");
 

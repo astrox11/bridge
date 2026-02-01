@@ -32,14 +32,12 @@ async fn main() {
     logger::debug("INIT", "Connecting to Redis...");
     let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
 
-    let redis_connected = match redis_client.get_connection() {
+    let mut redis_connected = match redis_client.get_connection() {
         Ok(mut conn) => redis::cmd("PING").query::<String>(&mut conn).is_ok(),
         Err(_) => false,
     };
 
-    if redis_connected {
-        logger::success("REDIS", "Connected");
-    } else {
+    if !redis_connected {
         if cfg!(windows) {
             logger::info("REDIS", "Starting WSL...");
 
@@ -48,36 +46,39 @@ async fn main() {
                     let _ = tokio::process::Command::new("wsl")
                         .stdout(std::process::Stdio::null())
                         .stderr(std::process::Stdio::null())
-                        .status()
-                        .await;
-                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                        .spawn();
+
+                    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
                 }
             });
 
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-
-            match redis_client.get_connection() {
-                Ok(mut conn) => {
-                    if redis::cmd("PING").query::<String>(&mut conn).is_ok() {
-                        logger::success("REDIS", "Connected via WSL");
-                    } else {
-                        logger::error("REDIS", "Failed to connect after starting WSL");
-                        std::process::exit(1);
-                    }
-                }
-                Err(e) => {
-                    logger::error("REDIS", &format!("Failed to connect: {}", e));
-                    std::process::exit(1);
-                }
-            }
         } else {
-            logger::error("REDIS", "Not running, please start Redis manually");
+            logger::info("REDIS", "Starting redis-server...");
+            let _ = tokio::process::Command::new("redis-server")
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn();
+
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        }
+
+        redis_connected = match redis_client.get_connection() {
+            Ok(mut conn) => redis::cmd("PING").query::<String>(&mut conn).is_ok(),
+            Err(_) => false,
+        };
+
+        if redis_connected {
+            logger::success("REDIS", "Connected successfully");
+        } else {
+            logger::error("REDIS", "Could not start or connect to Redis service");
             std::process::exit(1);
         }
+    } else {
+        logger::success("REDIS", "Connected");
     }
 
     let (tx, _rx) = tokio::sync::broadcast::channel::<String>(1024);
-
     let (log_tx, _) = tokio::sync::broadcast::channel::<String>(256);
     logger::set_broadcast(log_tx.clone());
 
@@ -114,10 +115,8 @@ async fn main() {
                     is_running: false,
                 },
             );
-            logger::debug("SESSION", &format!("{} (paused)", session.id));
             continue;
         }
-        logger::info("SESSION", &format!("Starting {}", session.id));
         state.sm.start_instance(&session.id, state.clone()).await;
     }
 
