@@ -1,7 +1,9 @@
 import { Innertube, Platform, UniversalCache } from 'youtubei.js';
 import { Cookie } from '../sql/models.mjs';
 
-
+/**
+ * Custom Evaluator for deciphering YouTube signatures
+ */
 const exportedVars = {
     nFunction: (n) => { return n; },
     sigFunction: (s) => { return s; }
@@ -16,15 +18,8 @@ Platform.shim.eval = async (data, env) => {
     return new Function('exportedVars', `return (${new Function(code).toString()})() `)(exportedVars);
 }
 
-let innertube = await Innertube.create({
-    generate_session_locally: true,
-    cache: new UniversalCache(true)
-});
-let currentSessionId = null;
-
 /**
  * Parse Netscape cookie format to header string
- * @param {string} text 
  */
 function parseCookies(text) {
     if (!text) return undefined;
@@ -33,139 +28,45 @@ function parseCookies(text) {
         .filter(line => line.trim() && !line.startsWith('#'))
         .map(line => {
             const parts = line.split('\t');
+            if (parts.length < 7) return null;
             return `${parts[5]}=${parts[6]}`;
         })
+        .filter(Boolean)
         .join('; ');
 }
 
 /**
- * Initialize or reinitialize Innertube with cookies from database
- * @param {string} sessionId
+ * Core: Get a fresh Innertube instance for a specific session
  */
-export async function initWithCookies(sessionId) {
-    currentSessionId = sessionId;
-
+async function getClient(sessionId) {
     const cookieRecord = await Cookie.findOne({
         where: { sessionId, platform: 'youtube' }
     });
 
     const parsedCookie = parseCookies(cookieRecord?.value);
 
-    innertube = await Innertube.create({
+    return await Innertube.create({
         cookie: parsedCookie,
         generate_session_locally: true,
         cache: new UniversalCache(true)
     });
-
-    return !!cookieRecord;
 }
 
 /**
- * Get cookie for a platform
- * @param {string} sessionId
- * @param {string} platform
+ * Public Functions
  */
-export async function getCookie(sessionId, platform) {
-    const record = await Cookie.findOne({
-        where: { sessionId, platform }
-    });
-    return record?.value || null;
-}
 
-/**
- * Set cookie for a platform
- * @param {string} sessionId
- * @param {string} platform
- * @param {string} value
- */
-export async function setCookie(sessionId, platform, value) {
-    await Cookie.upsert({
-        sessionId,
-        platform,
-        value,
-        updatedAt: new Date()
-    });
-
-    // Reinitialize innertube if setting youtube cookie
-    if (platform === 'youtube') {
-        await initWithCookies(sessionId);
-    }
-}
-
-/**
- * Delete cookie for a platform
- * @param {string} sessionId
- * @param {string} platform
- */
-export async function deleteCookie(sessionId, platform) {
-    await Cookie.destroy({
-        where: { sessionId, platform }
-    });
-
-    // Reinitialize innertube without cookie if deleting youtube cookie
-    if (platform === 'youtube' && currentSessionId === sessionId) {
-        innertube = await Innertube.create({});
-    }
-}
-
-/**
- * Extract video ID from various YouTube URL formats
- * @param {string} url 
- * @returns {string | null}
- */
-export function extractVideoId(url) {
-    const patterns = [
-        /(?:(?:music\.)?youtube\.com\/watch\?v=|youtu\.be\/|(?:music\.)?youtube\.com\/embed\/|(?:music\.)?youtube\.com\/v\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
-        /^([a-zA-Z0-9_-]{11})$/
-    ];
-
-    for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match) return match[1];
-    }
-
-    return null;
-}
-
-
-/**
- * Search YouTube for videos
- * @param {string} query 
- * @param {number} limit 
- * @returns {Promise<Array>} 
- */
-export async function search(query, limit = 5) {
-    const results = await innertube.search(query, { type: 'video' });
+export async function search(query, sessionId, limit = 5) {
+    const client = await getClient(sessionId);
+    const results = await client.search(query, { type: 'video' });
     return results.videos?.slice(0, limit) || [];
 }
 
-/**
- * Get video info
- * @param {string} id 
- * @returns {Promise<Object>} 
- */
-export async function getInfo(id) {
-    return await innertube.getInfo(id);
-}
+export async function downloadVideo(id, sessionId) {
+    const client = await getClient(sessionId);
+    const info = await client.getBasicInfo(id);
 
-/**
- * Get basic video info (lighter, more reliable)
- * @param {string} id 
- * @returns {Promise<Object>} 
- */
-export async function getBasicInfo(id) {
-    return await innertube.getBasicInfo(id);
-}
-
-/**
- * Download video
- * @param {string} id
- */
-export async function downloadVideo(id) {
-    const info = await getBasicInfo(id);
-
-    // Try to download with quality options
-    const stream = await innertube.download(id, {
+    const stream = await client.download(id, {
         type: 'video+audio',
         quality: 'bestefficiency',
         format: 'mp4'
@@ -186,21 +87,15 @@ export async function downloadVideo(id) {
     };
 }
 
-/**
- * Download audio
- * @param {string} id 
- * @returns {Promise<Object>} 
- */
-export async function downloadAudio(id) {
-    const info = await getBasicInfo(id);
-    const stream = await innertube.download(id, {
+export async function downloadAudio(id, sessionId) {
+    const client = await getClient(sessionId);
+    const info = await client.getBasicInfo(id);
+    const stream = await client.download(id, {
         type: 'audio'
     });
 
     const chunks = [];
-    for await (const chunk of stream) {
-        chunks.push(chunk);
-    }
+    for await (const chunk of stream) chunks.push(chunk);
 
     return {
         buffer: Buffer.concat(chunks),
@@ -214,18 +109,37 @@ export async function downloadAudio(id) {
     };
 }
 
-/**
- * Search and download video
- * @param {string} query 
- * @returns {Promise<Object>} 
- */
-export async function searchAndDownload(query) {
-    const results = await search(query);
-    const video = results[0];
+export function extractVideoId(url) {
+    const patterns = [
+        /(?:(?:music\.)?youtube\.com\/watch\?v=|youtu\.be\/|(?:music\.)?youtube\.com\/embed\/|(?:music\.)?youtube\.com\/v\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+        /^([a-zA-Z0-9_-]{11})$/
+    ];
 
-    if (!video) {
-        throw new Error('No videos found for query: ' + query);
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
     }
+    return null;
+}
 
-    return await downloadVideo(video.id);
+/**
+ * Cookie Management
+ */
+
+export async function getCookie(sessionId, platform) {
+    const record = await Cookie.findOne({ where: { sessionId, platform } });
+    return record?.value || null;
+}
+
+export async function setCookie(sessionId, platform, value) {
+    await Cookie.upsert({
+        sessionId,
+        platform,
+        value,
+        updatedAt: new Date()
+    });
+}
+
+export async function deleteCookie(sessionId, platform) {
+    await Cookie.destroy({ where: { sessionId, platform } });
 }
