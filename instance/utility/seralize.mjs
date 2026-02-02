@@ -153,6 +153,14 @@ const serialize = async (msg, client) => {
 
       return await downloadMediaMessage(this, "buffer", {});
     },
+    react: async function (emoji) {
+      return await client.sendMessage(this.chat, {
+        react: {
+          text: emoji,
+          key: this.key,
+        },
+      });
+    },
     client,
   };
 };

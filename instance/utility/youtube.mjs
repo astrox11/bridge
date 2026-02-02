@@ -77,7 +77,7 @@ export async function deleteCookie(sessionId, platform) {
  */
 export function extractVideoId(url) {
     const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+        /(?:(?:music\.)?youtube\.com\/watch\?v=|youtu\.be\/|(?:music\.)?youtube\.com\/embed\/|(?:music\.)?youtube\.com\/v\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
         /^([a-zA-Z0-9_-]{11})$/
     ];
 
