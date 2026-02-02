@@ -1,8 +1,44 @@
-import { Innertube } from 'youtubei.js';
+import { Innertube, Platform } from 'youtubei.js';
 import { Cookie } from '../sql/models.mjs';
 
-let innertube = await Innertube.create({});
+
+Platform.shim.eval = async (data, env) => {
+    const properties = [];
+
+    if (env.n) {
+        properties.push(`n: exportedVars.nFunction("${env.n}")`)
+    }
+
+    if (env.sig) {
+        properties.push(`sig: exportedVars.sigFunction("${env.sig}")`)
+    }
+
+    const code = `${data.output}\nreturn { ${properties.join(', ')} }`;
+
+    return new Function(code)();
+}
+
+
+let innertube = await Innertube.create({
+    generate_session_locally: true
+});
 let currentSessionId = null;
+
+/**
+ * Parse Netscape cookie format to header string
+ * @param {string} text 
+ */
+function parseCookies(text) {
+    if (!text) return undefined;
+    return text
+        .split('\n')
+        .filter(line => line.trim() && !line.startsWith('#'))
+        .map(line => {
+            const parts = line.split('\t');
+            return `${parts[5]}=${parts[6]}`;
+        })
+        .join('; ');
+}
 
 /**
  * Initialize or reinitialize Innertube with cookies from database
@@ -15,8 +51,11 @@ export async function initWithCookies(sessionId) {
         where: { sessionId, platform: 'youtube' }
     });
 
+    const parsedCookie = parseCookies(cookieRecord?.value);
+
     innertube = await Innertube.create({
-        cookie: cookieRecord?.value || undefined
+        cookie: parsedCookie,
+        generate_session_locally: true
     });
 
     return !!cookieRecord;
@@ -87,6 +126,17 @@ export function extractVideoId(url) {
     }
 
     return null;
+}
+
+function parseCookies(text) {
+    return text
+        .split('\n')
+        .filter(line => line.trim() && !line.startsWith('#'))
+        .map(line => {
+            const parts = line.split('\t');
+            return `${parts[5]}=${parts[6]}`;
+        })
+        .join('; ');
 }
 
 /**
