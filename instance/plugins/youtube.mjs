@@ -40,8 +40,8 @@ export default [
         pattern: "ytv",
         alias: ["ytvideo"],
         category: "download",
-        function: async (message) => {
-            const url = message.args.trim();
+        function: async (message, args) => {
+            const url = (args ?? "").trim();
 
             if (!url) {
                 return await message.reply(
@@ -79,8 +79,8 @@ export default [
         pattern: "yta",
         alias: ["ytaudio"],
         category: "download",
-        function: async (message) => {
-            const url = message.args.trim();
+        function: async (message, args) => {
+            const url = (args ?? "").trim();
 
             if (!url) {
                 return await message.reply(
@@ -118,8 +118,8 @@ export default [
         pattern: "yts",
         alias: ["ytsearch", "youtubesearch"],
         category: "download",
-        function: async (message) => {
-            const query = message.args.trim();
+        function: async (message, args) => {
+            const query = (args ?? "").trim();
 
             if (!query) {
                 return await message.reply(
