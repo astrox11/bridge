@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@latest
+        uses: oven-sh/setup-bun@3
         with:
           bun-version: latest
 
