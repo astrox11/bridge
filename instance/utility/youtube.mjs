@@ -1,26 +1,24 @@
-import { Innertube, Platform } from 'youtubei.js';
+import { Innertube, Platform, UniversalCache } from 'youtubei.js';
 import { Cookie } from '../sql/models.mjs';
 
 
+const exportedVars = {
+    nFunction: (n) => { return n; },
+    sigFunction: (s) => { return s; }
+};
+
 Platform.shim.eval = async (data, env) => {
     const properties = [];
-
-    if (env.n) {
-        properties.push(`n: exportedVars.nFunction("${env.n}")`)
-    }
-
-    if (env.sig) {
-        properties.push(`sig: exportedVars.sigFunction("${env.sig}")`)
-    }
+    if (env.n) properties.push(`n: exportedVars.nFunction("${env.n}")`);
+    if (env.sig) properties.push(`sig: exportedVars.sigFunction("${env.sig}")`);
 
     const code = `${data.output}\nreturn { ${properties.join(', ')} }`;
-
-    return new Function(code)();
+    return new Function('exportedVars', `return (${new Function(code).toString()})() `)(exportedVars);
 }
 
-
 let innertube = await Innertube.create({
-    generate_session_locally: true
+    generate_session_locally: true,
+    cache: new UniversalCache(true)
 });
 let currentSessionId = null;
 
@@ -55,7 +53,8 @@ export async function initWithCookies(sessionId) {
 
     innertube = await Innertube.create({
         cookie: parsedCookie,
-        generate_session_locally: true
+        generate_session_locally: true,
+        cache: new UniversalCache(true)
     });
 
     return !!cookieRecord;
@@ -150,13 +149,27 @@ export async function getInfo(id) {
 }
 
 /**
+ * Get basic video info (lighter, more reliable)
+ * @param {string} id 
+ * @returns {Promise<Object>} 
+ */
+export async function getBasicInfo(id) {
+    return await innertube.getBasicInfo(id);
+}
+
+/**
  * Download video
  * @param {string} id
  */
 export async function downloadVideo(id) {
-    const info = await getInfo(id);
-    const format = info.chooseFormat({ type: 'video+audio', quality: 'best' });
-    const stream = await innertube.download(id, { format });
+    const info = await getBasicInfo(id);
+
+    // Try to download with quality options
+    const stream = await innertube.download(id, {
+        type: 'video+audio',
+        quality: 'bestefficiency',
+        format: 'mp4'
+    });
 
     const chunks = [];
     for await (const chunk of stream) chunks.push(chunk);
@@ -169,7 +182,7 @@ export async function downloadVideo(id) {
             author: info.basic_info.author,
             thumbnail: info.basic_info.thumbnail?.[0]?.url
         },
-        mimetype: format.mime_type || 'video/mp4'
+        mimetype: 'video/mp4'
     };
 }
 
@@ -179,12 +192,15 @@ export async function downloadVideo(id) {
  * @returns {Promise<Object>} 
  */
 export async function downloadAudio(id) {
-    const info = await getInfo(id);
-    const format = info.chooseFormat({ type: 'audio', quality: 'best' });
-    const stream = await innertube.download(id, { format });
+    const info = await getBasicInfo(id);
+    const stream = await innertube.download(id, {
+        type: 'audio'
+    });
 
     const chunks = [];
-    for await (const chunk of stream) chunks.push(chunk);
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
 
     return {
         buffer: Buffer.concat(chunks),
@@ -194,7 +210,7 @@ export async function downloadAudio(id) {
             author: info.basic_info.author,
             thumbnail: info.basic_info.thumbnail?.[0]?.url
         },
-        mimetype: 'audio/mpeg'
+        mimetype: 'audio/mp4'
     };
 }
 
