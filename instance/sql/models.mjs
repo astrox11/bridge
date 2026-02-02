@@ -143,6 +143,21 @@ Economy.init(
 Session.hasMany(Economy, { foreignKey: 'sessionId', onDelete: 'CASCADE' });
 Economy.belongsTo(Session, { foreignKey: 'sessionId' });
 
+export class Cookie extends Model { }
+Cookie.init(
+    {
+        sessionId: { type: DataTypes.TEXT, allowNull: false, primaryKey: true },
+        platform: { type: DataTypes.TEXT, allowNull: false, primaryKey: true },
+        value: { type: DataTypes.TEXT, allowNull: false },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+        updatedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    },
+    { sequelize, modelName: 'cookies' }
+);
+
+Session.hasMany(Cookie, { foreignKey: 'sessionId', onDelete: 'CASCADE' });
+Cookie.belongsTo(Session, { foreignKey: 'sessionId' });
+
 export async function initDb() {
     await sequelize.authenticate();
 

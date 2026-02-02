@@ -1,5 +1,6 @@
 import { Configuration } from "../sql/configuration.mjs";
 import { parseId } from "../utility/util.mjs";
+import { setCookie, getCookie, deleteCookie, initWithCookies } from "../utility/youtube.mjs";
 
 export default [
     {
@@ -14,7 +15,7 @@ export default [
             }
 
 
-            const isSymbol = /^[^a-zA-Z0-9\s]+$/.test(args);
+            const isSymbol = /^[^\a-zA-Z0-9\s]+$/.test(args);
 
             if (!isSymbol && args !== 'null') {
                 return msg.reply("```Prefix must be symbols only```");
@@ -98,5 +99,46 @@ export default [
             await config.setMode(newMode);
             return msg.reply(`\`\`\`Mode set to: ${newMode}\`\`\``);
         }
+    },
+    {
+        pattern: "cookie",
+        fromMe: true,
+        function: async (msg, args) => {
+            if (!args) {
+                return msg.reply(
+                    "```Usage:\ncookie <platform> <value> - Set cookie\ncookie <platform> - Get cookie\ncookie <platform> delete - Delete cookie\n\nSupported platforms: youtube```"
+                );
+            }
+
+            const parts = args.split(" ");
+            const platform = parts[0].toLowerCase();
+            const value = parts.slice(1).join(" ");
+
+            const supportedPlatforms = ["youtube"];
+            if (!supportedPlatforms.includes(platform)) {
+                return msg.reply(`\`\`\`Unsupported platform: ${platform}\nSupported: ${supportedPlatforms.join(", ")}\`\`\``);
+            }
+
+            // Delete cookie
+            if (value.toLowerCase() === "delete") {
+                await deleteCookie(msg.session, platform);
+                return msg.reply(`\`\`\`Cookie deleted for ${platform}\`\`\``);
+            }
+
+            // Get cookie
+            if (!value) {
+                const cookie = await getCookie(msg.session, platform);
+                if (!cookie) {
+                    return msg.reply(`\`\`\`No cookie set for ${platform}\`\`\``);
+                }
+                const preview = cookie.length > 50 ? cookie.substring(0, 50) + "..." : cookie;
+                return msg.reply(`\`\`\`Cookie for ${platform}:\n${preview}\`\`\``);
+            }
+
+            // Set cookie
+            await setCookie(msg.session, platform, value);
+            return msg.reply(`\`\`\`Cookie set for ${platform}\`\`\``);
+        }
     }
 ];
+
