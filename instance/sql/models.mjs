@@ -163,11 +163,14 @@ Cookie.belongsTo(Session, { foreignKey: "sessionId" });
 export async function initDb() {
   await sequelize.authenticate();
 
+  // Optimized for low memory usage
   await sequelize.query("PRAGMA journal_mode = WAL;");
-  await sequelize.query("PRAGMA synchronous = OFF;");
-  await sequelize.query("PRAGMA temp_store = MEMORY;");
-  await sequelize.query("PRAGMA mmap_size = 268435456;");
-  await sequelize.query("PRAGMA cache_size = -64000;");
+  await sequelize.query("PRAGMA synchronous = NORMAL;");
+  await sequelize.query("PRAGMA temp_store = FILE;");
+  await sequelize.query("PRAGMA mmap_size = 8388608;");   // 8MB mmap (reduced from 256MB)
+  await sequelize.query("PRAGMA cache_size = -2000;");     // 2MB cache (reduced from 64MB)
+  await sequelize.query("PRAGMA page_size = 4096;");
+  await sequelize.query("PRAGMA wal_autocheckpoint = 100;");
 
   await sequelize.sync();
 }

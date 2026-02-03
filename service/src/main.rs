@@ -56,6 +56,7 @@ async fn main() {
         } else {
             logger::info("REDIS", "Starting redis-server...");
             let _ = tokio::process::Command::new("redis-server")
+                .arg("redis.conf")
                 .stdout(std::process::Stdio::null())
                 .stderr(std::process::Stdio::null())
                 .spawn();
