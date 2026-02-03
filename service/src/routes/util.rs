@@ -35,18 +35,27 @@ pub async fn get_whatsapp_news() -> impl IntoResponse {
     let mut articles = Vec::new();
 
     for (i, element) in document.select(&card_selector).enumerate() {
-        if i >= 5 { break; }
+        if i >= 5 {
+            break;
+        }
 
         let title_element = element.select(&title_selector).next();
-        let title = title_element.map(|e| e.text().collect::<String>()).unwrap_or_default();
-        let link = title_element.and_then(|e| e.value().attr("href")).unwrap_or_default().to_string();
+        let title = title_element
+            .map(|e| e.text().collect::<String>())
+            .unwrap_or_default();
+        let link = title_element
+            .and_then(|e| e.value().attr("href"))
+            .unwrap_or_default()
+            .to_string();
 
-        let description = element.select(&excerpt_selector)
+        let description = element
+            .select(&excerpt_selector)
             .next()
             .map(|e| e.text().collect::<String>().trim().to_string())
             .unwrap_or_default();
 
-        let date = element.select(&date_selector)
+        let date = element
+            .select(&date_selector)
             .next()
             .map(|e| e.text().collect::<String>())
             .unwrap_or_default();
