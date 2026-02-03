@@ -134,7 +134,7 @@ function isLoginError(error) {
     return msg.includes("login")
 }
 
-function getErrorMessage(error, type = "video") {
+export function getErrorMessage(error, type = "video") {
     if (isLoginError(error)) {
         return `⚠️ *Authentication Required*\n\nThis ${type} requires login or your cookie has expired.\n\nPlease update your YouTube cookie:\n\`cookie youtube <your-cookie>\`\n\n_Get cookies from YouTube DevTools (Network tab → Cookie header)_`;
     }
