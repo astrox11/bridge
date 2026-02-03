@@ -75,7 +75,12 @@ log("[REDIS] Connected");
 
 await loadPlugins();
 
-const msgRetryCounterCache = new NodeCache();
+const msgRetryCounterCache = new NodeCache({
+  maxKeys: 100,
+  stdTTL: 300,
+  checkperiod: 60,
+  useClones: false,
+});
 
 const Client = async (phone = process.argv?.[2]) => {
   if (!phone) throw new Error("Phone number is required");

@@ -44,7 +44,10 @@ pub async fn run(phone: String, state: Arc<AppState>) {
 
         let mut child = tokio::process::Command::new("bun")
             .args(["run", "client.mjs", &phone, &port.to_string()])
-            .env("NODE_OPTIONS", "--max-old-space-size=1024")
+            .env("NODE_OPTIONS", "--max-old-space-size=32")
+            .env("BUN_JSC_forceGCSlowPaths", "1")
+            .env("BUN_JSC_useJIT", "0")
+            .env("BUN_JSC_gcMaxHeapSize", "33554432")
             .current_dir("instance")
             .kill_on_drop(true)
             .stdout(Stdio::inherit())

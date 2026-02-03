@@ -9,6 +9,17 @@ services:
     depends_on:
       - redis
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=32
+      - BUN_JSC_forceGCSlowPaths=1
+      - BUN_JSC_useJIT=0
+      - BUN_JSC_gcMaxHeapSize=33554432
 
   redis:
     image: redis:alpine
@@ -16,3 +27,12 @@ services:
     ports:
       - "6379:6379"
     restart: always
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    deploy:
+      resources:
+        limits:
+          memory: 24M
+        reservations:
+          memory: 16M

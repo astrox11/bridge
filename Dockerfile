@@ -26,4 +26,6 @@ RUN make all
 
 EXPOSE 8080 6379
 
-CMD ["sh", "-c", "redis-server --port 6379 --daemonize yes && ./process.sh"]
+COPY redis.conf /etc/redis/redis.conf
+
+CMD ["sh", "-c", "redis-server /etc/redis/redis.conf --port 6379 --daemonize yes && ./process.sh"]
