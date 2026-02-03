@@ -96,4 +96,13 @@ export default [
       await msg.forward(msg.chat, { quoted: msg.quoted });
     },
   },
+  {
+    pattern: "save",
+    fromMe: true,
+    function: async (msg) => {
+      if (!msg?.quoted) return msg.reply("```Reply a message to save```");
+
+      await msg.forward(msg.client.user.id, { quoted: msg.quoted });
+    },
+  },
 ];

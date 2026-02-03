@@ -165,11 +165,15 @@ const serialize = async (msg, client) => {
         },
       });
     },
-    forward: async function (jid) {
-      return await client.sendMessage(jid, {
-        forward: this?.quoted || this,
-        contextInfo: { isForwarded: false, forwardingscore: 0 },
-      });
+    forward: async function (jid, opts = {}) {
+      return await client.sendMessage(
+        jid,
+        {
+          forward: this?.quoted || this,
+          contextInfo: { isForwarded: false, forwardingscore: 0, ...opts },
+        },
+        { ...opts },
+      );
     },
     client,
   };
