@@ -42,6 +42,13 @@ pub async fn run(phone: String, state: Arc<AppState>) {
 
         logger::debug("SUPERVISOR", &format!("{} spawning worker", phone));
 
+        let bot_dir = std::env::current_dir()
+            .map(|p| p.join("bot"))
+            .unwrap_or_else(|e| {
+                logger::warn("SUPERVISOR", &format!("Failed to get current directory: {}, using relative path", e));
+                std::path::PathBuf::from("bot")
+            });
+
         let mut child = tokio::process::Command::new("bun")
             .args(["run", "client.mjs", &phone, &port.to_string()])
             .env("BUN_JSC_gcMaxHeapSize", "33554432")
@@ -49,7 +56,7 @@ pub async fn run(phone: String, state: Arc<AppState>) {
             .env("BUN_JSC_forceGCSlowPaths", "1")
             .env("MALLOC_CONF", "dirty_decay_ms:0,muzzy_decay_ms:0")
             .env("BUN_JSC_minGen0Size", "1048576")
-            .current_dir("./bot")
+            .current_dir(&bot_dir)
             .kill_on_drop(true)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
