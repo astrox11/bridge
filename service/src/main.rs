@@ -60,21 +60,25 @@ async fn main() {
                 .map(|p| p.join("redis.conf"))
                 .unwrap_or_else(|_| std::path::PathBuf::from("redis.conf"));
 
-            let mut cmd = tokio::process::Command::new("redis-server");
-            if redis_conf_path.exists() {
-                cmd.arg(&redis_conf_path);
-            } else {
-                // Fallback to memory-efficient defaults without config file
-                cmd.args(["--maxmemory", "20mb", "--maxmemory-policy", "allkeys-lru"]);
-            }
-            let _ = cmd
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .spawn();
+         let mut cmd = tokio::process::Command::new("redis-server");
+if redis_conf_path.exists() {
+    cmd.arg(&redis_conf_path);
+} else {
+    cmd.args(["--maxmemory", "20mb", "--maxmemory-policy", "allkeys-lru"]);
+}
 
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-        }
-
+// Remove the .stdout/stderr(Stdio::null()) temporarily to see errors
+match cmd.spawn() {
+    Ok(_) => {
+        logger::info("REDIS", "Spawned redis-server, waiting for readiness...");
+        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    },
+    Err(e) => {
+        logger::error("REDIS", &format!("Failed to execute redis-server: {}", e));
+        std::process::exit(1);
+    }
+}
+        };
         redis_connected = match redis_client.get_connection() {
             Ok(mut conn) => redis::cmd("PING").query::<String>(&mut conn).is_ok(),
             Err(_) => false,
@@ -82,6 +86,11 @@ async fn main() {
 
         if redis_connected {
             logger::success("REDIS", "Connected successfully");
+
+            let mut conn = redis_client.get_connection().unwrap();
+    let _: () = redis::cmd("MEMORY").arg("PURGE").query(&mut conn).unwrap_or(());
+    
+    logger::debug("REDIS", "Memory purge triggered to reduce RSS overhead");
         } else {
             logger::error("REDIS", "Could not start or connect to Redis service");
             std::process::exit(1);
