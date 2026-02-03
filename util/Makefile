@@ -1,5 +1,5 @@
 TARGET = nodejs
-OUT = ../instance/pkg
+OUT = ../bot/pkg
 PROFILE = release
 
 export RUSTFLAGS = -C opt-level=z -C lto -C embed-bitcode=yes

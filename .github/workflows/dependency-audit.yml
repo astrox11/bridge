@@ -2,7 +2,7 @@ name: Dependency Audit
 
 on:
   schedule:
-    - cron: "0 0 * * 1" # Every Monday at midnight
+    - cron: "0 0 * * 1"
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Bun Audit (Instance)
-        working-directory: ./instance
+        working-directory: ./bot
         run: bun audit
 
       - name: Bun Audit (UI)
