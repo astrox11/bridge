@@ -1,6 +1,5 @@
 import { Configuration } from "../sql/configuration.mjs";
-import { parseId } from "../utility/util.mjs";
-import { setCookie, getCookie, deleteCookie } from "../utility/youtube.mjs";
+import { parseId, setCookie, getCookie, deleteCookie } from "../utility";
 
 export default [
     {
@@ -119,13 +118,11 @@ export default [
                 return msg.reply(`\`\`\`Unsupported platform: ${platform}\nSupported: ${supportedPlatforms.join(", ")}\`\`\``);
             }
 
-            // Delete cookie
             if (value.toLowerCase() === "delete") {
                 await deleteCookie(msg.session, platform);
                 return msg.reply(`\`\`\`Cookie deleted for ${platform}\`\`\``);
             }
 
-            // Get cookie
             if (!value) {
                 const cookie = await getCookie(msg.session, platform);
                 if (!cookie) {
@@ -135,7 +132,6 @@ export default [
                 return msg.reply(`\`\`\`Cookie for ${platform}:\n${preview}\`\`\``);
             }
 
-            // Set cookie
             await setCookie(msg.session, platform, value);
             return msg.reply(`\`\`\`Cookie set for ${platform}\`\`\``);
         }

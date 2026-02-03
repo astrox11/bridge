@@ -3,21 +3,10 @@ import {
     search,
     downloadVideo,
     downloadAudio,
-} from "../utility/youtube.mjs";
+    getErrorMessage
+} from "../utility";
 
 const searchSessions = new Map();
-
-function isLoginError(error) {
-    const msg = error.message?.toLowerCase() || "";
-    return msg.includes("login")
-}
-
-function getErrorMessage(error, type = "video") {
-    if (isLoginError(error)) {
-        return `⚠️ *Authentication Required*\n\nThis ${type} requires login or your cookie has expired.\n\nPlease update your YouTube cookie:\n\`cookie youtube <your-cookie>\`\n\n_Get cookies from YouTube DevTools (Network tab → Cookie header)_`;
-    }
-    return `Failed to download ${type}: ${error.message}`;
-}
 
 export default [
     {
@@ -34,7 +23,6 @@ export default [
             }
 
             const videoId = extractVideoId(url);
-            console.log(videoId)
             if (!videoId) {
                 return await message.reply(
                     "Invalid YouTube URL. Please provide a valid YouTube video link."
@@ -45,8 +33,7 @@ export default [
 
             try {
                 const result = await downloadVideo(videoId, message.session);
-                console.log(result)
-                await message.send(result.buffer, { caption: `🎬 *${result.info.title}*\n👤 ${result.info.author}`, mimetype: result.mimetype });
+                await message.send(result.buffer, { caption: `🎬 *${result.info.title}*\n\n👤 ${result.info.author}`, mimetype: result.mimetype });
 
                 await message.react("✅");
             } catch (error) {
@@ -79,8 +66,6 @@ export default [
 
             try {
                 const result = await downloadAudio(videoId, message.session);
-                console.log(result)
-
                 await message.client.sendMessage(message.chat, { audio: result.buffer, mimetype: "audio/mp4; codecs=mp4a.40.2" }, { quoted: message });
 
                 await message.react("✅");

@@ -1,5 +1,5 @@
 import { Innertube, Platform, UniversalCache } from 'youtubei.js';
-import { Cookie } from '../sql/models.mjs';
+import { Cookie } from '../sql';
 
 const exportedVars = {
     nFunction: (n) => { return n; },
@@ -127,4 +127,16 @@ export async function setCookie(sessionId, platform, value) {
 
 export async function deleteCookie(sessionId, platform) {
     await Cookie.destroy({ where: { sessionId, platform } });
+}
+
+function isLoginError(error) {
+    const msg = error.message?.toLowerCase() || "";
+    return msg.includes("login")
+}
+
+function getErrorMessage(error, type = "video") {
+    if (isLoginError(error)) {
+        return `⚠️ *Authentication Required*\n\nThis ${type} requires login or your cookie has expired.\n\nPlease update your YouTube cookie:\n\`cookie youtube <your-cookie>\`\n\n_Get cookies from YouTube DevTools (Network tab → Cookie header)_`;
+    }
+    return `Failed to download ${type}: ${error.message}`;
 }
