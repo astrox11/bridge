@@ -165,6 +165,7 @@ export async function initDb() {
 
   // Optimized for low memory usage
   await sequelize.query("PRAGMA journal_mode = WAL;");
+  // NORMAL sync provides better data integrity vs OFF, with minor write performance impact
   await sequelize.query("PRAGMA synchronous = NORMAL;");
   await sequelize.query("PRAGMA temp_store = FILE;");
   await sequelize.query("PRAGMA mmap_size = 8388608;");   // 8MB mmap (reduced from 256MB)
