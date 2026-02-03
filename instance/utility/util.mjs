@@ -1,7 +1,7 @@
 import { findCommand, getAllEvents } from "../plugins/index.mjs";
 import { getAlternateId } from "../sql";
 import { Configuration } from "../sql/configuration.mjs";
-import { to_small_caps } from "../pkg/util";
+import { to_small_caps, parse_command, update_config } from "../pkg/util";
 
 import * as net from "net";
 import { WorkerEvent, ConnectionUpdate } from "../proto/index.mjs";
@@ -55,29 +55,16 @@ export const socketOut = (tag, data) => {
 export const handleCommand = async (msg) => {
   if (!msg?.text) return;
 
-  const config = new Configuration(msg.session);
-  const prefixes = await config.getPrefix();
+  const cmdCall = parse_command(msg.text); // Rust does the check against config internally
 
-  let commandName;
-  let args;
+  if (!cmdCall) return;
+  const { command, args } = cmdCall;
 
-  if (prefixes && prefixes.length > 0) {
-    const firstChar = msg.text.charAt(0);
-    if (prefixes.includes(firstChar)) {
-      commandName = msg.text.slice(1).split(" ")[0]?.toLowerCase();
-      args = msg.text.split(" ").slice(1).join(" ");
-    } else {
-      return;
-    }
-  } else {
-    commandName = msg.text.split(" ")[0]?.toLowerCase();
-    args = msg.text.split(" ").slice(1).join(" ");
-  }
-
-  const cmd = findCommand(commandName);
+  const cmd = findCommand(command);
 
   if (!cmd) return;
 
+  const config = new Configuration(msg.session);
   const validation = await vaildateCmd(cmd, msg, config);
   if (validation) return validation;
 

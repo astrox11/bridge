@@ -1,4 +1,5 @@
 import { ConfigManager } from "./index.mjs";
+import { update_config } from "../pkg/util";
 
 export class Configuration {
   constructor(sessionId) {
@@ -18,6 +19,22 @@ export class Configuration {
     });
   }
 
+  async syncToWasm() {
+    const prefixes = await this.getPrefix();
+    const mode = await this.getMode();
+    const sudo = await this.getSudo();
+
+    try {
+      update_config({
+        prefixes,
+        mode,
+        sudo,
+      });
+    } catch (e) {
+      console.error("[CONFIG] Failed to sync to WASM:", e);
+    }
+  }
+
   /**
    * Prefix: string or null
    * Returns: array of characters
@@ -31,14 +48,11 @@ export class Configuration {
 
   async setPrefix(val) {
     if (val === null) {
-      // Assuming we can store null or header to delete?
-      // Upsert might fail with null if text is expected? Model says configValue is TEXT (nullable by default).
-      // But let's store empty string or delete? User said "takes string or null".
-      // Let's store null as null (Db) or empty string.
       await this.set("prefix", null);
     } else {
       await this.set("prefix", String(val));
     }
+    await this.syncToWasm();
   }
 
   /**
@@ -81,6 +95,7 @@ export class Configuration {
       }
     }
     await this.set("sudo", toStore);
+    await this.syncToWasm();
   }
 
   async addSudo(id) {
@@ -88,6 +103,9 @@ export class Configuration {
     if (!current.includes(id)) {
       current.push(id);
       await this.setSudo(current);
+      // setSudo calls syncToWasm, so we don't need to call it here explicitly again,
+      // but to be safe and explicit or if setSudo implementation changes:
+      // Actually setSudo calls it.
     }
   }
 
@@ -105,5 +123,6 @@ export class Configuration {
       throw new Error("Invalid mode. Must be public or private");
     }
     await this.set("mode", val);
+    await this.syncToWasm();
   }
 }

@@ -21,13 +21,15 @@ import {
   useHybridAuthState,
   cacheGroupMetadata,
   cachedGroupMetadata,
+  cachedGroupMetadata,
   syncGroupParticipantsToContactList,
+  Configuration,
 } from "./sql";
 
-const DEBUG = process.env.LOGS === 'true';
+const DEBUG = process.env.LOGS === "true";
 const log = (...args) => {
   if (DEBUG) {
-    const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const time = new Date().toLocaleTimeString("en-US", { hour12: false });
     console.log(`  ${time}`, ...args);
   }
 };
@@ -49,21 +51,26 @@ const redis = await createClient({
         log("[REDIS] Reconnecting... attempt", retries);
       }
       return delay;
-    }
+    },
   },
   pingInterval: 30000,
-}).on("error", async () => {
-  log("[REDIS] Error:", "Redis server has crashed");
-  await delay(5000);
-}).on("reconnecting", async () => {
-  log("[REDIS] Reconnecting...");
-  await delay(5000);
-}).on("ready", () => {
-  log("[REDIS] Connection restored");
-}).connect().catch((err) => {
-  console.error("[REDIS] Failed to connect:", err?.message || err);
-  process.exit(1);
-});
+})
+  .on("error", async () => {
+    log("[REDIS] Error:", "Redis server has crashed");
+    await delay(5000);
+  })
+  .on("reconnecting", async () => {
+    log("[REDIS] Reconnecting...");
+    await delay(5000);
+  })
+  .on("ready", () => {
+    log("[REDIS] Connection restored");
+  })
+  .connect()
+  .catch((err) => {
+    console.error("[REDIS] Failed to connect:", err?.message || err);
+    process.exit(1);
+  });
 
 log("[REDIS] Connected");
 
@@ -126,6 +133,10 @@ const Client = async (phone = process.argv?.[2]) => {
         log("[CLIENT]", phone, "connected");
         await delay(15000);
         await syncGroupMetadata(phone, sock);
+
+        const config = new Configuration(phone);
+        await config.syncToWasm();
+
         await SessionManager.set({
           id: phone,
           status: SessionStatus.CONNECTED,

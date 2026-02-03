@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{RequestInit, Response};
+
+// Global Configuration Cache
+static CONFIG: Mutex<Option<Config>> = Mutex::new(None);
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,13 +40,68 @@ pub struct FullSerializedResponse {
     pub quoted: Option<QuotedMessage>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ParsedResult {
     pub mimetype: String,
     pub content: Option<String>,
     #[serde(with = "serde_wasm_bindgen::preserve")]
     pub buffer: JsValue,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Config {
+    pub prefixes: Vec<String>,
+    pub mode: String,
+    pub sudo: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CommandParseResult {
+    pub command: String,
+    pub args: String,
+}
+
+#[wasm_bindgen]
+pub fn update_config(val: JsValue) -> Result<(), JsValue> {
+    let config: Config = serde_wasm_bindgen::from_value(val)?;
+    let mut lock = CONFIG.lock().map_err(|_| "Failed to lock config")?;
+    *lock = Some(config);
+    Ok(())
+}
+
+#[wasm_bindgen]
+pub fn parse_command(text: String) -> Result<JsValue, JsValue> {
+    let lock = CONFIG.lock().map_err(|_| "Failed to lock config")?;
+    let config = lock.as_ref().ok_or("Config not initialized")?;
+
+    let mut command_content = None;
+
+    if config.prefixes.is_empty() {
+        command_content = Some(text.clone());
+    } else {
+        for prefix in &config.prefixes {
+            if text.starts_with(prefix) {
+                command_content = Some(text[prefix.len()..].to_string());
+                break;
+            }
+        }
+    };
+
+    if let Some(content) = command_content {
+        let mut parts = content.splitn(2, ' ');
+        let command = parts.next().unwrap_or("").to_lowercase();
+        let args = parts.next().unwrap_or("").to_string();
+
+        if command.is_empty() {
+            return Ok(JsValue::NULL);
+        }
+
+        let result = CommandParseResult { command, args };
+        return Ok(serde_wasm_bindgen::to_value(&result)?);
+    }
+
+    Ok(JsValue::NULL)
 }
 
 #[wasm_bindgen]
