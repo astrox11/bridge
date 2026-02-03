@@ -9,7 +9,6 @@ import { WorkerEvent, ConnectionUpdate } from "../proto/index.mjs";
 const port = parseInt(process.argv[3]);
 let socket = null;
 
-// Logging helper (respects LOGS env)
 const log = (...args) => {
   if (process.env.LOGS === 'true') {
     const time = new Date().toLocaleTimeString('en-US', { hour12: false });

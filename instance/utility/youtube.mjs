@@ -53,7 +53,6 @@ export async function search(query, sessionId, limit = 5) {
 export async function downloadVideo(id, sessionId) {
     const client = await getClient(sessionId);
     const info = await client.getBasicInfo(id);
-    console.log(info)
 
     const stream = await client.download(id, {
         type: 'video+audio',
