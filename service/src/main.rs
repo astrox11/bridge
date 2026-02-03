@@ -55,8 +55,19 @@ async fn main() {
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         } else {
             logger::info("REDIS", "Starting redis-server...");
-            let _ = tokio::process::Command::new("redis-server")
-                .arg("redis.conf")
+            // Try with redis.conf if it exists in current directory, otherwise use defaults
+            let redis_conf_path = std::env::current_dir()
+                .map(|p| p.join("redis.conf"))
+                .unwrap_or_else(|_| std::path::PathBuf::from("redis.conf"));
+
+            let mut cmd = tokio::process::Command::new("redis-server");
+            if redis_conf_path.exists() {
+                cmd.arg(&redis_conf_path);
+            } else {
+                // Fallback to memory-efficient defaults without config file
+                cmd.args(["--maxmemory", "20mb", "--maxmemory-policy", "allkeys-lru"]);
+            }
+            let _ = cmd
                 .stdout(std::process::Stdio::null())
                 .stderr(std::process::Stdio::null())
                 .spawn();

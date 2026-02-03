@@ -77,6 +77,8 @@ await loadPlugins();
 
 const msgRetryCounterCache = new NodeCache({
   maxKeys: 100,
+  // 5 minute TTL is sufficient for WhatsApp message retry windows which typically
+  // complete within 1-2 minutes, with extra buffer for network delays
   stdTTL: 300,
   checkperiod: 60,
   useClones: false,
