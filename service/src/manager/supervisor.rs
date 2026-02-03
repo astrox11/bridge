@@ -49,7 +49,7 @@ pub async fn run(phone: String, state: Arc<AppState>) {
             .env("BUN_JSC_forceGCSlowPaths", "1")
             .env("MALLOC_CONF", "dirty_decay_ms:0,muzzy_decay_ms:0")
             .env("BUN_JSC_minGen0Size", "1048576")
-            .current_dir("bot")
+            .current_dir("./bot")
             .kill_on_drop(true)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
