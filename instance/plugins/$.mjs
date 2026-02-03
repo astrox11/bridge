@@ -9,22 +9,22 @@ export default {
     if (!code) return await msg.reply("No code provided");
 
     try {
-      const base64Code = Buffer.from(
-        `
-        export const run = async () => {
-          ${code.includes("return") ? code : `return ${code}`}
-        };
-      `,
-      ).toString("base64");
+      const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
 
-      const module = await import(`data:text/javascript;base64,${base64Code}`);
-      const result = await module.run();
+      const execute = new AsyncFunction(
+        "msg",
+        "Bun",
+        "inspect",
+        code.includes("return") ? code : `return ${code}`
+      );
 
-      const output =
-        typeof result === "string" ? result : inspect(result, { depth: 2 });
+      const result = await execute(msg, Bun, inspect);
+
+      const output = typeof result === "string" ? result : inspect(result, { depth: 2 });
+
       await msg.reply(`\`\`\`\n${output}\n\`\`\``);
     } catch (error) {
-      const e = error instanceof Error ? error.message : String(error);
+      const e = error instanceof Error ? error.stack || error.message : String(error);
       await msg.reply(`\`\`\`Error:\n${e}\n\`\`\``);
     }
   },

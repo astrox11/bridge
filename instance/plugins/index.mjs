@@ -4,6 +4,7 @@ import { cwd } from "process";
 import { pathToFileURL } from "url";
 
 export const commands = new Map();
+export const events = [];
 
 export const loadPlugins = async (
   directory = join(cwd(), "plugins"),
@@ -43,10 +44,8 @@ const addCommandToMap = (cmd) => {
     cmd.alias.forEach((a) => commands.set(a.trim(), cmd));
   }
 
-  if (cmd.event && !cmd.pattern) {
-    const eventKey = `event_${cmd.function.name || Math.random().toString(36).slice(2, 9)
-      }`;
-    commands.set(eventKey, cmd);
+  if (cmd.event) {
+    events.push(cmd);
   }
 };
 
@@ -59,5 +58,5 @@ export const getAllCommands = () => {
 };
 
 export const getAllEvents = () => {
-  return getAllCommands().filter((cmd) => cmd?.event === true);
+  return events;
 };

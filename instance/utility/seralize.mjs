@@ -35,7 +35,7 @@ const serialize = async (msg, client) => {
       return await client.sendMessage(this.chat, { text }, { quoted: msg });
     },
 
-    send: async function (input) {
+    send: async function (input, opts = {}) {
       const content = await parse_content(input);
 
       if (!content) {
@@ -43,15 +43,15 @@ const serialize = async (msg, client) => {
       }
 
       const sendMap = {
-        "text/plain": { text: content.content },
-        "image/": { image: content.buffer },
-        "video/": { video: content.buffer },
-        "audio/": { audio: content.buffer },
+        "text/plain": { text: content.content, ...opts },
+        "image/": { image: content.buffer, ...opts },
+        "video/": { video: content.buffer, ...opts },
+        "audio/": { audio: content.buffer, ...opts },
       };
 
       for (const [mime, body] of Object.entries(sendMap)) {
         if (content.mimetype?.startsWith(mime)) {
-          const m = await client.sendMessage(this.chat, body);
+          const m = await client.sendMessage(this.chat, body, opts);
           return await serialize({ ...m, session: this.session }, client);
         }
       }
@@ -160,6 +160,9 @@ const serialize = async (msg, client) => {
           key: this.key,
         },
       });
+    },
+    forward: async function (jid) {
+      return await client.sendMessage(jid, { forward: this?.quoted || this, contextInfo: { isForwarded: false, forwardingscore: 0 } })
     },
     client,
   };

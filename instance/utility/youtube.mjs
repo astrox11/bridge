@@ -1,9 +1,6 @@
 import { Innertube, Platform, UniversalCache } from 'youtubei.js';
 import { Cookie } from '../sql/models.mjs';
 
-/**
- * Custom Evaluator for deciphering YouTube signatures
- */
 const exportedVars = {
     nFunction: (n) => { return n; },
     sigFunction: (s) => { return s; }
@@ -18,26 +15,21 @@ Platform.shim.eval = async (data, env) => {
     return new Function('exportedVars', `return (${new Function(code).toString()})() `)(exportedVars);
 }
 
-/**
- * Parse Netscape cookie format to header string
- */
 function parseCookies(text) {
     if (!text) return undefined;
     return text
         .split('\n')
-        .filter(line => line.trim() && !line.startsWith('#'))
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'))
         .map(line => {
-            const parts = line.split('\t');
-            if (parts.length < 7) return null;
-            return `${parts[5]}=${parts[6]}`;
+            const i = line.split('\t');
+            if (i.length < 7) return null;
+            return `${i[5]}=${i[6]}`;
         })
         .filter(Boolean)
         .join('; ');
 }
 
-/**
- * Core: Get a fresh Innertube instance for a specific session
- */
 async function getClient(sessionId) {
     const cookieRecord = await Cookie.findOne({
         where: { sessionId, platform: 'youtube' }
@@ -52,10 +44,6 @@ async function getClient(sessionId) {
     });
 }
 
-/**
- * Public Functions
- */
-
 export async function search(query, sessionId, limit = 5) {
     const client = await getClient(sessionId);
     const results = await client.search(query, { type: 'video' });
@@ -65,6 +53,7 @@ export async function search(query, sessionId, limit = 5) {
 export async function downloadVideo(id, sessionId) {
     const client = await getClient(sessionId);
     const info = await client.getBasicInfo(id);
+    console.log(info)
 
     const stream = await client.download(id, {
         type: 'video+audio',
@@ -105,7 +94,7 @@ export async function downloadAudio(id, sessionId) {
             author: info.basic_info.author,
             thumbnail: info.basic_info.thumbnail?.[0]?.url
         },
-        mimetype: 'audio/mp4'
+        mimetype: 'audio/mp3'
     };
 }
 
@@ -121,10 +110,6 @@ export function extractVideoId(url) {
     }
     return null;
 }
-
-/**
- * Cookie Management
- */
 
 export async function getCookie(sessionId, platform) {
     const record = await Cookie.findOne({ where: { sessionId, platform } });

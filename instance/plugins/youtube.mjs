@@ -7,25 +7,9 @@ import {
 
 const searchSessions = new Map();
 
-const LOGIN_ERROR_KEYWORDS = [
-    "sign in",
-    "login",
-    "log in",
-    "authentication",
-    "authenticate",
-    "age-restricted",
-    "age restricted",
-    "confirm your age",
-    "members-only",
-    "members only",
-    "private video",
-    "cookies",
-    "session expired",
-];
-
 function isLoginError(error) {
     const msg = error.message?.toLowerCase() || "";
-    return LOGIN_ERROR_KEYWORDS.some((keyword) => msg.includes(keyword));
+    return msg.includes("login")
 }
 
 function getErrorMessage(error, type = "video") {
@@ -50,6 +34,7 @@ export default [
             }
 
             const videoId = extractVideoId(url);
+            console.log(videoId)
             if (!videoId) {
                 return await message.reply(
                     "Invalid YouTube URL. Please provide a valid YouTube video link."
@@ -59,14 +44,9 @@ export default [
             await message.react("⏳");
 
             try {
-                const result = await downloadVideo(videoId);
-
-                await message.send({
-                    video: result.buffer,
-                    mimetype: result.mimetype,
-                    caption: `🎬 *${result.info.title}*\n👤 ${result.info.author}`,
-                    gifPlayback: false,
-                });
+                const result = await downloadVideo(videoId, message.session);
+                console.log(result)
+                await message.send(result.buffer, { caption: `🎬 *${result.info.title}*\n👤 ${result.info.author}`, mimetype: result.mimetype });
 
                 await message.react("✅");
             } catch (error) {
@@ -98,14 +78,10 @@ export default [
             await message.react("⏳");
 
             try {
-                const result = await downloadAudio(videoId);
+                const result = await downloadAudio(videoId, message.session);
+                console.log(result)
 
-                await message.send({
-                    audio: result.buffer,
-                    mimetype: result.mimetype,
-                    fileName: `${result.info.title}.mp3`,
-                    ptt: false,
-                });
+                await message.client.sendMessage(message.chat, { audio: result.buffer, mimetype: "audio/mp4; codecs=mp4a.40.2" }, { quoted: message });
 
                 await message.react("✅");
             } catch (error) {
@@ -202,19 +178,17 @@ export default [
 
             try {
                 if (isAudio) {
-                    const result = await downloadAudio(video.id);
+                    const result = await downloadAudio(video.id, message.session);
 
-                    await msg.send({
-                        audio: result.buffer,
+                    await msg.send(result.buffer, {
                         mimetype: result.mimetype,
                         fileName: `${result.info.title}.mp3`,
                         ptt: false,
                     });
                 } else {
-                    const result = await downloadVideo(video.id);
+                    const result = await downloadVideo(video.id, message.session);
 
-                    await msg.send({
-                        video: result.buffer,
+                    await msg.send(result.buffer, {
                         mimetype: result.mimetype,
                         caption: `🎬 *${result.info.title}*\n👤 ${result.info.author}`,
                         gifPlayback: false,

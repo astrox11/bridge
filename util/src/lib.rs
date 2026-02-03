@@ -64,18 +64,15 @@ pub fn to_small_caps(text: String) -> String {
 
 #[wasm_bindgen]
 pub fn serialize_full(msg: JsValue) -> Result<JsValue, JsValue> {
-    // 1. Safe access to 'message' property: msg?.message
     let mut content = if msg.is_object() {
         js_sys::Reflect::get(&msg, &"message".into()).unwrap_or(JsValue::UNDEFINED)
     } else {
         JsValue::UNDEFINED
     };
 
-    // 2. Safely unwrap nested wrappers (viewOnce, ephemeral, etc.)
     for _ in 0..5 {
         let inner = get_future_proof_inner(&content)?;
 
-        // Ternary: (inner is Object) ? inner.message : break
         if inner.is_object() {
             content = js_sys::Reflect::get(&inner, &"message".into()).unwrap_or(JsValue::UNDEFINED);
         } else {
@@ -83,14 +80,12 @@ pub fn serialize_full(msg: JsValue) -> Result<JsValue, JsValue> {
         }
     }
 
-    // 3. Safe access to 'key' property
     let key = if msg.is_object() {
         js_sys::Reflect::get(&msg, &"key".into()).unwrap_or(JsValue::UNDEFINED)
     } else {
         JsValue::UNDEFINED
     };
 
-    // 4. Safe string extraction for remoteJid
     let remote_jid = if key.is_object() {
         js_sys::Reflect::get(&key, &"remoteJid".into())
             .ok()
@@ -102,7 +97,6 @@ pub fn serialize_full(msg: JsValue) -> Result<JsValue, JsValue> {
 
     let m_type = get_content_type(content.clone()).unwrap_or_else(|| "unknown".into());
 
-    // 5. Safe access to the specific message content based on type
     let specific_msg = if content.is_object() {
         js_sys::Reflect::get(&content, &m_type.clone().into()).unwrap_or(JsValue::NULL)
     } else {
@@ -122,10 +116,18 @@ pub fn serialize_full(msg: JsValue) -> Result<JsValue, JsValue> {
 
         if quoted_msg.is_object() && !quoted_msg.is_null() && !quoted_msg.is_undefined() {
             let q_type = get_content_type(quoted_msg.clone()).unwrap_or_default();
+
+            let is_view_once = js_sys::Reflect::get(&quoted_msg, &q_type.clone().into())
+                .ok()
+                .and_then(|media_obj| js_sys::Reflect::get(&media_obj, &"viewOnce".into()).ok())
+                .and_then(|vo| vo.as_bool())
+                .unwrap_or(false);
+
             let stanza_id = js_sys::Reflect::get(&context_info, &"stanzaId".into())
                 .ok()
                 .and_then(|v| v.as_string())
                 .unwrap_or_default();
+
             let participant = js_sys::Reflect::get(&context_info, &"participant".into())
                 .ok()
                 .and_then(|v| v.as_string());
@@ -140,7 +142,7 @@ pub fn serialize_full(msg: JsValue) -> Result<JsValue, JsValue> {
                 sender: participant.unwrap_or_default(),
                 mtype: q_type,
                 text: extract_text_from_message(quoted_msg.clone()),
-                viewonce: false,
+                viewonce: is_view_once,
                 message: quoted_msg,
             });
         }

@@ -82,4 +82,17 @@ export default [
       return await msg.send("```Message unstarred.```");
     },
   },
+  {
+    pattern: "vv",
+    fromMe: true,
+    function: async (msg) => {
+      const { mtype, message } = msg.quoted || {};
+
+      if (!msg?.quoted?.viewonce) return msg.reply("```Reply to a view once message```");
+
+      if (message?.[mtype]) message[mtype].viewOnce = false;
+
+      await msg.forward(msg.chat, { quoted: msg.quoted });
+    }
+  }
 ] 
