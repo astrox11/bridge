@@ -177,7 +177,9 @@ export const EconomyManager = {
   }
 };
 
-export * from './session.mjs';
-export * from './contacts.mjs';
-export * from './groups.mjs';
-export * from './messages.mjs';
+export * from './configuration'
+export * from './session';
+export * from './contacts';
+export * from './groups';
+export * from './messages';
+export * from './models'
