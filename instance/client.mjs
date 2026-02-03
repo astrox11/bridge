@@ -21,7 +21,6 @@ import {
   useHybridAuthState,
   cacheGroupMetadata,
   cachedGroupMetadata,
-  cachedGroupMetadata,
   syncGroupParticipantsToContactList,
   Configuration,
 } from "./sql";
