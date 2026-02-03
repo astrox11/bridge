@@ -42,19 +42,19 @@ pub async fn run(phone: String, state: Arc<AppState>) {
 
         logger::debug("SUPERVISOR", &format!("{} spawning worker", phone));
 
-       let mut child = tokio::process::Command::new("bun")
-    .args(["run", "client.mjs", &phone, &port.to_string()])
-    .env("BUN_JSC_gcMaxHeapSize", "33554432") 
-    .env("BUN_JSC_useJIT", "0")
-    .env("BUN_JSC_forceGCSlowPaths", "1")
-    .env("MALLOC_CONF", "dirty_decay_ms:0,muzzy_decay_ms:0")
-    .env("BUN_JSC_minGen0Size", "1048576")
-    .current_dir("instance")
-    .kill_on_drop(true)
-    .stdout(Stdio::inherit())
-    .stderr(Stdio::inherit())
-    .spawn()
-    .expect("Failed to spawn bun");
+        let mut child = tokio::process::Command::new("bun")
+            .args(["run", "client.mjs", &phone, &port.to_string()])
+            .env("BUN_JSC_gcMaxHeapSize", "33554432")
+            .env("BUN_JSC_useJIT", "0")
+            .env("BUN_JSC_forceGCSlowPaths", "1")
+            .env("MALLOC_CONF", "dirty_decay_ms:0,muzzy_decay_ms:0")
+            .env("BUN_JSC_minGen0Size", "1048576")
+            .current_dir("instance")
+            .kill_on_drop(true)
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .expect("Failed to spawn bun");
 
         let child_id = child.id().unwrap_or(0);
 

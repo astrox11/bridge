@@ -55,29 +55,27 @@ async fn main() {
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         } else {
             logger::info("REDIS", "Starting redis-server...");
-            // Try with redis.conf if it exists in current directory, otherwise use defaults
             let redis_conf_path = std::env::current_dir()
                 .map(|p| p.join("redis.conf"))
                 .unwrap_or_else(|_| std::path::PathBuf::from("redis.conf"));
 
-         let mut cmd = tokio::process::Command::new("redis-server");
-if redis_conf_path.exists() {
-    cmd.arg(&redis_conf_path);
-} else {
-    cmd.args(["--maxmemory", "20mb", "--maxmemory-policy", "allkeys-lru"]);
-}
+            let mut cmd = tokio::process::Command::new("redis-server");
+            if redis_conf_path.exists() {
+                cmd.arg(&redis_conf_path);
+            } else {
+                cmd.args(["--maxmemory", "20mb", "--maxmemory-policy", "allkeys-lru"]);
+            }
 
-// Remove the .stdout/stderr(Stdio::null()) temporarily to see errors
-match cmd.spawn() {
-    Ok(_) => {
-        logger::info("REDIS", "Spawned redis-server, waiting for readiness...");
-        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
-    },
-    Err(e) => {
-        logger::error("REDIS", &format!("Failed to execute redis-server: {}", e));
-        std::process::exit(1);
-    }
-}
+            match cmd.spawn() {
+                Ok(_) => {
+                    logger::info("REDIS", "Spawned redis-server, waiting for readiness...");
+                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                }
+                Err(e) => {
+                    logger::error("REDIS", &format!("Failed to execute redis-server: {}", e));
+                    std::process::exit(1);
+                }
+            }
         };
         redis_connected = match redis_client.get_connection() {
             Ok(mut conn) => redis::cmd("PING").query::<String>(&mut conn).is_ok(),
@@ -88,9 +86,12 @@ match cmd.spawn() {
             logger::success("REDIS", "Connected successfully");
 
             let mut conn = redis_client.get_connection().unwrap();
-    let _: () = redis::cmd("MEMORY").arg("PURGE").query(&mut conn).unwrap_or(());
-    
-    logger::debug("REDIS", "Memory purge triggered to reduce RSS overhead");
+            let _: () = redis::cmd("MEMORY")
+                .arg("PURGE")
+                .query(&mut conn)
+                .unwrap_or(());
+
+            logger::debug("REDIS", "Memory purge triggered to reduce RSS overhead");
         } else {
             logger::error("REDIS", "Could not start or connect to Redis service");
             std::process::exit(1);

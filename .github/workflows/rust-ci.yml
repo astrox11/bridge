@@ -20,23 +20,27 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [service, util]
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.project }}
 
       - name: Check formatting
         run: cargo fmt --all -- --check
+        working-directory: ./${{ matrix.project }}
 
       - name: Run clippy
         run: cargo clippy -- -D warnings
+        working-directory: ./${{ matrix.project }}
 
       - name: Run tests
         run: cargo test
+        working-directory: ./${{ matrix.project }}
