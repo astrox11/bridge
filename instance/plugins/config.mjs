@@ -1,6 +1,6 @@
 import { Configuration } from "../sql/configuration.mjs";
 import { parseId } from "../utility/util.mjs";
-import { setCookie, getCookie, deleteCookie, initWithCookies } from "../utility/youtube.mjs";
+import { setCookie, getCookie, deleteCookie } from "../utility/youtube.mjs";
 
 export default [
     {
