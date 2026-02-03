@@ -179,7 +179,7 @@ export const EconomyManager = {
   },
 };
 
-export * from "./configuration";
+export * from "./config";
 export * from "./session";
 export * from "./contacts";
 export * from "./groups";

@@ -1,4 +1,4 @@
-import { parseId } from "../utility/index.mjs";
+import { parseId } from "../utility";
 
 /**
  * Game State Map
