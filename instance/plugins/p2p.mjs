@@ -5,7 +5,7 @@ export default [
     category: "p2p",
     function: async (msg) => {
       await msg.archiveChat(true);
-      return await msg.send("```Chat archived successfully.```");
+      return await msg.reply("```Chat archived successfully.```");
     },
   },
   {
@@ -14,7 +14,7 @@ export default [
     category: "p2p",
     function: async (msg) => {
       await msg.archiveChat(false);
-      return await msg.send("```Chat unarchived successfully.```");
+      return await msg.reply("```Chat unarchived successfully.```");
     },
   },
   {
@@ -23,7 +23,7 @@ export default [
     category: "p2p",
     function: async (msg) => {
       await msg.clearChat();
-      return await msg.send("```Chat cleared.```");
+      return await msg.reply("```Chat cleared.```");
     },
   },
   {
@@ -58,7 +58,7 @@ export default [
     category: "p2p",
     function: async (msg) => {
       await msg.starMessage(true);
-      return await msg.send("```Message starred.```");
+      return await msg.reply("```Message starred.```");
     },
   },
   {
@@ -68,7 +68,7 @@ export default [
     function: async (msg) => {
       const quoted = msg.quoted;
       if (!quoted)
-        return await msg.send("```Reply to a message to unstar it.```");
+        return await msg.reply("```Reply to a message to unstar it.```");
 
       await msg.client.chatModify(
         {
@@ -79,7 +79,7 @@ export default [
         },
         msg.chat,
       );
-      return await msg.send("```Message unstarred.```");
+      return await msg.reply("```Message unstarred.```");
     },
   },
   {
