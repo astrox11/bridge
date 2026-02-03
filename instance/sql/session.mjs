@@ -20,12 +20,7 @@ export const useHybridAuthState = async (sock, phone) => {
     });
   };
 
-  const redisAuth = await useRedisAuthState(
-    sock,
-    keyPrefix,
-    saveToSQL,
-    phone,
-  );
+  const redisAuth = await useRedisAuthState(sock, keyPrefix, saveToSQL, phone);
 
   return {
     ...redisAuth,
@@ -36,12 +31,7 @@ export const useHybridAuthState = async (sock, phone) => {
   };
 };
 
-export const useRedisAuthState = async (
-  sock,
-  keyPrefix,
-  onWrite,
-  phone,
-) => {
+export const useRedisAuthState = async (sock, keyPrefix, onWrite, phone) => {
   const getRedisKey = (key) => {
     const safeKey = key?.replace(/\//g, "__")?.replace(/:/g, "-");
     return `${keyPrefix}${safeKey}`;
@@ -65,8 +55,7 @@ export const useRedisAuthState = async (
     await sock.del(getRedisKey(key));
   };
 
-  const creds =
-    (await readData("creds")) || initAuthCreds();
+  const creds = (await readData("creds")) || initAuthCreds();
 
   return {
     state: {

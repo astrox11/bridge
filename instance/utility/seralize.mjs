@@ -18,7 +18,13 @@ const serialize = async (msg, client) => {
   }
 
   const isMedia = (mtype) =>
-    ["imageMessage", "videoMessage", "audioMessage", "documentMessage", "stickerMessage"].includes(mtype);
+    [
+      "imageMessage",
+      "videoMessage",
+      "audioMessage",
+      "documentMessage",
+      "stickerMessage",
+    ].includes(mtype);
 
   return {
     ...core,
@@ -127,9 +133,7 @@ const serialize = async (msg, client) => {
         this.chat,
       );
     },
-    recordContact: async function (
-      details,
-    ) {
+    recordContact: async function (details) {
       return await client.addOrEditContact(this.chat, details);
     },
     pinChatorMsg: async function (pin) {
@@ -162,7 +166,10 @@ const serialize = async (msg, client) => {
       });
     },
     forward: async function (jid) {
-      return await client.sendMessage(jid, { forward: this?.quoted || this, contextInfo: { isForwarded: false, forwardingscore: 0 } })
+      return await client.sendMessage(jid, {
+        forward: this?.quoted || this,
+        contextInfo: { isForwarded: false, forwardingscore: 0 },
+      });
     },
     client,
   };

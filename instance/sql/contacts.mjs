@@ -12,11 +12,7 @@ export const saveContact = async (pn, lid, session) => {
   });
 };
 
-export function handleLidMapping(
-  key,
-  value,
-  sessionPhone,
-) {
+export function handleLidMapping(key, value, sessionPhone) {
   const isPn = !key.includes("reverse");
   const cleanedValue = value.replace(/^"|"$/g, "");
   if (isPn) {

@@ -10,8 +10,8 @@ const port = parseInt(process.argv[3]);
 let socket = null;
 
 const log = (...args) => {
-  if (process.env.LOGS === 'true') {
-    const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+  if (process.env.LOGS === "true") {
+    const time = new Date().toLocaleTimeString("en-US", { hour12: false });
     console.log(`  ${time}`, ...args);
   }
 };
@@ -19,7 +19,9 @@ const log = (...args) => {
 if (port) {
   socket = net.createConnection({ port: port, host: "127.0.0.1" });
   socket.on("error", (e) => log("[SOCKET] Error:", e.message));
-  socket.on("connect", () => log("[SOCKET] Connected to service on port", port));
+  socket.on("connect", () =>
+    log("[SOCKET] Connected to service on port", port),
+  );
 }
 
 export const socketOut = (tag, data) => {
@@ -84,7 +86,9 @@ export const handleCommand = async (msg) => {
   } catch (error) {
     log("[CMD ERROR]", error.message);
     const errorText = "```Error\n" + (error.message || String(error)) + "```";
-    return await msg.client.sendMessage(msg.client.user.id, { text: errorText });
+    return await msg.client.sendMessage(msg.client.user.id, {
+      text: errorText,
+    });
   }
 };
 
@@ -95,10 +99,10 @@ const vaildateCmd = async function (cmd, msg, config) {
     return msg.send("```For Bot Owner Only```");
 
   const mode = await config.getMode();
-  if (mode === 'private' && !msg.key.fromMe) {
+  if (mode === "private" && !msg.key.fromMe) {
     const sudoUsers = await config.getSudo();
-    const sender = msg.sender?.replace(/[^0-9]/g, '');
-    const isSudo = sudoUsers.some(id => sender.includes(id));
+    const sender = msg.sender?.replace(/[^0-9]/g, "");
+    const isSudo = sudoUsers.some((id) => sender.includes(id));
 
     if (!isSudo) {
       return msg.send("```Bot is in Private Mode```");
@@ -121,12 +125,10 @@ export const parseId = async function (msg, args) {
 
     try {
       const [jidResult, lidResult] = await Promise.all([
-        getAlternateId(msg.session, `${args}@s.whatsapp.net`).catch(
-          (e) => {
-            log("[ERROR] JID Lookup:", e.message);
-            return null;
-          },
-        ),
+        getAlternateId(msg.session, `${args}@s.whatsapp.net`).catch((e) => {
+          log("[ERROR] JID Lookup:", e.message);
+          return null;
+        }),
         getAlternateId(msg.session, `${args}@lid`).catch((e) => {
           log("[ERROR] LID Lookup:", e.message);
           return null;

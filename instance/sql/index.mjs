@@ -8,16 +8,16 @@ import {
   SessionGroup,
   Economy,
   initDb,
-} from './models.mjs';
+} from "./models.mjs";
 
 await initDb();
 
 export const SessionStatus = {
-  ACTIVE: 'active',
-  CONNECTED: 'connected',
-  PAUSED: 'paused',
-  LOGGED_OUT: 'logged_out',
-  PAIRING: 'pairing',
+  ACTIVE: "active",
+  CONNECTED: "connected",
+  PAUSED: "paused",
+  LOGGED_OUT: "logged_out",
+  PAIRING: "pairing",
 };
 
 export const SessionManager = {
@@ -43,7 +43,7 @@ export const DevicesManager = {
   async set(data) {
     await Device.upsert({
       sessionId: data.sessionId,
-      User: data.User || '',
+      User: data.User || "",
       deviceInfo: data.deviceInfo,
       lastSeenAt: data.lastSeenAt || new Date(),
       createdAt: data.createdAt || new Date(),
@@ -123,7 +123,9 @@ export const ConfigManager = {
     });
   },
   async get(sessionId, configKey) {
-    return await SessionConfiguration.findOne({ where: { sessionId, configKey } });
+    return await SessionConfiguration.findOne({
+      where: { sessionId, configKey },
+    });
   },
   async getAll(sessionId) {
     return await SessionConfiguration.findAll({ where: { sessionId } });
@@ -164,8 +166,8 @@ export const EconomyManager = {
         sessionId,
         userId,
         balance: 5000,
-        bank: 0
-      }
+        bank: 0,
+      },
     });
     return eco;
   },
@@ -174,12 +176,12 @@ export const EconomyManager = {
   },
   async reset(sessionId, userId) {
     await Economy.destroy({ where: { sessionId, userId } });
-  }
+  },
 };
 
-export * from './configuration'
-export * from './session';
-export * from './contacts';
-export * from './groups';
-export * from './messages';
-export * from './models'
+export * from "./configuration";
+export * from "./session";
+export * from "./contacts";
+export * from "./groups";
+export * from "./messages";
+export * from "./models";

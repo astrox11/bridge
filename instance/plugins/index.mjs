@@ -6,12 +6,13 @@ import { pathToFileURL } from "url";
 export const commands = new Map();
 export const events = [];
 
-export const loadPlugins = async (
-  directory = join(cwd(), "plugins"),
-) => {
+export const loadPlugins = async (directory = join(cwd(), "plugins")) => {
   try {
     const files = readdirSync(directory)
-      .filter((file) => file.endsWith(".ts") || file.endsWith(".js") || file.endsWith(".mjs"))
+      .filter(
+        (file) =>
+          file.endsWith(".ts") || file.endsWith(".js") || file.endsWith(".mjs"),
+      )
       .filter((file) => !file.startsWith("index."));
 
     for (const file of files) {

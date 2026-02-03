@@ -113,4 +113,4 @@ export default [
       return await message.send(parts.join(" ") || "0s");
     },
   },
-] 
+];
