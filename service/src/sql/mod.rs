@@ -53,7 +53,7 @@ pub async fn sync_db() -> SqlitePool {
             Ok(schema) => {
                 if let Err(e) = sqlx::query(&schema).execute(&pool).await {
                     eprintln!("⚠️ Warning: Failed to execute schema from main.sql: {}", e);
-                } 
+                }
             }
             Err(e) => eprintln!("❌ Failed to read main.sql: {}", e),
         }

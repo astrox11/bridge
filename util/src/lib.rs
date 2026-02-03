@@ -321,9 +321,11 @@ pub fn extract_text_from_message(message: JsValue) -> Option<String> {
     }
     if let Ok(p) = js_sys::Reflect::get(&message, &"protocolMessage".into())
         && let Ok(e) = js_sys::Reflect::get(&p, &"editedMessage".into())
-            && !e.is_null() && !e.is_undefined() {
-                return extract_text_from_message(e);
-            }
+        && !e.is_null()
+        && !e.is_undefined()
+    {
+        return extract_text_from_message(e);
+    }
     None
 }
 
@@ -335,10 +337,11 @@ pub fn get_content_type(content: JsValue) -> Option<String> {
     let keys = js_sys::Object::keys(content.unchecked_ref());
     for i in 0..keys.length() {
         if let Some(k) = keys.get(i).as_string()
-            && (k == "conversation" || k.contains("Message")) && k != "senderKeyDistributionMessage"
-            {
-                return Some(k);
-            }
+            && (k == "conversation" || k.contains("Message"))
+            && k != "senderKeyDistributionMessage"
+        {
+            return Some(k);
+        }
     }
     None
 }
