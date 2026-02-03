@@ -161,7 +161,7 @@ export default [
 
       try {
         if (isAudio) {
-          const result = await downloadAudio(video.id, message.session);
+          const result = await downloadAudio(video.id, msg.session);
 
           await msg.send(result.buffer, {
             mimetype: result.mimetype,
@@ -169,7 +169,7 @@ export default [
             ptt: false,
           });
         } else {
-          const result = await downloadVideo(video.id, message.session);
+          const result = await downloadVideo(video.id, msg.session);
 
           await msg.send(result.buffer, {
             mimetype: result.mimetype,
