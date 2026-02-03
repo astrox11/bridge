@@ -9,7 +9,7 @@ on:
   pull_request:
     branches: ["master"]
     paths:
-      - "instance/**"
+      - "bot/**"
       - "ui/**"
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
           bun-version: latest
 
       - name: Instance - Install dependencies
-        working-directory: ./instance
+        working-directory: ./bot
         run: bun install
 
       - name: UI - Install dependencies

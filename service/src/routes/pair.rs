@@ -13,14 +13,13 @@ pub async fn pair_instance(
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
     {
         let workers = state.sm.workers.read().await;
-        if let Some(worker) = workers.get(&phone) {
-            if worker.status == "active" || worker.status == "connected" {
+        if let Some(worker) = workers.get(&phone)
+            && (worker.status == "active" || worker.status == "connected") {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(json!({"error": "instance already connected"})),
                 ));
             }
-        }
     }
 
     state.sm.start_instance(&phone, state.clone()).await;

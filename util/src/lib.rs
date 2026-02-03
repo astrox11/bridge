@@ -319,13 +319,11 @@ pub fn extract_text_from_message(message: JsValue) -> Option<String> {
     if let Some(t) = gp(&message, &["documentMessage", "caption"]) {
         return Some(t);
     }
-    if let Ok(p) = js_sys::Reflect::get(&message, &"protocolMessage".into()) {
-        if let Ok(e) = js_sys::Reflect::get(&p, &"editedMessage".into()) {
-            if !e.is_null() && !e.is_undefined() {
+    if let Ok(p) = js_sys::Reflect::get(&message, &"protocolMessage".into())
+        && let Ok(e) = js_sys::Reflect::get(&p, &"editedMessage".into())
+            && !e.is_null() && !e.is_undefined() {
                 return extract_text_from_message(e);
             }
-        }
-    }
     None
 }
 
@@ -336,12 +334,11 @@ pub fn get_content_type(content: JsValue) -> Option<String> {
     }
     let keys = js_sys::Object::keys(content.unchecked_ref());
     for i in 0..keys.length() {
-        if let Some(k) = keys.get(i).as_string() {
-            if (k == "conversation" || k.contains("Message")) && k != "senderKeyDistributionMessage"
+        if let Some(k) = keys.get(i).as_string()
+            && (k == "conversation" || k.contains("Message")) && k != "senderKeyDistributionMessage"
             {
                 return Some(k);
             }
-        }
     }
     None
 }
@@ -418,7 +415,7 @@ async fn fetch_and_analyze(url: String) -> Result<ParsedResult, JsValue> {
         .headers()
         .get("content-type")?
         .filter(|s| !s.is_empty());
-    let ab_promise: js_sys::Promise = resp.array_buffer()?.into();
+    let ab_promise: js_sys::Promise = resp.array_buffer()?;
     let bytes = js_sys::Uint8Array::new(&JsFuture::from(ab_promise).await?).to_vec();
     Ok(create_result_from_bytes(bytes, ct))
 }
