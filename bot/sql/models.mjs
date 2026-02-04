@@ -89,7 +89,7 @@ SessionConfiguration.init(
     configValue: { type: DataTypes.TEXT },
     createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },
-  { sequelize, tableName: "session_configurations" },
+  { sequelize, tableName: "configurations" },
 );
 
 export class SessionGroup extends Model {}
