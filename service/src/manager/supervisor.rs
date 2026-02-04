@@ -43,13 +43,8 @@ pub async fn run(phone: String, state: Arc<AppState>) {
         logger::debug("SUPERVISOR", &format!("{} spawning worker", phone));
 
         let mut child = tokio::process::Command::new("bun")
-            .args(["run", "client.mjs", &phone, &port.to_string()])
-            .env("BUN_JSC_gcMaxHeapSize", "33554432")
-            .env("BUN_JSC_useJIT", "0")
-            .env("BUN_JSC_forceGCSlowPaths", "1")
-            .env("MALLOC_CONF", "dirty_decay_ms:0,muzzy_decay_ms:0")
-            .env("BUN_JSC_minGen0Size", "1048576")
-            .current_dir("./bot")
+            .args(["start", &phone, &port.to_string()])
+            .current_dir("bot")
             .kill_on_drop(true)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
@@ -73,8 +68,8 @@ pub async fn run(phone: String, state: Arc<AppState>) {
                 }
                 Ok(msg) = rx.recv() => {
                     let parts: Vec<&str> = msg.splitn(2, ':').collect();
-                    if parts.first() == Some(&phone.as_str()) {
-                        match parts.get(1) {
+                    if parts.get(0) == Some(&phone.as_str()) {
+                        match parts.first() {
                             Some(cmd) if *cmd == "pause" || *cmd == "stop" => {
                                 is_paused = *cmd == "pause";
 
