@@ -1,4 +1,4 @@
-import { Configuration } from "../sql/configuration.mjs";
+import { Configuration } from "../sql";
 import { parseId, setCookie, getCookie, deleteCookie } from "../utility";
 
 export default [

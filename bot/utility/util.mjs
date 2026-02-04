@@ -1,10 +1,9 @@
-import { findCommand, getAllEvents } from "../plugins/index.mjs";
-import { getAlternateId } from "../sql";
-import { Configuration } from "../sql/configuration.mjs";
-import { to_small_caps, parse_command, update_config } from "../pkg/util";
+import { findCommand, getAllEvents } from "../plugins";
+import { getAlternateId, Configuration } from "../sql";
+import { to_small_caps, parse_command } from "../pkg/util";
 
 import * as net from "net";
-import { WorkerEvent, ConnectionUpdate } from "../proto/index.mjs";
+import { WorkerEvent, ConnectionUpdate } from "../proto";
 
 const port = parseInt(process.argv[3]);
 let socket = null;

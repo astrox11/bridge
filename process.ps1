@@ -1,1 +1,1 @@
-./service/target/release/whatsaly-api.exe
+.\target\release\whatsaly-api.exe

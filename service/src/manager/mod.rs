@@ -66,7 +66,7 @@ impl SessionManager {
             let mut workers = self.workers.write().await;
             workers.remove(phone);
         }
-        let mut conn = redis_client.get_multiplexed_tokio_connection().await?;
+        let mut conn = redis_client.get_multiplexed_async_connection().await?;
 
         let redis_key = format!("session:{}", phone);
         let pattern = format!("{}:*", phone);
