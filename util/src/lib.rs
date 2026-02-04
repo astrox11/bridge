@@ -82,10 +82,9 @@ pub fn parse_command(text: String) -> Result<JsValue, JsValue> {
     } else {
         let mut best_match: Option<&String> = None;
         for prefix in &config.prefixes {
-            if text.starts_with(prefix)
-                && best_match.is_none_or(|p| prefix.len() > p.len()) {
-                    best_match = Some(prefix);
-                }
+            if text.starts_with(prefix) && best_match.is_none_or(|p| prefix.len() > p.len()) {
+                best_match = Some(prefix);
+            }
         }
 
         if let Some(prefix) = best_match {
