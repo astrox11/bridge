@@ -68,7 +68,7 @@ pub async fn run(phone: String, state: Arc<AppState>) {
                 }
                 Ok(msg) = rx.recv() => {
                     let parts: Vec<&str> = msg.splitn(2, ':').collect();
-                    if parts.get(0) == Some(&phone.as_str()) {
+                    if parts.first() == Some(&phone.as_str()) {
                         match parts.first() {
                             Some(cmd) if *cmd == "pause" || *cmd == "stop" => {
                                 is_paused = *cmd == "pause";
