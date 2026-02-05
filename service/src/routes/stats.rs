@@ -22,14 +22,14 @@ pub async fn get_instance_stats(
     State(state): State<Arc<AppState>>,
 ) -> Json<serde_json::Value> {
     let workers = state.sm.workers.read().await;
-    
+
     if let Some(worker) = workers.get(&phone) {
         if let Some(pid) = worker.pid {
             let mut sys = System::new();
             let pid_obj = Pid::from_u32(pid);
             sys.refresh_memory();
             sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid_obj]), true);
-            
+
             if let Some(process) = sys.process(pid_obj) {
                 let total_memory = sys.total_memory();
                 let memory_usage = process.memory();
@@ -48,11 +48,11 @@ pub async fn get_instance_stats(
                     status: worker.status.clone(),
                     pid: worker.pid,
                 };
-                
+
                 return Json(serde_json::json!(stats));
             }
         }
-        
+
         // Worker exists but no PID or process not found
         return Json(serde_json::json!({
             "phone": worker.phone,
@@ -64,6 +64,6 @@ pub async fn get_instance_stats(
             "error": "Process not running or not found"
         }));
     }
-    
+
     Json(serde_json::json!({"error": "Instance not found"}))
 }
