@@ -135,6 +135,7 @@ async fn main() {
                     status: "paused".to_string(),
                     pairing_code: None,
                     is_running: false,
+                    pid: None,
                 },
             );
             continue;

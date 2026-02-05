@@ -1,6 +1,7 @@
 import os from "os";
 import { getAllCommands } from ".";
 import { toSmallCaps } from "../utility";
+import config from "../config.mjs";
 
 export default [
   {
@@ -35,25 +36,34 @@ export default [
         return parts.join(" ");
       };
 
-      const formatBytes = (bytes) => {
-        if (bytes <= 0) return "0 Bytes";
-        const k = 1024;
-        const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+      const getCpuUsage = () => {
+        const cpus = os.cpus();
+        let totalIdle = 0;
+        let totalTick = 0;
+        for (const cpu of cpus) {
+          for (const type in cpu.times) {
+            totalTick += cpu.times[type];
+          }
+          totalIdle += cpu.times.idle;
+        }
+        return ((1 - totalIdle / totalTick) * 100).toFixed(1);
       };
 
       const pushName = message.pushName?.replace(/[\r\n]+/gm, "");
       const runtimeStr = formatRuntime();
       const platformStr = os.platform();
-      const ramStr = `${formatBytes(os.totalmem() - os.freemem())} / ${formatBytes(os.totalmem())}`;
+      const usedMem = os.totalmem() - os.freemem();
+      const ramPercent = ((usedMem / os.totalmem()) * 100).toFixed(1);
+      const cpuPercent = getCpuUsage();
+      const botName = config.BOT_NAME.toUpperCase();
 
-      let menu = `\`\`\`╭━━━〔 WHATSALY 〕━━━`;
+      let menu = `\`\`\`╭━━━〔 ${botName} 〕━━━`;
       if (pushName) menu += `\n│ User : ${pushName}`;
       menu += `\n│ Plugins : ${totalMenuCommands}`;
       if (runtimeStr) menu += `\n│ Runtime : ${runtimeStr}`;
       if (platformStr) menu += `\n│ Platform : ${platformStr}`;
-      if (ramStr) menu += `\n│ Ram : ${ramStr}`;
+      menu += `\n│ Ram : ${ramPercent}%`;
+      menu += `\n│ Cpu : ${cpuPercent}%`;
       menu += `\n╰──────────────\`\`\`\n`;
 
       let commandIndex = 1;

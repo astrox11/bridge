@@ -2,6 +2,7 @@ pub mod instance;
 pub mod logs;
 pub mod pair;
 pub mod settings;
+pub mod stats;
 pub mod system;
 pub mod util;
 
@@ -32,6 +33,10 @@ pub fn create_routes() -> Router<Arc<AppState>> {
         .route(
             "/api/instances/:phone/reset",
             post(instance::reset_instance),
+        )
+        .route(
+            "/api/instances/:phone/stats",
+            get(stats::get_instance_stats),
         )
         .route("/api/instances/:phone/pair", post(pair::pair_instance))
         .route("/api/settings/:phone", get(settings::get_settings))
