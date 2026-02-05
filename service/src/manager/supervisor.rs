@@ -46,8 +46,8 @@ pub async fn run(phone: String, state: Arc<AppState>) {
             .args(["start", &phone, &port.to_string()])
             .current_dir("bot")
             .kill_on_drop(true)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
             .expect("Failed to spawn bun");
 
