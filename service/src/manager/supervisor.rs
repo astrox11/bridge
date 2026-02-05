@@ -53,6 +53,14 @@ pub async fn run(phone: String, state: Arc<AppState>) {
 
         let child_id = child.id().unwrap_or(0);
 
+        // Update the worker's PID for stats tracking
+        {
+            let mut workers = state.sm.workers.write().await;
+            if let Some(w) = workers.get_mut(&phone) {
+                w.pid = if child_id > 0 { Some(child_id) } else { None };
+            }
+        }
+
         if let Some(stdout) = child.stdout.take() {
             let p_out = phone.clone();
             tokio::spawn(async move {

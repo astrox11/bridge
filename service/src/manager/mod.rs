@@ -12,6 +12,8 @@ pub struct WorkerInfo {
     pub status: String,
     pub pairing_code: Option<String>,
     pub is_running: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pid: Option<u32>,
 }
 
 pub struct SessionManager {
@@ -35,6 +37,7 @@ impl SessionManager {
                 status: "starting".to_string(),
                 pairing_code: None,
                 is_running: true,
+                pid: None,
             });
         }
         tokio::spawn(crate::manager::supervisor::run(phone_clone, state));
