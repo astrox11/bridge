@@ -36,25 +36,28 @@ export default [
         return parts.join(" ");
       };
 
-      const getCpuUsage = () => {
-        const cpus = os.cpus();
-        let totalIdle = 0;
-        let totalTick = 0;
-        for (const cpu of cpus) {
-          for (const type in cpu.times) {
-            totalTick += cpu.times[type];
+      const fetchInstanceStats = async () => {
+        try {
+          const port = config.PORT || "8080";
+          const phone = message.session;
+          const response = await fetch(
+            `http://127.0.0.1:${port}/api/instances/${phone}/stats`
+          );
+          if (response.ok) {
+            return await response.json();
           }
-          totalIdle += cpu.times.idle;
+        } catch {
+          // Fallback to zeros if stats endpoint is unavailable
         }
-        return ((1 - totalIdle / totalTick) * 100).toFixed(1);
+        return { cpu_usage: 0, memory_percent: 0 };
       };
 
       const pushName = message.pushName?.replace(/[\r\n]+/gm, "");
       const runtimeStr = formatRuntime();
       const platformStr = os.platform();
-      const usedMem = os.totalmem() - os.freemem();
-      const ramPercent = ((usedMem / os.totalmem()) * 100).toFixed(1);
-      const cpuPercent = getCpuUsage();
+      const stats = await fetchInstanceStats();
+      const ramPercent = stats.memory_percent?.toFixed(1) || "0.0";
+      const cpuPercent = stats.cpu_usage?.toFixed(1) || "0.0";
       const botName = (config.BOT_NAME || "Whatsaly").toUpperCase();
 
       let menu = `\`\`\`╭━━━〔 ${botName} 〕━━━`;
