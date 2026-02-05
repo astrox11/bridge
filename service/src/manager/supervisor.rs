@@ -5,7 +5,7 @@ use crate::manager::events::worker_event::Event;
 use prost::Message;
 use std::process::Stdio;
 use std::sync::Arc;
-use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
 use tokio::net::TcpListener;
 use tokio::time::{Duration, sleep};
 
@@ -53,6 +53,26 @@ pub async fn run(phone: String, state: Arc<AppState>) {
 
         let child_id = child.id().unwrap_or(0);
 
+        if let Some(stdout) = child.stdout.take() {
+            let p_out = phone.clone();
+            tokio::spawn(async move {
+                let mut reader = BufReader::new(stdout).lines();
+                while let Ok(Some(line)) = reader.next_line().await {
+                    logger::info(&format!("{} [bun]", p_out), &line);
+                }
+            });
+        }
+
+        if let Some(stderr) = child.stderr.take() {
+            let p_err = phone.clone();
+            tokio::spawn(async move {
+                let mut reader = BufReader::new(stderr).lines();
+                while let Ok(Some(line)) = reader.next_line().await {
+                    logger::error(&format!("{} [bun-err]", p_err), &line);
+                }
+            });
+        }
+
         loop {
             tokio::select! {
                 accept_res = listener.accept() => {
@@ -66,28 +86,31 @@ pub async fn run(phone: String, state: Arc<AppState>) {
                         });
                     }
                 }
-                Ok(msg) = rx.recv() => {
-                    let parts: Vec<&str> = msg.splitn(2, ':').collect();
-                    if parts.first() == Some(&phone.as_str()) {
-                        match parts.first() {
-                            Some(cmd) if *cmd == "pause" || *cmd == "stop" => {
-                                is_paused = *cmd == "pause";
+                res = rx.recv() => {
+                    if let Ok(msg) = res {
+                        let parts: Vec<&str> = msg.splitn(2, ':').collect();
+                        if parts.first() == Some(&phone.as_str()) {
+                            match parts.get(1) {
+                                Some(&"pause") | Some(&"stop") => {
+                                    let cmd = parts[1];
+                                    is_paused = cmd == "pause";
 
-                                kill_process_tree(child_id).await;
-                                let _ = child.wait().await;
+                                    kill_process_tree(child_id).await;
+                                    let _ = child.wait().await;
 
-                                if *cmd == "pause" {
-                                    update_db_status(&phone, "paused", &state).await;
-                                    logger::info("SUPERVISOR", &format!("{} paused", phone));
+                                    if cmd == "pause" {
+                                        update_db_status(&phone, "paused", &state).await;
+                                        logger::info("SUPERVISOR", &format!("{} paused", phone));
+                                    }
+
+                                    if cmd == "stop" {
+                                        logger::info("SUPERVISOR", &format!("{} stopped", phone));
+                                        return;
+                                    }
+                                    break;
                                 }
-
-                                if *cmd == "stop" {
-                                    logger::info("SUPERVISOR", &format!("{} stopped", phone));
-                                    return;
-                                }
-                                break;
+                                _ => {}
                             }
-                            _ => {}
                         }
                     }
                 }
@@ -163,14 +186,12 @@ async fn handle_event(event: WorkerEvent, state: Arc<AppState>, phone: &str) {
             Event::Connection(conn) => {
                 logger::debug("EVENT", &format!("{} status: {}", conn.phone, conn.status));
 
-                // Handle logged_out - kill instance and flush data
                 if conn.status == "logged_out" {
                     logger::warn(
                         "SESSION",
                         &format!("{} logged out, clearing data...", conn.phone),
                     );
 
-                    // Clear session (kills process, flushes Redis, deletes from DB)
                     if let Err(e) = state
                         .sm
                         .clear_session(&conn.phone, &state.db, &state.redis)
@@ -183,7 +204,6 @@ async fn handle_event(event: WorkerEvent, state: Arc<AppState>, phone: &str) {
                     return;
                 }
 
-                // Update worker status
                 let mut workers = state.sm.workers.write().await;
                 if let Some(w) = workers.get_mut(&conn.phone) {
                     w.status = conn.status.clone();
