@@ -58,7 +58,10 @@ pub async fn run(phone: String, state: Arc<AppState>) {
             tokio::spawn(async move {
                 let mut reader = BufReader::new(stdout).lines();
                 while let Ok(Some(line)) = reader.next_line().await {
-                    logger::info(&format!("{} [bun]", p_out), &line);
+                    let clean_line = line.trim();
+                    if !clean_line.is_empty() {
+                        logger::info(&format!("{} [BUN]", p_out), clean_line);
+                    }
                 }
             });
         }
@@ -68,7 +71,10 @@ pub async fn run(phone: String, state: Arc<AppState>) {
             tokio::spawn(async move {
                 let mut reader = BufReader::new(stderr).lines();
                 while let Ok(Some(line)) = reader.next_line().await {
-                    logger::error(&format!("{} [bun-err]", p_err), &line);
+                    let clean_line = line.trim();
+                    if !clean_line.is_empty() {
+                        logger::error(&format!("{} [BUN-ERR]", p_err), clean_line);
+                    }
                 }
             });
         }

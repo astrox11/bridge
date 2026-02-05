@@ -37,8 +37,9 @@ fn timestamp() -> String {
 }
 
 pub fn info(tag: &str, message: &str) {
+    // Adding \r ensures we start at the far left
     println!(
-        "  {} {} {}",
+        "\r  {} {} {}",
         timestamp().dimmed(),
         format!("[{}]", tag).cyan().bold(),
         message
@@ -48,7 +49,7 @@ pub fn info(tag: &str, message: &str) {
 
 pub fn success(tag: &str, message: &str) {
     println!(
-        "  {} {} {}",
+        "\r  {} {} {}",
         timestamp().dimmed(),
         format!("[{}]", tag).green().bold(),
         message.green()
@@ -58,7 +59,7 @@ pub fn success(tag: &str, message: &str) {
 
 pub fn warn(tag: &str, message: &str) {
     println!(
-        "  {} {} {}",
+        "\r  {} {} {}",
         timestamp().dimmed(),
         format!("[{}]", tag).yellow().bold(),
         message.yellow()
@@ -68,7 +69,7 @@ pub fn warn(tag: &str, message: &str) {
 
 pub fn error(tag: &str, message: &str) {
     eprintln!(
-        "  {} {} {}",
+        "\r  {} {} {}",
         timestamp().dimmed(),
         format!("[{}]", tag).red().bold(),
         message.red()
@@ -79,7 +80,7 @@ pub fn error(tag: &str, message: &str) {
 pub fn debug(tag: &str, message: &str) {
     if is_debug() {
         println!(
-            "  {} {} {}",
+            "\r  {} {} {}",
             timestamp().dimmed(),
             format!("[{}]", tag).magenta(),
             message.dimmed()
@@ -89,22 +90,22 @@ pub fn debug(tag: &str, message: &str) {
 }
 
 pub fn banner(port: u16) {
-    println!();
+    println!("\r");
     println!(
-        "  {}  {}",
+        "\r  {}  {}",
         "WHATSALY".green().bold(),
         format!("v{}", env!("CARGO_PKG_VERSION")).dimmed()
     );
-    println!();
+    println!("\r");
     println!(
-        "  {}  Local:   {}",
+        "\r  {}  Local:    {}",
         "➜".green().bold(),
         format!("http://localhost:{}/", port).cyan()
     );
     println!(
-        "  {}  Network: {}",
+        "\r  {}  Network: {}",
         "➜".dimmed(),
         format!("http://0.0.0.0:{}/", port).cyan()
     );
-    println!();
+    println!("\r");
 }
