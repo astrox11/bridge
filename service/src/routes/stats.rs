@@ -26,11 +26,14 @@ pub async fn get_instance_stats(
     if let Some(worker) = workers.get(&phone) {
         if let Some(pid) = worker.pid {
             let mut sys = System::new();
-            sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+            let pid_obj = Pid::from_u32(pid);
+            sys.refresh_memory();
+            sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid_obj]), true);
             
-            if let Some(process) = sys.process(Pid::from_u32(pid)) {
+            if let Some(process) = sys.process(pid_obj) {
                 let total_memory = sys.total_memory();
                 let memory_usage = process.memory();
+                let cpu_usage = process.cpu_usage();
                 let memory_percent = if total_memory > 0 {
                     (memory_usage as f32 / total_memory as f32) * 100.0
                 } else {
@@ -39,7 +42,7 @@ pub async fn get_instance_stats(
 
                 let stats = InstanceStats {
                     phone: worker.phone.clone(),
-                    cpu_usage: process.cpu_usage(),
+                    cpu_usage,
                     memory_usage,
                     memory_percent,
                     status: worker.status.clone(),
