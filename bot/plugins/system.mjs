@@ -55,7 +55,7 @@ export default [
       const usedMem = os.totalmem() - os.freemem();
       const ramPercent = ((usedMem / os.totalmem()) * 100).toFixed(1);
       const cpuPercent = getCpuUsage();
-      const botName = config.BOT_NAME.toUpperCase();
+      const botName = (config.BOT_NAME || "Whatsaly").toUpperCase();
 
       let menu = `\`\`\`╭━━━〔 ${botName} 〕━━━`;
       if (pushName) menu += `\n│ User : ${pushName}`;
