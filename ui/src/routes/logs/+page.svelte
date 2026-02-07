@@ -9,11 +9,16 @@
 		
 		eventSource.onopen = () => {
 			connectionStatus = 'connected';
-			logs = [...logs, { level: 'INFO', tag: 'UI', message: 'Connected to log stream', time: new Date().toLocaleTimeString() }];
 		};
 		
 		eventSource.onmessage = (event) => {
-			const [level, tag, message] = event.data.split('|');
+			// Ignore empty keep-alive pings
+			if (!event.data || event.data.trim() === '') return;
+			
+			const [level, tag, ...messageParts] = event.data.split('|');
+			const message = messageParts.join('|'); // In case message contains |
+			if (!level || !tag) return; // Invalid format
+			
 			logs = [...logs, { level, tag, message, time: new Date().toLocaleTimeString() }].slice(-500);
 			
 			if (autoScroll && logContainer) {
