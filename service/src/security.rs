@@ -240,6 +240,8 @@ pub async fn jwt_auth_middleware(
         "/api/auth/admin",
         "/api/auth/passkey/login/challenge",
         "/api/auth/passkey/login",
+        "/api/auth/passkey/register/challenge",
+        "/api/auth/passkey/register",
         "/util/whatsapp-news",
         // SSE stream endpoints (real-time data feeds)
         "/api/system/stream",
