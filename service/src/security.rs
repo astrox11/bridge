@@ -1,6 +1,5 @@
 use axum::{
     body::Body,
-    extract::State,
     http::{header, Request, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
@@ -10,9 +9,6 @@ use hmac::{Hmac, Mac};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
-use std::sync::Arc;
-
-use crate::AppState;
 
 // ========== JWT Token Types ==========
 
@@ -52,6 +48,8 @@ pub struct SecureResponse {
 }
 
 /// Response codes (obfuscated - not readable)
+/// These are exported for use in various parts of the application
+#[allow(dead_code)]
 pub mod response_codes {
     pub const AUTH_SUCCESS: u32 = 0x1A3F;
     pub const AUTH_FAILED: u32 = 0x2B4E;
@@ -243,6 +241,10 @@ pub async fn jwt_auth_middleware(
         "/api/auth/passkey/login/challenge",
         "/api/auth/passkey/login",
         "/util/whatsapp-news",
+        // SSE stream endpoints (real-time data feeds)
+        "/api/system/stream",
+        "/api/instances/stream",
+        "/api/logs/stream",
     ];
     
     if public_routes.iter().any(|r| path.starts_with(r)) {
@@ -392,6 +394,10 @@ pub async fn api_key_middleware(
         "/api/auth/register",
         "/api/auth/admin",
         "/api/auth/passkey",
+        // SSE stream endpoints (real-time data feeds)
+        "/api/system/stream",
+        "/api/instances/stream",
+        "/api/logs/stream",
     ];
     
     if public_routes.iter().any(|r| path.starts_with(r)) {
@@ -461,6 +467,7 @@ pub fn create_auth_cookie(token: &str, is_production: bool) -> String {
 }
 
 /// Create a cookie to clear the auth token
+#[allow(dead_code)]
 pub fn create_logout_cookie() -> String {
     "whatsaly_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict".to_string()
 }

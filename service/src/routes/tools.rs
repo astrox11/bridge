@@ -95,6 +95,8 @@ pub struct ExecuteToolRequest {
     pub tool_id: String,
     #[serde(rename = "sessionId")]
     pub session_id: String,
+    /// Additional parameters for the tool (reserved for future use)
+    #[allow(dead_code)]
     pub params: Option<serde_json::Value>,
 }
 
