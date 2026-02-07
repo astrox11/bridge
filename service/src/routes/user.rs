@@ -562,13 +562,14 @@ pub async fn create_user_instance(
 
     // Create session in sessions table
     let session_result = sqlx::query(
-        "INSERT INTO sessions (id, name, status, phoneNumber, createdAt, updatedAt) 
-         VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO sessions (id, name, status, phoneNumber, ownerCryptoHash, createdAt, updatedAt) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(&session_id)
     .bind(payload.name.as_deref().unwrap_or("New Instance"))
     .bind("paused")
     .bind(&payload.phone_number)
+    .bind(&crypto_hash)
     .bind(now)
     .bind(now)
     .execute(&state.db)

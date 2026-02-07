@@ -6,9 +6,15 @@ CREATE TABLE
         status TEXT NOT NULL,
         name TEXT,
         profileUrl TEXT,
+        phoneNumber TEXT,
+        ownerCryptoHash TEXT,
         isBusinessAccount BOOLEAN NOT NULL DEFAULT FALSE,
-        createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+CREATE INDEX IF NOT EXISTS idx_sessions_phone ON sessions (phoneNumber);
+CREATE INDEX IF NOT EXISTS idx_sessions_owner ON sessions (ownerCryptoHash);
 
 CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions (status);
 
