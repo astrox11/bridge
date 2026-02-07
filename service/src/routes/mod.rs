@@ -82,6 +82,7 @@ pub fn create_routes() -> Router<Arc<AppState>> {
         .route("/api/user/:crypto_hash/dashboard", get(user::get_user_dashboard))
         .route("/api/user/:crypto_hash/instances", get(user::get_user_instances))
         .route("/api/user/:crypto_hash/instances", post(user::create_user_instance))
+        .route("/api/user/:crypto_hash/instances/:session_id/pairing", get(user::get_instance_pairing_code))
         .route("/api/user/:crypto_hash/credits", get(user::get_user_credits))
         .route("/api/user/:crypto_hash/credits/add", post(user::add_credits))
         .route("/api/user/:crypto_hash/usage", get(user::get_usage_history))
