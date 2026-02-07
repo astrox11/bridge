@@ -228,13 +228,6 @@
 					</a>
 				</p>
 			</div>
-
-			<div class="mt-4 pt-4 border-t text-center" style="border-color: hsl(var(--border));">
-				<a href="/" class="text-xs" style="color: hsl(var(--text-muted));">
-					<i class="fi fi-rr-shield mr-1"></i>
-					Admin Access
-				</a>
-			</div>
 		</div>
 	</div>
 </div>

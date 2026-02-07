@@ -626,3 +626,41 @@ pub async fn delete_passkey(
         ),
     }
 }
+
+// ========== Admin Authentication ==========
+
+/// Admin login request
+#[derive(Debug, serde::Deserialize)]
+pub struct AdminLoginRequest {
+    pub password: String,
+}
+
+/// Get the admin password from environment or use default
+fn get_admin_password() -> String {
+    std::env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "astrox11".to_string())
+}
+
+/// Verify admin password
+pub async fn admin_login(
+    Json(payload): Json<AdminLoginRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let admin_password = get_admin_password();
+    
+    if payload.password == admin_password {
+        (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "success": true,
+                "message": "Admin authentication successful"
+            })),
+        )
+    } else {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "Invalid admin password"
+            })),
+        )
+    }
+}

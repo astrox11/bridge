@@ -1,6 +1,7 @@
 <script>
 	import { page } from '$app/stores';
 	import ThemeToggle from './ThemeToggle.svelte';
+	import { logoutAdmin, adminCurrentView } from '$lib/stores/admin';
 	
 	const navItems = [
 		{ href: '/', label: 'Dashboard', mobileLabel: 'Overview', icon: 'fi-rr-apps' },
@@ -8,6 +9,10 @@
 		{ href: '/news', label: 'Updates', mobileLabel: 'Updates', icon: 'fi-rr-bell' },
 		{ href: '/pair', label: 'Link', mobileLabel: 'Connect', icon: 'fi-rr-add' }
 	];
+
+	function handleLogout() {
+		logoutAdmin();
+	}
 </script>
 
 <header class="header">
@@ -37,6 +42,13 @@
 				<i class="fi fi-rr-user text-xs"></i>
 				User Portal
 			</a>
+			<button 
+				onclick={handleLogout}
+				class="hidden sm:flex items-center gap-2 text-xs font-medium px-2.5 py-1.5 rounded-full cursor-pointer" 
+				style="background: hsla(var(--danger) / 0.1); color: hsl(var(--danger));">
+				<i class="fi fi-rr-sign-out-alt text-xs"></i>
+				Logout
+			</button>
 			<div class="hidden sm:flex items-center gap-2 text-xs font-medium px-2.5 py-1.5 rounded-full" style="background: hsla(var(--primary) / 0.1); color: hsl(var(--primary));">
 				<span class="status-dot status-online"></span>
 				Active
