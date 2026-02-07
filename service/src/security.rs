@@ -234,15 +234,13 @@ pub async fn jwt_auth_middleware(
 ) -> Response {
     // Skip auth for public routes
     let path = request.uri().path();
+    
+    // All auth routes should be public (no JWT required)
+    if path.starts_with("/api/auth/") {
+        return next.run(request).await;
+    }
+    
     let public_routes = [
-        "/api/auth/login",
-        "/api/auth/register",
-        "/api/auth/admin",
-        "/api/auth/admin/validate", // Admin session validation
-        "/api/auth/passkey/login/challenge",
-        "/api/auth/passkey/login",
-        "/api/auth/passkey/register/challenge",
-        "/api/auth/passkey/register",
         "/util/whatsapp-news",
         // SSE stream endpoints (real-time data feeds)
         "/api/system/stream",
@@ -456,12 +454,13 @@ pub async fn api_key_middleware(
         return next.run(request).await;
     }
     
+    // All auth routes should be public (no API key required)
+    if path.starts_with("/api/auth/") {
+        return next.run(request).await;
+    }
+    
     // Public routes don't need API key
     let public_routes = [
-        "/api/auth/login",
-        "/api/auth/register",
-        "/api/auth/admin",
-        "/api/auth/passkey",
         // SSE stream endpoints (real-time data feeds)
         "/api/system/stream",
         "/api/instances/stream",
