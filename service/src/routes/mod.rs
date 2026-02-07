@@ -52,6 +52,7 @@ pub fn create_routes() -> Router<Arc<AppState>> {
         .route("/api/auth/register", post(auth::register))
         .route("/api/auth/login", post(auth::login))
         .route("/api/auth/admin", post(auth::admin_login))
+        .route("/api/auth/admin/validate", get(auth::validate_admin_session))
         .route(
             "/api/dashboard/user/cryptooooooohash/:phone",
             get(auth::get_crypto_hash),

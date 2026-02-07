@@ -258,6 +258,38 @@ pub async fn jwt_auth_middleware(
         return next.run(request).await;
     }
     
+    // Dashboard routes that can be accessed by admin session cookie
+    let admin_routes = [
+        "/api/instances",
+        "/api/settings",
+        "/api/tools",
+    ];
+    
+    // Check for admin session cookie first (for dashboard routes)
+    let cookie_header = request.headers().get(header::COOKIE);
+    let admin_session = cookie_header
+        .and_then(|h| h.to_str().ok())
+        .and_then(|cookies| {
+            cookies.split(';').find_map(|cookie| {
+                let parts: Vec<&str> = cookie.trim().splitn(2, '=').collect();
+                if parts.len() == 2 && parts[0] == "admin_session" {
+                    Some(parts[1].to_string())
+                } else {
+                    None
+                }
+            })
+        });
+    
+    // If there's a valid admin session cookie, allow admin routes
+    if let Some(session) = admin_session {
+        if is_valid_admin_session(&session) {
+            // Admin routes are allowed without JWT
+            if admin_routes.iter().any(|r| path.starts_with(r)) {
+                return next.run(request).await;
+            }
+        }
+    }
+    
     // Check for Authorization header
     let auth_header = request
         .headers()
@@ -273,7 +305,6 @@ pub async fn jwt_auth_middleware(
         },
         None => {
             // Check for token in cookie
-            let cookie_header = request.headers().get(header::COOKIE);
             let cookie_token = cookie_header
                 .and_then(|h| h.to_str().ok())
                 .and_then(|cookies| {
@@ -311,6 +342,22 @@ pub async fn jwt_auth_middleware(
             }
         }
     }
+}
+
+/// Check if admin session is valid (token:expiry format)
+fn is_valid_admin_session(session: &str) -> bool {
+    let parts: Vec<&str> = session.split(':').collect();
+    if parts.len() != 2 {
+        return false;
+    }
+    
+    let expiry: i64 = match parts[1].parse() {
+        Ok(e) => e,
+        Err(_) => return false,
+    };
+    
+    // Check if session has expired (30 minute sessions)
+    chrono::Utc::now().timestamp() <= expiry
 }
 
 /// Origin validation middleware

@@ -18,6 +18,7 @@
 			const res = await fetch('/api/auth/admin', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include', // Important: include cookies
 				body: JSON.stringify({ password })
 			});
 			const data = await res.json();
