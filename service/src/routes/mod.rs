@@ -1,9 +1,12 @@
+pub mod auth;
 pub mod instance;
 pub mod logs;
 pub mod pair;
 pub mod settings;
 pub mod stats;
 pub mod system;
+pub mod tools;
+pub mod user;
 pub mod util;
 
 use crate::AppState;
@@ -15,6 +18,7 @@ use std::sync::Arc;
 
 pub fn create_routes() -> Router<Arc<AppState>> {
     Router::new()
+        // Admin routes (existing - hidden technical workspace)
         .route("/api/instances", get(instance::list_instances))
         .route("/api/instances/stream", get(instance::instance_stream))
         .route("/api/instances/:phone", get(instance::get_instance))
@@ -44,4 +48,27 @@ pub fn create_routes() -> Router<Arc<AppState>> {
         .route("/api/system/stream", get(system::system_stream))
         .route("/api/logs/stream", get(logs::logs_stream))
         .route("/util/whatsapp-news", get(util::get_whatsapp_news))
+        // Authentication routes
+        .route("/api/auth/register", post(auth::register))
+        .route("/api/auth/login", post(auth::login))
+        .route(
+            "/api/dashboard/user/cryptooooooohash/:phone",
+            get(auth::get_crypto_hash),
+        )
+        .route(
+            "/api/auth/verify/:crypto_hash",
+            get(auth::verify_crypto_hash),
+        )
+        // User dashboard routes
+        .route("/api/user/:crypto_hash/dashboard", get(user::get_user_dashboard))
+        .route("/api/user/:crypto_hash/instances", get(user::get_user_instances))
+        .route("/api/user/:crypto_hash/credits", get(user::get_user_credits))
+        .route("/api/user/:crypto_hash/credits/add", post(user::add_credits))
+        .route("/api/user/:crypto_hash/usage", get(user::get_usage_history))
+        .route("/api/user/:crypto_hash/support", get(user::get_support_requests))
+        .route("/api/user/:crypto_hash/support", post(user::submit_support_request))
+        // User command tools (no text input required)
+        .route("/api/tools", get(tools::get_available_tools))
+        .route("/api/tools/quick-actions", get(tools::get_quick_actions))
+        .route("/api/user/:crypto_hash/tools/execute", post(tools::execute_tool))
 }

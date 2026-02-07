@@ -17,6 +17,9 @@
 				<i class="fi fi-rr-cloud-share text-white text-sm"></i>
 			</div>
 			<span class="font-semibold" style="color: hsl(var(--text));">Whatsaly</span>
+			<span class="text-[10px] px-2 py-0.5 rounded-full font-medium" style="background: hsla(var(--danger) / 0.1); color: hsl(var(--danger));">
+				Admin
+			</span>
 		</div>
 
 		<nav class="hidden md:flex gap-1">
@@ -29,6 +32,11 @@
 		</nav>
 
 		<div class="flex items-center gap-3">
+			<a href="/login" class="hidden sm:flex items-center gap-2 text-xs font-medium px-2.5 py-1.5 rounded-full" 
+				style="background: hsla(var(--text) / 0.1); color: hsl(var(--text-muted));">
+				<i class="fi fi-rr-user text-xs"></i>
+				User Portal
+			</a>
 			<div class="hidden sm:flex items-center gap-2 text-xs font-medium px-2.5 py-1.5 rounded-full" style="background: hsla(var(--primary) / 0.1); color: hsl(var(--primary));">
 				<span class="status-dot status-online"></span>
 				Active

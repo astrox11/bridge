@@ -58,6 +58,16 @@ impl SessionManager {
         }
     }
 
+    pub async fn stop_instance(&self, phone: &str) {
+        let _ = self.tx.send(format!("{}:stop", phone));
+
+        let mut workers = self.workers.write().await;
+        if let Some(w) = workers.get_mut(phone) {
+            w.status = "stopped".to_string();
+            w.is_running = false;
+        }
+    }
+
     pub async fn clear_session(
         &self,
         phone: &str,
