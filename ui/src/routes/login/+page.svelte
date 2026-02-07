@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { base64UrlToArrayBuffer, arrayBufferToBase64Url, isPasskeySupported } from '$lib/webauthn';
+	import { parseSecureResponse, storeAuthTokens, ResponseCodes } from '$lib/api';
 
 	let phoneNumber = $state('');
 	let password = $state('');
@@ -30,19 +31,24 @@
 			const res = await fetch('/api/auth/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
 				body: JSON.stringify({
 					phoneNumber,
 					password,
 					cryptoHash
 				})
 			});
-			const data = await res.json();
+			const rawData = await res.json();
+			const data = parseSecureResponse(rawData);
 
 			if (data.success) {
-				// Redirect to user dashboard
-				goto(`/user/${cryptoHash}`);
+				// Store tokens client-side
+				storeAuthTokens(data.tokens);
+				// Redirect to user dashboard using crypto hash from form or decoded data
+				const hash = data.data?.h || cryptoHash;
+				goto(`/user/${hash}`);
 			} else {
-				error = data.message;
+				error = data.error || 'Authentication failed';
 			}
 		} catch (e) {
 			error = 'Login failed. Please try again.';
@@ -90,6 +96,7 @@
 			const authRes = await fetch('/api/auth/passkey/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
 				body: JSON.stringify({
 					credentialId: arrayBufferToBase64Url(credential.rawId),
 					authenticatorData: arrayBufferToBase64Url(credential.response.authenticatorData),
@@ -97,12 +104,14 @@
 					signature: arrayBufferToBase64Url(credential.response.signature)
 				})
 			});
-			const authData = await authRes.json();
+			const rawAuthData = await authRes.json();
+			const authData = parseSecureResponse(rawAuthData);
 
-			if (authData.success && authData.cryptoHash) {
-				goto(`/user/${authData.cryptoHash}`);
+			if (authData.success && authData.data?.h) {
+				storeAuthTokens(authData.tokens);
+				goto(`/user/${authData.data.h}`);
 			} else {
-				error = authData.message || 'Passkey authentication failed';
+				error = authData.error || 'Passkey authentication failed';
 			}
 		} catch (e) {
 			if (e.name === 'NotAllowedError') {

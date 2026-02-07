@@ -150,6 +150,33 @@ pub struct AuthResponse {
     pub crypto_hash: Option<String>,
 }
 
+/// Secure auth response with JWT tokens (obfuscated)
+#[derive(Debug, Serialize)]
+pub struct SecureAuthResponse {
+    #[serde(rename = "c")]
+    pub code: u32,
+    #[serde(rename = "s")]
+    pub status: u8,
+    #[serde(rename = "tk", skip_serializing_if = "Option::is_none")]
+    pub tokens: Option<TokenResponse>,
+    #[serde(rename = "d", skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,  // Base64 encoded user data
+    #[serde(rename = "t")]
+    pub timestamp: i64,
+    #[serde(rename = "sig")]
+    pub signature: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TokenResponse {
+    #[serde(rename = "a")]
+    pub access_token: String,
+    #[serde(rename = "r")]
+    pub refresh_token: String,
+    #[serde(rename = "e")]
+    pub expires_in: i64,
+}
+
 #[derive(Debug, FromRow, Serialize, Clone)]
 pub struct PasskeyCredential {
     pub id: String,
