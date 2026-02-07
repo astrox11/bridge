@@ -91,6 +91,23 @@ CREATE TABLE
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users (phoneNumber);
 CREATE INDEX IF NOT EXISTS idx_users_crypto_hash ON users (cryptoHash);
 
+-- Passkey credentials for WebAuthn
+CREATE TABLE
+    IF NOT EXISTS passkey_credentials (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        credentialId TEXT UNIQUE NOT NULL,
+        publicKey TEXT NOT NULL,
+        counter INTEGER NOT NULL DEFAULT 0,
+        deviceName TEXT,
+        createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        lastUsedAt TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
+    );
+
+CREATE INDEX IF NOT EXISTS idx_passkey_user ON passkey_credentials (userId);
+CREATE INDEX IF NOT EXISTS idx_passkey_credential ON passkey_credentials (credentialId);
+
 -- User sessions (instances) ownership
 CREATE TABLE
     IF NOT EXISTS user_instances (

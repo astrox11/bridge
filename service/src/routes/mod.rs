@@ -59,6 +59,22 @@ pub fn create_routes() -> Router<Arc<AppState>> {
             "/api/auth/verify/:crypto_hash",
             get(auth::verify_crypto_hash),
         )
+        // Passkey (WebAuthn) routes
+        .route(
+            "/api/auth/passkey/register/challenge/:user_id",
+            get(auth::passkey_register_challenge),
+        )
+        .route("/api/auth/passkey/register", post(auth::passkey_register))
+        .route(
+            "/api/auth/passkey/login/challenge",
+            get(auth::passkey_login_challenge),
+        )
+        .route("/api/auth/passkey/login", post(auth::passkey_login))
+        .route("/api/auth/passkey/:user_id", get(auth::get_passkeys))
+        .route(
+            "/api/auth/passkey/:user_id/:passkey_id",
+            axum::routing::delete(auth::delete_passkey),
+        )
         // User dashboard routes
         .route("/api/user/:crypto_hash/dashboard", get(user::get_user_dashboard))
         .route("/api/user/:crypto_hash/instances", get(user::get_user_instances))

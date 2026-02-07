@@ -5,7 +5,22 @@
 	let password = $state('');
 	let cryptoHash = $state('');
 	let loading = $state(false);
+	let passkeyLoading = $state(false);
 	let error = $state('');
+	let passkeySupported = $state(false);
+
+	// Check if passkey is supported
+	$effect(() => {
+		if (typeof window !== 'undefined' && window.PublicKeyCredential) {
+			PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+				.then(available => {
+					passkeySupported = available;
+				})
+				.catch(() => {
+					passkeySupported = false;
+				});
+		}
+	});
 
 	async function handleLogin() {
 		if (!phoneNumber || !password || !cryptoHash) {
@@ -40,6 +55,91 @@
 			loading = false;
 		}
 	}
+
+	async function handlePasskeyLogin() {
+		if (!passkeySupported) {
+			error = 'Passkey not supported on this device';
+			return;
+		}
+
+		passkeyLoading = true;
+		error = '';
+
+		try {
+			// Get challenge from server
+			const challengeRes = await fetch('/api/auth/passkey/login/challenge');
+			const challengeData = await challengeRes.json();
+
+			if (!challengeData.success) {
+				throw new Error(challengeData.message || 'Failed to get challenge');
+			}
+
+			// Convert challenge from base64url to ArrayBuffer
+			const challenge = base64UrlToArrayBuffer(challengeData.challenge);
+
+			// Request passkey authentication
+			const credential = await navigator.credentials.get({
+				publicKey: {
+					challenge,
+					rpId: challengeData.rpId,
+					timeout: challengeData.timeout,
+					userVerification: challengeData.userVerification
+				}
+			});
+
+			if (!credential) {
+				throw new Error('No credential returned');
+			}
+
+			// Send credential to server for verification
+			const authRes = await fetch('/api/auth/passkey/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					credentialId: arrayBufferToBase64Url(credential.rawId),
+					authenticatorData: arrayBufferToBase64Url(credential.response.authenticatorData),
+					clientDataJSON: arrayBufferToBase64Url(credential.response.clientDataJSON),
+					signature: arrayBufferToBase64Url(credential.response.signature)
+				})
+			});
+			const authData = await authRes.json();
+
+			if (authData.success && authData.cryptoHash) {
+				goto(`/user/${authData.cryptoHash}`);
+			} else {
+				error = authData.message || 'Passkey authentication failed';
+			}
+		} catch (e) {
+			if (e.name === 'NotAllowedError') {
+				error = 'Authentication cancelled';
+			} else {
+				error = e.message || 'Passkey login failed';
+			}
+		} finally {
+			passkeyLoading = false;
+		}
+	}
+
+	// Helper functions for base64url encoding/decoding
+	function base64UrlToArrayBuffer(base64url) {
+		const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+		const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+		const binary = atob(base64 + padding);
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i++) {
+			bytes[i] = binary.charCodeAt(i);
+		}
+		return bytes.buffer;
+	}
+
+	function arrayBufferToBase64Url(buffer) {
+		const bytes = new Uint8Array(buffer);
+		let binary = '';
+		for (let i = 0; i < bytes.length; i++) {
+			binary += String.fromCharCode(bytes[i]);
+		}
+		return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+	}
 </script>
 
 <svelte:head>
@@ -71,8 +171,9 @@
 			<form onsubmit={(e) => { e.preventDefault(); handleLogin(); }}>
 				<div class="space-y-4">
 					<div>
-						<label class="label">Phone Number</label>
+						<label for="login-phone" class="label">Phone Number</label>
 						<input 
+							id="login-phone"
 							type="tel" 
 							bind:value={phoneNumber}
 							class="input"
@@ -81,8 +182,9 @@
 						/>
 					</div>
 					<div>
-						<label class="label">Password</label>
+						<label for="login-password" class="label">Password</label>
 						<input 
+							id="login-password"
 							type="password" 
 							bind:value={password}
 							class="input"
@@ -91,13 +193,14 @@
 						/>
 					</div>
 					<div>
-						<label class="label">
+						<label for="login-crypto-hash" class="label">
 							Crypto Hash
 							<span class="text-xs font-normal ml-1" style="color: hsl(var(--text-muted));">
 								(Your unique key)
 							</span>
 						</label>
 						<input 
+							id="login-crypto-hash"
 							type="text" 
 							bind:value={cryptoHash}
 							class="input mono text-xs"
@@ -119,6 +222,29 @@
 					</button>
 				</div>
 			</form>
+
+			<!-- Passkey Login -->
+			{#if passkeySupported}
+				<div class="my-4 flex items-center gap-3">
+					<div class="flex-1 h-px" style="background: hsl(var(--border));"></div>
+					<span class="text-xs" style="color: hsl(var(--text-muted));">or</span>
+					<div class="flex-1 h-px" style="background: hsl(var(--border));"></div>
+				</div>
+
+				<button 
+					type="button"
+					class="btn btn-secondary w-full"
+					onclick={handlePasskeyLogin}
+					disabled={passkeyLoading}>
+					{#if passkeyLoading}
+						<i class="fi fi-rr-spinner animate-spin"></i>
+						Authenticating...
+					{:else}
+						<i class="fi fi-rr-fingerprint"></i>
+						Sign in with Passkey
+					{/if}
+				</button>
+			{/if}
 
 			<div class="mt-6 text-center">
 				<p class="text-sm" style="color: hsl(var(--text-muted));">

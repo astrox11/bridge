@@ -8,6 +8,23 @@
 	let error = $state('');
 	let success = $state(false);
 	let cryptoHash = $state('');
+	let userId = $state('');
+	let passkeySupported = $state(false);
+	let passkeyRegistering = $state(false);
+	let passkeyRegistered = $state(false);
+
+	// Check if passkey is supported
+	$effect(() => {
+		if (typeof window !== 'undefined' && window.PublicKeyCredential) {
+			PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+				.then(available => {
+					passkeySupported = available;
+				})
+				.catch(() => {
+					passkeySupported = false;
+				});
+		}
+	});
 
 	async function handleRegister() {
 		if (!phoneNumber || !password) {
@@ -42,6 +59,7 @@
 			if (data.success) {
 				success = true;
 				cryptoHash = data.cryptoHash;
+				userId = data.user?.id || '';
 			} else {
 				error = data.message;
 			}
@@ -54,6 +72,107 @@
 
 	function copyHash() {
 		navigator.clipboard.writeText(cryptoHash);
+	}
+
+	async function registerPasskey() {
+		if (!passkeySupported || !userId) return;
+
+		passkeyRegistering = true;
+		error = '';
+
+		try {
+			// Get challenge from server
+			const challengeRes = await fetch(`/api/auth/passkey/register/challenge/${userId}`);
+			const challengeData = await challengeRes.json();
+
+			if (!challengeData.success) {
+				throw new Error(challengeData.message || 'Failed to get challenge');
+			}
+
+			// Convert challenge and user ID to ArrayBuffer
+			const challenge = base64UrlToArrayBuffer(challengeData.challenge);
+			const userIdBuffer = new TextEncoder().encode(challengeData.user.id);
+
+			// Create passkey credential
+			const credential = await navigator.credentials.create({
+				publicKey: {
+					challenge,
+					rp: challengeData.rp,
+					user: {
+						id: userIdBuffer,
+						name: challengeData.user.name,
+						displayName: challengeData.user.displayName
+					},
+					pubKeyCredParams: challengeData.pubKeyCredParams,
+					timeout: challengeData.timeout,
+					attestation: challengeData.attestation,
+					authenticatorSelection: challengeData.authenticatorSelection
+				}
+			});
+
+			if (!credential) {
+				throw new Error('No credential created');
+			}
+
+			// Send credential to server
+			const registerRes = await fetch('/api/auth/passkey/register', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					userId,
+					credentialId: arrayBufferToBase64Url(credential.rawId),
+					publicKey: arrayBufferToBase64Url(credential.response.getPublicKey()),
+					deviceName: getDeviceName()
+				})
+			});
+			const registerData = await registerRes.json();
+
+			if (registerData.success) {
+				passkeyRegistered = true;
+			} else {
+				error = registerData.message || 'Failed to register passkey';
+			}
+		} catch (e) {
+			if (e.name === 'NotAllowedError') {
+				error = 'Passkey registration cancelled';
+			} else {
+				error = e.message || 'Failed to register passkey';
+			}
+		} finally {
+			passkeyRegistering = false;
+		}
+	}
+
+	function getDeviceName() {
+		const ua = navigator.userAgent;
+		if (ua.includes('iPhone')) return 'iPhone';
+		if (ua.includes('iPad')) return 'iPad';
+		if (ua.includes('Android')) return 'Android Device';
+		if (ua.includes('Mac')) return 'Mac';
+		if (ua.includes('Windows')) return 'Windows PC';
+		if (ua.includes('Linux')) return 'Linux';
+		return 'Unknown Device';
+	}
+
+	// Helper functions for base64url encoding/decoding
+	function base64UrlToArrayBuffer(base64url) {
+		const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+		const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+		const binary = atob(base64 + padding);
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i++) {
+			bytes[i] = binary.charCodeAt(i);
+		}
+		return bytes.buffer;
+	}
+
+	function arrayBufferToBase64Url(buffer) {
+		const bytes = new Uint8Array(buffer);
+		let binary = '';
+		for (let i = 0; i < bytes.length; i++) {
+			binary += String.fromCharCode(bytes[i]);
+		}
+		return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 	}
 </script>
 
@@ -79,12 +198,15 @@
 					</p>
 
 					<div class="p-4 rounded-lg mb-4" style="background: hsla(var(--primary) / 0.1);">
-						<label class="text-xs font-medium block mb-2" style="color: hsl(var(--primary));">
+						<span class="text-xs font-medium block mb-2" style="color: hsl(var(--primary));">
 							<i class="fi fi-rr-key mr-1"></i>
 							Your Crypto Hash (SAVE THIS!)
-						</label>
+						</span>
 						<div class="mono text-xs break-all p-3 rounded" 
-							style="background: hsl(var(--bg-secondary)); color: hsl(var(--text));">
+							style="background: hsl(var(--bg-secondary)); color: hsl(var(--text));"
+							role="textbox"
+							aria-readonly="true"
+							aria-label="Your crypto hash">
 							{cryptoHash}
 						</div>
 						<button 
@@ -106,6 +228,50 @@
 							Write it down or save it securely.
 						</p>
 					</div>
+
+					<!-- Passkey Registration -->
+					{#if passkeySupported && !passkeyRegistered}
+						<div class="p-4 rounded-lg mb-4" style="background: hsla(var(--primary) / 0.05); border: 1px dashed hsl(var(--primary));">
+							<div class="text-xs font-medium mb-2" style="color: hsl(var(--primary));">
+								<i class="fi fi-rr-fingerprint mr-1"></i>
+								Set up Passkey (Recommended)
+							</div>
+							<p class="text-xs mb-3" style="color: hsl(var(--text-muted));">
+								Skip typing your password next time by setting up a passkey using Face ID, Touch ID, or your device PIN.
+							</p>
+							<button 
+								class="btn btn-secondary w-full text-xs"
+								onclick={registerPasskey}
+								disabled={passkeyRegistering}>
+								{#if passkeyRegistering}
+									<i class="fi fi-rr-spinner animate-spin"></i>
+									Setting up...
+								{:else}
+									<i class="fi fi-rr-fingerprint"></i>
+									Set up Passkey
+								{/if}
+							</button>
+						</div>
+					{:else if passkeyRegistered}
+						<div class="p-3 rounded-lg mb-4 text-left" 
+							style="background: hsla(var(--primary) / 0.1); color: hsl(var(--primary));">
+							<div class="text-xs font-medium">
+								<i class="fi fi-rr-check mr-1"></i>
+								Passkey set up successfully!
+							</div>
+							<p class="text-xs mt-1" style="color: hsl(var(--text-muted));">
+								You can now sign in without entering your password.
+							</p>
+						</div>
+					{/if}
+
+					{#if error}
+						<div class="p-3 rounded-lg mb-4 text-sm" 
+							style="background: hsla(var(--danger) / 0.1); color: hsl(var(--danger));">
+							<i class="fi fi-rr-exclamation mr-2"></i>
+							{error}
+						</div>
+					{/if}
 
 					<a href="/login" class="btn btn-primary w-full">
 						<i class="fi fi-rr-sign-in-alt"></i>
@@ -136,8 +302,9 @@
 				<form onsubmit={(e) => { e.preventDefault(); handleRegister(); }}>
 					<div class="space-y-4">
 						<div>
-							<label class="label">Phone Number</label>
+							<label for="register-phone" class="label">Phone Number</label>
 							<input 
+								id="register-phone"
 								type="tel" 
 								bind:value={phoneNumber}
 								class="input"
@@ -149,8 +316,9 @@
 							</p>
 						</div>
 						<div>
-							<label class="label">Password</label>
+							<label for="register-password" class="label">Password</label>
 							<input 
+								id="register-password"
 								type="password" 
 								bind:value={password}
 								class="input"
@@ -160,8 +328,9 @@
 							/>
 						</div>
 						<div>
-							<label class="label">Confirm Password</label>
+							<label for="register-confirm-password" class="label">Confirm Password</label>
 							<input 
+								id="register-confirm-password"
 								type="password" 
 								bind:value={confirmPassword}
 								class="input"
