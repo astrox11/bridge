@@ -515,6 +515,22 @@ pub async fn create_user_instance(
         );
     }
 
+    // Clean phone number - remove + and non-digit characters
+    let clean_phone: String = payload.phone_number
+        .chars()
+        .filter(|c| c.is_ascii_digit())
+        .collect();
+
+    if clean_phone.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "Invalid phone number"
+            })),
+        );
+    }
+
     // Check if user already has an instance for this phone number
     let existing: Option<(String,)> = sqlx::query_as(
         "SELECT ui.sessionId FROM user_instances ui 
@@ -522,7 +538,7 @@ pub async fn create_user_instance(
          WHERE ui.userId = ? AND s.phoneNumber = ?"
     )
     .bind(&user.id)
-    .bind(&payload.phone_number)
+    .bind(&clean_phone)
     .fetch_optional(&state.db)
     .await
     .unwrap_or(None);
@@ -556,8 +572,9 @@ pub async fn create_user_instance(
         );
     }
 
-    // Create session ID
-    let session_id = uuid::Uuid::new_v4().to_string();
+    // Use the clean phone number as session ID for the WhatsApp pairing
+    // This is what the bot client uses to request pairing codes
+    let session_id = clean_phone.clone();
     let now = chrono::Utc::now();
 
     // Create session in sessions table
@@ -567,8 +584,8 @@ pub async fn create_user_instance(
     )
     .bind(&session_id)
     .bind(payload.name.as_deref().unwrap_or("New Instance"))
-    .bind("paused")
-    .bind(&payload.phone_number)
+    .bind("starting")
+    .bind(&clean_phone)
     .bind(&crypto_hash)
     .bind(now)
     .bind(now)
@@ -611,12 +628,106 @@ pub async fn create_user_instance(
         );
     }
 
+    // Start the instance to generate pairing code
+    state.sm.start_instance(&session_id, state.clone()).await;
+
     (
         StatusCode::CREATED,
         Json(serde_json::json!({
             "success": true,
-            "message": "Instance created successfully",
-            "sessionId": session_id
+            "message": "Instance created and starting. Please wait for pairing code.",
+            "sessionId": session_id,
+            "phoneNumber": clean_phone
         })),
     )
+}
+
+/// Get pairing code for a specific session
+pub async fn get_instance_pairing_code(
+    State(state): State<Arc<AppState>>,
+    Path((crypto_hash, session_id)): Path<(String, String)>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    // Verify user owns this instance
+    let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE cryptoHash = ?")
+        .bind(&crypto_hash)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None);
+
+    let user = match user {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({
+                    "success": false,
+                    "message": "Invalid crypto hash"
+                })),
+            );
+        }
+    };
+
+    // Check if user owns this session
+    let owns_session: Option<(String,)> = sqlx::query_as(
+        "SELECT sessionId FROM user_instances WHERE userId = ? AND sessionId = ?"
+    )
+    .bind(&user.id)
+    .bind(&session_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
+
+    if owns_session.is_none() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "You don't own this instance"
+            })),
+        );
+    }
+
+    // Get worker info to check for pairing code
+    let workers = state.sm.workers.read().await;
+    if let Some(worker) = workers.get(&session_id) {
+        return (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "success": true,
+                "sessionId": session_id,
+                "status": worker.status,
+                "pairingCode": worker.pairing_code,
+                "isRunning": worker.is_running
+            })),
+        );
+    }
+
+    // No worker found, check database for status
+    let session: Option<(String, String)> = sqlx::query_as(
+        "SELECT id, status FROM sessions WHERE id = ?"
+    )
+    .bind(&session_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
+
+    match session {
+        Some((_, status)) => (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "success": true,
+                "sessionId": session_id,
+                "status": status,
+                "pairingCode": null,
+                "isRunning": false
+            })),
+        ),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "Session not found"
+            })),
+        ),
+    }
 }
