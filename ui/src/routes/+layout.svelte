@@ -10,6 +10,7 @@
 	let { children } = $props();
 
 	let mounted = $state(false);
+	let checking = $state(true);
 
 	// Admin routes that require authentication
 	const adminRoutes = ['/', '/logs', '/news', '/pair'];
@@ -19,19 +20,25 @@
 		return adminRoutes.includes(pathname);
 	}
 
-	onMount(() => {
-		checkAdminAuth();
+	onMount(async () => {
+		await checkAdminAuth();
+		checking = false;
 		mounted = true;
 	});
 
 	// Determine if we should show admin login
 	let showAdminLogin = $derived(
-		mounted && isAdminRoute($page.url.pathname) && !$isAdminAuthenticated
+		mounted && !checking && isAdminRoute($page.url.pathname) && !$isAdminAuthenticated
 	);
 </script>
 
 <div class="min-h-screen">
-	{#if showAdminLogin}
+	{#if checking && isAdminRoute($page.url.pathname)}
+		<!-- Loading state while checking auth -->
+		<div class="flex items-center justify-center min-h-screen">
+			<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+		</div>
+	{:else if showAdminLogin}
 		<AdminLogin />
 	{:else}
 		{#if mounted && isAdminRoute($page.url.pathname) && $isAdminAuthenticated}

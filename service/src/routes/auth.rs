@@ -668,15 +668,71 @@ fn constant_time_compare(a: &str, b: &str) -> bool {
     result == 0
 }
 
+/// Generate admin session token with 30 minute expiry
+fn generate_admin_session_token() -> (String, i64) {
+    use sha2::{Digest, Sha256};
+    
+    let expiry = chrono::Utc::now().timestamp() + (30 * 60); // 30 minutes
+    let random_bytes: [u8; 32] = rand::random();
+    
+    let mut hasher = Sha256::new();
+    hasher.update(&random_bytes);
+    hasher.update(expiry.to_le_bytes());
+    hasher.update(get_admin_password().as_bytes());
+    
+    let token = hex::encode(hasher.finalize());
+    (format!("{}:{}", token, expiry), expiry)
+}
+
+/// Verify admin session token
+pub fn verify_admin_session_token(token: &str) -> bool {
+    let parts: Vec<&str> = token.split(':').collect();
+    if parts.len() != 2 {
+        return false;
+    }
+    
+    let expiry: i64 = match parts[1].parse() {
+        Ok(e) => e,
+        Err(_) => return false,
+    };
+    
+    // Check if token has expired
+    if chrono::Utc::now().timestamp() > expiry {
+        return false;
+    }
+    
+    true
+}
+
+/// Create admin session cookie with 30 minute expiry
+pub fn create_admin_session_cookie(token: &str, is_production: bool) -> String {
+    let max_age = 30 * 60; // 30 minutes
+    let mut cookie = format!(
+        "admin_session={}; Path=/; Max-Age={}; HttpOnly; SameSite=Strict",
+        token, max_age
+    );
+    
+    if is_production {
+        cookie.push_str("; Secure");
+    }
+    
+    cookie
+}
+
 /// Verify admin password
 pub async fn admin_login(
     Json(payload): Json<AdminLoginRequest>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> impl axum::response::IntoResponse {
     let admin_password = get_admin_password();
+    let is_production = std::env::var("PRODUCTION").is_ok();
     
     if constant_time_compare(&payload.password, &admin_password) {
+        let (session_token, _expiry) = generate_admin_session_token();
+        let cookie = create_admin_session_cookie(&session_token, is_production);
+        
         (
             StatusCode::OK,
+            [(header::SET_COOKIE, cookie)],
             Json(serde_json::json!({
                 "success": true,
                 "message": "Admin authentication successful"
@@ -685,10 +741,52 @@ pub async fn admin_login(
     } else {
         (
             StatusCode::UNAUTHORIZED,
+            [(header::SET_COOKIE, "".to_string())],
             Json(serde_json::json!({
                 "success": false,
                 "message": "Invalid admin password"
             })),
         )
+    }
+}
+
+/// Validate admin session from cookie
+pub async fn validate_admin_session(
+    headers: axum::http::HeaderMap,
+) -> (StatusCode, Json<serde_json::Value>) {
+    // Get cookie from headers
+    let cookie_header = headers.get(header::COOKIE);
+    let admin_token = cookie_header
+        .and_then(|h| h.to_str().ok())
+        .and_then(|cookies| {
+            cookies.split(';').find_map(|cookie| {
+                let parts: Vec<&str> = cookie.trim().splitn(2, '=').collect();
+                if parts.len() == 2 && parts[0] == "admin_session" {
+                    Some(parts[1].to_string())
+                } else {
+                    None
+                }
+            })
+        });
+    
+    match admin_token {
+        Some(token) if verify_admin_session_token(&token) => {
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "valid": true,
+                    "message": "Admin session is valid"
+                })),
+            )
+        }
+        _ => {
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({
+                    "valid": false,
+                    "message": "Admin session is invalid or expired"
+                })),
+            )
+        }
     }
 }
