@@ -240,7 +240,9 @@ pub async fn login(
     if let Some(ref tokens) = response.tokens {
         let cookie = create_auth_cookie(&tokens.access_token, is_production);
         let mut headers = axum::http::HeaderMap::new();
-        headers.insert(header::SET_COOKIE, cookie.parse().unwrap());
+        if let Ok(cookie_value) = cookie.parse() {
+            headers.insert(header::SET_COOKIE, cookie_value);
+        }
         return (StatusCode::OK, headers, Json(response)).into_response();
     }
 
@@ -553,7 +555,9 @@ pub async fn passkey_login(
             if let Some(ref tokens) = response.tokens {
                 let cookie = create_auth_cookie(&tokens.access_token, is_production);
                 let mut headers = axum::http::HeaderMap::new();
-                headers.insert(header::SET_COOKIE, cookie.parse().unwrap());
+                if let Ok(cookie_value) = cookie.parse() {
+                    headers.insert(header::SET_COOKIE, cookie_value);
+                }
                 return (StatusCode::OK, headers, Json(response)).into_response();
             }
             
