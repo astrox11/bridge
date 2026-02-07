@@ -342,6 +342,7 @@ pub async fn get_grouped_instances(
     State(state): State<Arc<AppState>>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     // Get all instances with user info
+    #[allow(clippy::type_complexity)]
     let instances: Vec<(String, Option<String>, String, Option<String>, chrono::DateTime<chrono::Utc>, Option<String>, Option<String>)> = sqlx::query_as(
         "SELECT s.id, s.name, s.status, s.phoneNumber, s.createdAt, ui.userId, u.phoneNumber as userPhone
          FROM sessions s

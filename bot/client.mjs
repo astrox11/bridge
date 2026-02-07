@@ -120,6 +120,8 @@ const Client = async (phone = process.argv?.[2]) => {
       const update = events["connection.update"];
       const { connection, lastDisconnect } = update;
 
+      socketOut("CONNECTION_UPDATE", update);
+
       if (connection === "close") {
         if (
           lastDisconnect?.error?.output?.statusCode !==
