@@ -150,6 +150,53 @@ pub struct AuthResponse {
     pub crypto_hash: Option<String>,
 }
 
+#[derive(Debug, FromRow, Serialize, Clone)]
+pub struct PasskeyCredential {
+    pub id: String,
+    #[sqlx(rename = "userId")]
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    #[sqlx(rename = "credentialId")]
+    #[serde(rename = "credentialId")]
+    pub credential_id: String,
+    #[sqlx(rename = "publicKey")]
+    #[serde(rename = "publicKey")]
+    pub public_key: String,
+    pub counter: i32,
+    #[sqlx(rename = "deviceName")]
+    #[serde(rename = "deviceName")]
+    pub device_name: Option<String>,
+    #[sqlx(rename = "createdAt")]
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+    #[sqlx(rename = "lastUsedAt")]
+    #[serde(rename = "lastUsedAt")]
+    pub last_used_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PasskeyRegisterRequest {
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    #[serde(rename = "credentialId")]
+    pub credential_id: String,
+    #[serde(rename = "publicKey")]
+    pub public_key: String,
+    #[serde(rename = "deviceName")]
+    pub device_name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PasskeyLoginRequest {
+    #[serde(rename = "credentialId")]
+    pub credential_id: String,
+    #[serde(rename = "authenticatorData")]
+    pub authenticator_data: String,
+    #[serde(rename = "clientDataJSON")]
+    pub client_data_json: String,
+    pub signature: String,
+}
+
 use sqlx::sqlite::SqliteConnectOptions;
 use std::fs;
 use std::path::Path;

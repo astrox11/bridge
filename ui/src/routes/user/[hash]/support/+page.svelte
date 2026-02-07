@@ -108,8 +108,9 @@
 			</div>
 			<div class="p-4 space-y-4">
 				<div>
-					<label class="label">Subject</label>
+					<label for="support-subject" class="label">Subject</label>
 					<input 
+						id="support-subject"
 						type="text" 
 						bind:value={subject}
 						class="input"
@@ -117,8 +118,9 @@
 					/>
 				</div>
 				<div>
-					<label class="label">Message</label>
+					<label for="support-message" class="label">Message</label>
 					<textarea 
+						id="support-message"
 						bind:value={message}
 						class="input min-h-[120px]"
 						placeholder="Describe your issue in detail..."
