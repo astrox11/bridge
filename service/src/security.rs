@@ -73,20 +73,31 @@ pub mod response_codes {
 
 // ========== Security Configuration ==========
 
-/// Get the JWT secret from environment or generate a random one
+/// Get the JWT secret from environment
+/// WARNING: In production, JWT_SECRET MUST be set to prevent token invalidation on restart
 pub fn get_jwt_secret() -> String {
-    std::env::var("JWT_SECRET").unwrap_or_else(|_| {
-        let random_bytes: [u8; 32] = rand::random();
-        hex::encode(random_bytes)
-    })
+    match std::env::var("JWT_SECRET") {
+        Ok(secret) => secret,
+        Err(_) => {
+            // Log warning in non-production
+            eprintln!("WARNING: JWT_SECRET not set. Using random secret (tokens will be invalidated on restart)");
+            let random_bytes: [u8; 32] = rand::random();
+            hex::encode(random_bytes)
+        }
+    }
 }
 
 /// Get the API secret key for request signing
+/// WARNING: In production, API_SECRET_KEY MUST be set
 pub fn get_api_secret() -> String {
-    std::env::var("API_SECRET_KEY").unwrap_or_else(|_| {
-        let random_bytes: [u8; 32] = rand::random();
-        hex::encode(random_bytes)
-    })
+    match std::env::var("API_SECRET_KEY") {
+        Ok(secret) => secret,
+        Err(_) => {
+            eprintln!("WARNING: API_SECRET_KEY not set. Using random secret.");
+            let random_bytes: [u8; 32] = rand::random();
+            hex::encode(random_bytes)
+        }
+    }
 }
 
 /// Get allowed origins for CORS and origin validation
@@ -326,7 +337,8 @@ pub async fn origin_validation_middleware(
         .and_then(|r| {
             // Extract origin from referer URL
             url::Url::parse(r).ok().map(|u| {
-                format!("{}://{}", u.scheme(), u.host_str().unwrap_or(""))
+                let port = u.port().map(|p| format!(":{}", p)).unwrap_or_default();
+                format!("{}://{}{}", u.scheme(), u.host_str().unwrap_or(""), port)
             })
         });
     
@@ -335,8 +347,9 @@ pub async fn origin_validation_middleware(
     
     match request_origin {
         Some(o) => {
+            // Use exact matching to prevent bypass attacks (e.g., localhost.evil.com)
             let origin_matches = allowed_origins.iter().any(|allowed| {
-                o.starts_with(allowed) || o == *allowed
+                o == *allowed
             });
             
             if origin_matches {

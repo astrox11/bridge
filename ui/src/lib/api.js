@@ -88,19 +88,15 @@ export function parseSecureResponse(response) {
 }
 
 /**
- * Store tokens securely (the cookie is already set by the server)
- * This stores additional info client-side
+ * Store token metadata client-side (the HttpOnly cookie is set by the server)
+ * NOTE: sessionStorage is used for expiry tracking only - the actual tokens
+ * are stored in HttpOnly cookies which are not accessible to JavaScript
  * @param {Object} tokens - Token object from parseSecureResponse
  */
 export function storeAuthTokens(tokens) {
 	if (!tokens) return;
 	
-	// Store refresh token in sessionStorage (not localStorage for security)
-	if (tokens.refreshToken) {
-		sessionStorage.setItem('wly_rt', tokens.refreshToken);
-	}
-	
-	// Store token expiry
+	// Store token expiry for client-side expiry checking
 	if (tokens.expiresIn) {
 		const expiry = Date.now() + (tokens.expiresIn * 1000);
 		sessionStorage.setItem('wly_exp', expiry.toString());
@@ -108,29 +104,20 @@ export function storeAuthTokens(tokens) {
 }
 
 /**
- * Clear auth tokens
+ * Clear auth session data
  */
 export function clearAuthTokens() {
-	sessionStorage.removeItem('wly_rt');
 	sessionStorage.removeItem('wly_exp');
 }
 
 /**
- * Check if tokens are likely expired
+ * Check if tokens are likely expired (based on stored expiry time)
  * @returns {boolean} True if tokens are expired or not present
  */
 export function isTokenExpired() {
 	const expiry = sessionStorage.getItem('wly_exp');
 	if (!expiry) return true;
 	return Date.now() > parseInt(expiry, 10);
-}
-
-/**
- * Get the stored refresh token
- * @returns {string|null} The refresh token or null
- */
-export function getRefreshToken() {
-	return sessionStorage.getItem('wly_rt');
 }
 
 /**
