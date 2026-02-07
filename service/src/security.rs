@@ -253,16 +253,20 @@ pub async fn jwt_auth_middleware(
         return next.run(request).await;
     }
     
-    // Also skip for static files
-    if !path.starts_with("/api/") {
+    // Also skip for static files and non-API routes
+    if !path.starts_with("/api/") && !path.starts_with("/util/") {
         return next.run(request).await;
     }
     
-    // Dashboard routes that can be accessed by admin session cookie
+    // Admin dashboard routes that can be accessed by admin session cookie
+    // These routes are for the hidden admin technical workspace
     let admin_routes = [
         "/api/instances",
         "/api/settings",
         "/api/tools",
+        "/api/logs",
+        "/api/system",
+        "/api/dashboard/user/cryptooooooohash", // Admin can get user crypto hashes
     ];
     
     // Check for admin session cookie first (for dashboard routes)
@@ -281,14 +285,21 @@ pub async fn jwt_auth_middleware(
         });
     
     // If there's a valid admin session cookie, allow admin routes
-    if let Some(session) = admin_session {
-        if is_valid_admin_session(&session) {
+    if let Some(ref session) = admin_session {
+        if is_valid_admin_session(session) {
             // Admin routes are allowed without JWT
             if admin_routes.iter().any(|r| path.starts_with(r)) {
                 return next.run(request).await;
             }
         }
     }
+    
+    // User portal routes - require JWT token from user authentication
+    let user_routes = [
+        "/api/user/",
+    ];
+    
+    let is_user_route = user_routes.iter().any(|r| path.starts_with(r));
     
     // Check for Authorization header
     let auth_header = request
@@ -298,50 +309,57 @@ pub async fn jwt_auth_middleware(
     
     let token = match auth_header {
         Some(h) => match extract_bearer_token(h) {
-            Some(t) => t,
-            None => {
-                return create_error_response(response_codes::TOKEN_INVALID);
-            }
+            Some(t) => Some(t.to_string()),
+            None => None,
         },
         None => {
             // Check for token in cookie
-            let cookie_token = cookie_header
+            cookie_header
                 .and_then(|h| h.to_str().ok())
                 .and_then(|cookies| {
                     cookies.split(';').find_map(|cookie| {
                         let parts: Vec<&str> = cookie.trim().splitn(2, '=').collect();
                         if parts.len() == 2 && parts[0] == "whatsaly_token" {
-                            Some(parts[1])
+                            Some(parts[1].to_string())
                         } else {
                             None
                         }
                     })
-                });
-            
-            match cookie_token {
-                Some(t) => t,
-                None => {
-                    return create_error_response(response_codes::TOKEN_INVALID);
-                }
-            }
+                })
         }
     };
     
-    // Verify token
-    match verify_token(token) {
-        Ok(claims) => {
-            // Add claims to request extensions for later use
-            request.extensions_mut().insert(claims);
-            next.run(request).await
-        }
-        Err(e) => {
-            if e.to_string().contains("ExpiredSignature") {
-                create_error_response(response_codes::TOKEN_EXPIRED)
-            } else {
-                create_error_response(response_codes::TOKEN_INVALID)
+    // If we have a token, verify it
+    if let Some(token) = token {
+        match verify_token(&token) {
+            Ok(claims) => {
+                // Add claims to request extensions for later use
+                request.extensions_mut().insert(claims);
+                return next.run(request).await;
+            }
+            Err(_e) => {
+                // Token invalid, continue to check other auth methods
             }
         }
     }
+    
+    // For user routes, require JWT
+    if is_user_route {
+        return create_error_response(response_codes::TOKEN_INVALID);
+    }
+    
+    // For admin routes, if we get here, no valid auth was found
+    if admin_routes.iter().any(|r| path.starts_with(r)) {
+        // If admin session cookie exists but is invalid, return error
+        if admin_session.is_some() {
+            return create_error_response(response_codes::TOKEN_EXPIRED);
+        }
+        return create_error_response(response_codes::ACCESS_DENIED);
+    }
+    
+    // Allow other routes (for development/testing)
+    // In production, you might want to deny all unknown routes
+    next.run(request).await
 }
 
 /// Check if admin session is valid (token:expiry format)
