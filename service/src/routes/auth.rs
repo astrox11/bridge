@@ -640,13 +640,31 @@ fn get_admin_password() -> String {
     std::env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "astrox11".to_string())
 }
 
+/// Constant-time string comparison to prevent timing attacks
+fn constant_time_compare(a: &str, b: &str) -> bool {
+    let a_bytes = a.as_bytes();
+    let b_bytes = b.as_bytes();
+    
+    // If lengths differ, still do comparison to maintain constant time
+    if a_bytes.len() != b_bytes.len() {
+        return false;
+    }
+    
+    // XOR all bytes and accumulate - result is 0 only if all bytes match
+    let mut result = 0u8;
+    for (x, y) in a_bytes.iter().zip(b_bytes.iter()) {
+        result |= x ^ y;
+    }
+    result == 0
+}
+
 /// Verify admin password
 pub async fn admin_login(
     Json(payload): Json<AdminLoginRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let admin_password = get_admin_password();
     
-    if payload.password == admin_password {
+    if constant_time_compare(&payload.password, &admin_password) {
         (
             StatusCode::OK,
             Json(serde_json::json!({

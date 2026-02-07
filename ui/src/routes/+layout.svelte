@@ -36,10 +36,6 @@
 	{:else}
 		{#if mounted && isAdminRoute($page.url.pathname) && $isAdminAuthenticated}
 			<Header />
-		{:else if !isAdminRoute($page.url.pathname)}
-			<!-- Non-admin routes don't need header (they have their own layouts) -->
-		{:else}
-			<Header />
 		{/if}
 		
 		<main class="max-w-5xl mx-auto px-4 pt-20 pb-24 md:pb-8">

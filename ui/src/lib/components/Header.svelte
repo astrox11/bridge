@@ -1,7 +1,7 @@
 <script>
 	import { page } from '$app/stores';
 	import ThemeToggle from './ThemeToggle.svelte';
-	import { logoutAdmin, adminCurrentView } from '$lib/stores/admin';
+	import { logoutAdmin } from '$lib/stores/admin';
 	
 	const navItems = [
 		{ href: '/', label: 'Dashboard', mobileLabel: 'Overview', icon: 'fi-rr-apps' },
