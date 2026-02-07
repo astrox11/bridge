@@ -6,6 +6,11 @@
 	let loading = $state(true);
 	let error = $state(null);
 	let executing = $state(null);
+	let showCreateForm = $state(false);
+	let newPhoneNumber = $state('');
+	let newInstanceName = $state('');
+	let creating = $state(false);
+	let createError = $state('');
 
 	$effect(() => {
 		const hash = $page.params.hash;
@@ -29,6 +34,41 @@
 			error = 'Failed to load instances';
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function createInstance() {
+		if (!newPhoneNumber.trim()) {
+			createError = 'Phone number is required';
+			return;
+		}
+
+		creating = true;
+		createError = '';
+
+		try {
+			const res = await fetch(`/api/user/${$page.params.hash}/instances`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					phoneNumber: newPhoneNumber,
+					name: newInstanceName || null
+				})
+			});
+			const data = await res.json();
+			
+			if (data.success) {
+				newPhoneNumber = '';
+				newInstanceName = '';
+				showCreateForm = false;
+				await fetchInstances($page.params.hash);
+			} else {
+				createError = data.message;
+			}
+		} catch (e) {
+			createError = 'Failed to create instance';
+		} finally {
+			creating = false;
 		}
 	}
 
@@ -78,11 +118,70 @@
 <section class="space-y-6 fade-in">
 	<div class="flex justify-between items-center">
 		<h1 class="text-xl font-semibold" style="color: hsl(var(--text));">My Instances</h1>
-		<a href="/pair" class="btn btn-primary">
-			<i class="fi fi-rr-plus"></i>
-			Link Device
-		</a>
+		<button class="btn btn-primary" onclick={() => showCreateForm = !showCreateForm}>
+			<i class="fi {showCreateForm ? 'fi-rr-cross' : 'fi-rr-plus'}"></i>
+			{showCreateForm ? 'Cancel' : 'New Instance'}
+		</button>
 	</div>
+
+	<!-- Create Instance Form -->
+	{#if showCreateForm}
+		<div class="card fade-in">
+			<div class="card-header flex items-center gap-2">
+				<i class="fi fi-rr-add text-sm" style="color: hsl(var(--primary));"></i>
+				<span>Create New Instance</span>
+			</div>
+			<div class="p-4 space-y-4">
+				{#if createError}
+					<div class="p-3 rounded-lg text-sm" 
+						style="background: hsla(var(--danger) / 0.1); color: hsl(var(--danger));">
+						<i class="fi fi-rr-exclamation mr-2"></i>
+						{createError}
+					</div>
+				{/if}
+				<div class="text-sm p-3 rounded-lg" style="background: hsla(var(--primary) / 0.1); color: hsl(var(--text-muted));">
+					<i class="fi fi-rr-info mr-2" style="color: hsl(var(--primary));"></i>
+					<strong>Note:</strong> You can only have one instance per phone number. Enter the phone number associated with your WhatsApp account.
+				</div>
+				<div>
+					<label for="new-phone" class="label">Phone Number</label>
+					<input 
+						id="new-phone"
+						type="tel" 
+						bind:value={newPhoneNumber}
+						class="input"
+						placeholder="+1234567890"
+					/>
+				</div>
+				<div>
+					<label for="new-name" class="label">Instance Name (optional)</label>
+					<input 
+						id="new-name"
+						type="text" 
+						bind:value={newInstanceName}
+						class="input"
+						placeholder="My WhatsApp"
+					/>
+				</div>
+				<div class="flex justify-end gap-2">
+					<button class="btn btn-secondary" onclick={() => showCreateForm = false}>
+						Cancel
+					</button>
+					<button 
+						class="btn btn-primary"
+						onclick={createInstance}
+						disabled={creating || !newPhoneNumber.trim()}>
+						{#if creating}
+							<i class="fi fi-rr-spinner animate-spin"></i>
+						{:else}
+							<i class="fi fi-rr-check"></i>
+						{/if}
+						Create Instance
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	{#if loading}
 		<div class="card">
@@ -107,11 +206,11 @@
 		<div class="card p-12 text-center">
 			<i class="fi fi-rr-server text-4xl mb-4 opacity-40" style="color: hsl(var(--text-muted));"></i>
 			<h3 class="font-medium mb-2" style="color: hsl(var(--text));">No instances yet</h3>
-			<p class="text-sm mb-6" style="color: hsl(var(--text-muted));">Link your WhatsApp device to get started</p>
-			<a href="/pair" class="btn btn-primary inline-flex">
-				<i class="fi fi-rr-link-alt"></i>
-				Link Device
-			</a>
+			<p class="text-sm mb-6" style="color: hsl(var(--text-muted));">Create your first WhatsApp instance to get started</p>
+			<button class="btn btn-primary inline-flex" onclick={() => showCreateForm = true}>
+				<i class="fi fi-rr-plus"></i>
+				Create Instance
+			</button>
 		</div>
 	{:else}
 		<div class="card">

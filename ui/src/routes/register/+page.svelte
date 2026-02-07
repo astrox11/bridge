@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { base64UrlToArrayBuffer, arrayBufferToBase64Url, isPasskeySupported, getDeviceName } from '$lib/webauthn';
 	import { parseSecureResponse, storeAuthTokens, ResponseCodes } from '$lib/api';
+	import ParticleBackground from '$lib/components/ParticleBackground.svelte';
 
 	let phoneNumber = $state('');
 	let password = $state('');
@@ -149,7 +150,9 @@
 	<title>Register | Whatsaly</title>
 </svelte:head>
 
-<div class="min-h-screen flex items-center justify-center px-4 py-8">
+<ParticleBackground />
+
+<div class="min-h-screen flex items-center justify-center px-4 py-8 relative z-10">
 	<div class="card w-full max-w-sm">
 		<div class="p-6">
 			{#if success}

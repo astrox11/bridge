@@ -47,6 +47,10 @@ pub struct User {
     #[serde(rename = "isAdmin")]
     pub is_admin: bool,
     pub credits: f64,
+    pub suspended: bool,
+    #[sqlx(rename = "instanceLimit")]
+    #[serde(rename = "instanceLimit")]
+    pub instance_limit: i32,
     #[sqlx(rename = "createdAt")]
     #[serde(rename = "createdAt")]
     pub created_at: DateTime<Utc>,
@@ -118,6 +122,7 @@ pub struct SupportRequest {
     #[sqlx(rename = "userId")]
     #[serde(rename = "userId")]
     pub user_id: String,
+    pub email: String,
     pub subject: String,
     pub message: String,
     pub status: String,

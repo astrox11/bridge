@@ -84,6 +84,8 @@ CREATE TABLE
         cryptoHash TEXT UNIQUE NOT NULL,
         isAdmin BOOLEAN NOT NULL DEFAULT FALSE,
         credits REAL NOT NULL DEFAULT 0.0,
+        suspended BOOLEAN NOT NULL DEFAULT FALSE,
+        instanceLimit INTEGER NOT NULL DEFAULT 10,
         createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -156,6 +158,7 @@ CREATE TABLE
     IF NOT EXISTS support_requests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         userId TEXT NOT NULL,
+        email TEXT NOT NULL,
         subject TEXT NOT NULL,
         message TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'open',
