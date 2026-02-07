@@ -1,12 +1,12 @@
 use axum::{
+    Json,
     body::Body,
-    http::{header, Request, StatusCode},
+    http::{Request, StatusCode, header},
     middleware::Next,
     response::{IntoResponse, Response},
-    Json,
 };
 use hmac::{Hmac, Mac};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 
@@ -14,12 +14,12 @@ use sha2::Sha256;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: String,           // User ID or crypto hash
-    pub role: String,          // "user" or "admin"
-    pub iat: i64,              // Issued at
-    pub exp: i64,              // Expiration
-    pub jti: String,           // JWT ID (unique token identifier)
-    pub sid: String,           // Session ID
+    pub sub: String,  // User ID or crypto hash
+    pub role: String, // "user" or "admin"
+    pub iat: i64,     // Issued at
+    pub exp: i64,     // Expiration
+    pub jti: String,  // JWT ID (unique token identifier)
+    pub sid: String,  // Session ID
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,15 +36,15 @@ pub struct TokenPair {
 #[derive(Debug, Serialize, Clone)]
 pub struct SecureResponse {
     #[serde(rename = "c")]
-    pub code: u32,              // Response code
+    pub code: u32, // Response code
     #[serde(rename = "s")]
-    pub status: u8,             // 0 = error, 1 = success
+    pub status: u8, // 0 = error, 1 = success
     #[serde(rename = "d")]
-    pub data: Option<String>,   // Base64 encoded data
+    pub data: Option<String>, // Base64 encoded data
     #[serde(rename = "t")]
-    pub timestamp: i64,         // Unix timestamp
+    pub timestamp: i64, // Unix timestamp
     #[serde(rename = "sig")]
-    pub signature: String,      // HMAC signature of the response
+    pub signature: String, // HMAC signature of the response
 }
 
 /// Response codes (obfuscated - not readable)
@@ -78,7 +78,9 @@ pub fn get_jwt_secret() -> String {
         Ok(secret) => secret,
         Err(_) => {
             // Log warning in non-production
-            eprintln!("WARNING: JWT_SECRET not set. Using random secret (tokens will be invalidated on restart)");
+            eprintln!(
+                "WARNING: JWT_SECRET not set. Using random secret (tokens will be invalidated on restart)"
+            );
             let random_bytes: [u8; 32] = rand::random();
             hex::encode(random_bytes)
         }
@@ -110,7 +112,10 @@ pub fn get_allowed_origins() -> Vec<String> {
 // ========== JWT Token Functions ==========
 
 /// Generate a new access token
-pub fn generate_access_token(user_id: &str, role: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_access_token(
+    user_id: &str,
+    role: &str,
+) -> Result<String, jsonwebtoken::errors::Error> {
     let now = chrono::Utc::now();
     let exp = now + chrono::Duration::hours(1); // 1 hour expiry
     let jti = uuid::Uuid::new_v4().to_string();
@@ -134,7 +139,10 @@ pub fn generate_access_token(user_id: &str, role: &str) -> Result<String, jsonwe
 }
 
 /// Generate a refresh token (longer expiry)
-pub fn generate_refresh_token(user_id: &str, role: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_refresh_token(
+    user_id: &str,
+    role: &str,
+) -> Result<String, jsonwebtoken::errors::Error> {
     let now = chrono::Utc::now();
     let exp = now + chrono::Duration::days(7); // 7 days expiry
     let jti = uuid::Uuid::new_v4().to_string();
@@ -158,7 +166,10 @@ pub fn generate_refresh_token(user_id: &str, role: &str) -> Result<String, jsonw
 }
 
 /// Generate both access and refresh tokens
-pub fn generate_token_pair(user_id: &str, role: &str) -> Result<TokenPair, jsonwebtoken::errors::Error> {
+pub fn generate_token_pair(
+    user_id: &str,
+    role: &str,
+) -> Result<TokenPair, jsonwebtoken::errors::Error> {
     let access_token = generate_access_token(user_id, role)?;
     let refresh_token = generate_refresh_token(user_id, role)?;
 
@@ -187,26 +198,35 @@ pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
 pub fn sign_response(data: &str) -> String {
     let secret = get_api_secret();
     type HmacSha256 = Hmac<Sha256>;
-    let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
-        .expect("HMAC can take key of any size");
+    let mut mac =
+        HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC can take key of any size");
     mac.update(data.as_bytes());
     let result = mac.finalize();
     hex::encode(result.into_bytes())
 }
 
 /// Create an obfuscated secure response
-pub fn create_secure_response(code: u32, success: bool, data: Option<serde_json::Value>) -> SecureResponse {
+pub fn create_secure_response(
+    code: u32,
+    success: bool,
+    data: Option<serde_json::Value>,
+) -> SecureResponse {
     let timestamp = chrono::Utc::now().timestamp();
-    
+
     // Encode data as base64 if present
-    let encoded_data = data.map(|d| {
-        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, d.to_string())
-    });
-    
+    let encoded_data = data
+        .map(|d| base64::Engine::encode(&base64::engine::general_purpose::STANDARD, d.to_string()));
+
     // Create signature
-    let sig_input = format!("{}{}{}{}", code, success as u8, encoded_data.as_deref().unwrap_or(""), timestamp);
+    let sig_input = format!(
+        "{}{}{}{}",
+        code,
+        success as u8,
+        encoded_data.as_deref().unwrap_or(""),
+        timestamp
+    );
     let signature = sign_response(&sig_input);
-    
+
     SecureResponse {
         code,
         status: if success { 1 } else { 0 },
@@ -228,18 +248,15 @@ fn extract_bearer_token(auth_header: &str) -> Option<&str> {
 }
 
 /// JWT Authentication middleware
-pub async fn jwt_auth_middleware(
-    mut request: Request<Body>,
-    next: Next,
-) -> Response {
+pub async fn jwt_auth_middleware(mut request: Request<Body>, next: Next) -> Response {
     // Skip auth for public routes
     let path = request.uri().path();
-    
+
     // All auth routes should be public (no JWT required)
     if path.starts_with("/api/auth/") {
         return next.run(request).await;
     }
-    
+
     let public_routes = [
         "/util/whatsapp-news",
         // SSE stream endpoints (real-time data feeds)
@@ -247,16 +264,16 @@ pub async fn jwt_auth_middleware(
         "/api/instances/stream",
         "/api/logs/stream",
     ];
-    
+
     if public_routes.iter().any(|r| path.starts_with(r)) {
         return next.run(request).await;
     }
-    
+
     // Also skip for static files and non-API routes
     if !path.starts_with("/api/") && !path.starts_with("/util/") {
         return next.run(request).await;
     }
-    
+
     // Admin dashboard routes that can be accessed by admin session cookie
     // These routes are for the hidden admin technical workspace
     let admin_routes = [
@@ -267,7 +284,7 @@ pub async fn jwt_auth_middleware(
         "/api/system",
         "/api/dashboard/user/cryptooooooohash", // Admin can get user crypto hashes
     ];
-    
+
     // Check for admin session cookie first (for dashboard routes)
     let cookie_header = request.headers().get(header::COOKIE);
     let admin_session = cookie_header
@@ -282,35 +299,30 @@ pub async fn jwt_auth_middleware(
                 }
             })
         });
-    
+
     // If there's a valid admin session cookie, allow admin routes
-    if let Some(ref session) = admin_session {
-        if is_valid_admin_session(session) {
-            // Admin routes are allowed without JWT
-            if admin_routes.iter().any(|r| path.starts_with(r)) {
-                return next.run(request).await;
-            }
+    if let Some(ref session) = admin_session
+        && is_valid_admin_session(session)
+    {
+        // Admin routes are allowed without JWT
+        if admin_routes.iter().any(|r| path.starts_with(r)) {
+            return next.run(request).await;
         }
     }
-    
+
     // User portal routes - require JWT token from user authentication
-    let user_routes = [
-        "/api/user/",
-    ];
-    
+    let user_routes = ["/api/user/"];
+
     let is_user_route = user_routes.iter().any(|r| path.starts_with(r));
-    
+
     // Check for Authorization header
     let auth_header = request
         .headers()
         .get(header::AUTHORIZATION)
         .and_then(|h| h.to_str().ok());
-    
+
     let token = match auth_header {
-        Some(h) => match extract_bearer_token(h) {
-            Some(t) => Some(t.to_string()),
-            None => None,
-        },
+        Some(h) => extract_bearer_token(h).map(|t| t.to_string()),
         None => {
             // Check for token in cookie
             cookie_header
@@ -327,7 +339,7 @@ pub async fn jwt_auth_middleware(
                 })
         }
     };
-    
+
     // If we have a token, verify it
     if let Some(token) = token {
         match verify_token(&token) {
@@ -341,12 +353,12 @@ pub async fn jwt_auth_middleware(
             }
         }
     }
-    
+
     // For user routes, require JWT
     if is_user_route {
         return create_error_response(response_codes::TOKEN_INVALID);
     }
-    
+
     // For admin routes, if we get here, no valid auth was found
     if admin_routes.iter().any(|r| path.starts_with(r)) {
         // If admin session cookie exists but is invalid, return error
@@ -355,7 +367,7 @@ pub async fn jwt_auth_middleware(
         }
         return create_error_response(response_codes::ACCESS_DENIED);
     }
-    
+
     // Allow other routes (for development/testing)
     // In production, you might want to deny all unknown routes
     next.run(request).await
@@ -367,36 +379,33 @@ fn is_valid_admin_session(session: &str) -> bool {
     if parts.len() != 2 {
         return false;
     }
-    
+
     let expiry: i64 = match parts[1].parse() {
         Ok(e) => e,
         Err(_) => return false,
     };
-    
+
     // Check if session has expired (30 minute sessions)
     chrono::Utc::now().timestamp() <= expiry
 }
 
 /// Origin validation middleware
-pub async fn origin_validation_middleware(
-    request: Request<Body>,
-    next: Next,
-) -> Response {
+pub async fn origin_validation_middleware(request: Request<Body>, next: Next) -> Response {
     let path = request.uri().path();
-    
+
     // Skip origin check for static files and certain routes
     if !path.starts_with("/api/") {
         return next.run(request).await;
     }
-    
+
     let allowed_origins = get_allowed_origins();
-    
+
     // Check Origin header
     let origin = request
         .headers()
         .get(header::ORIGIN)
         .and_then(|h| h.to_str().ok());
-    
+
     // Check Referer as fallback
     let referer = request
         .headers()
@@ -409,17 +418,15 @@ pub async fn origin_validation_middleware(
                 format!("{}://{}{}", u.scheme(), u.host_str().unwrap_or(""), port)
             })
         });
-    
+
     // Validate origin
     let request_origin = origin.map(String::from).or(referer);
-    
+
     match request_origin {
         Some(o) => {
             // Use exact matching to prevent bypass attacks (e.g., localhost.evil.com)
-            let origin_matches = allowed_origins.iter().any(|allowed| {
-                o == *allowed
-            });
-            
+            let origin_matches = allowed_origins.iter().any(|allowed| o == *allowed);
+
             if origin_matches {
                 next.run(request).await
             } else {
@@ -443,22 +450,19 @@ pub async fn origin_validation_middleware(
 }
 
 /// API key validation middleware
-pub async fn api_key_middleware(
-    request: Request<Body>,
-    next: Next,
-) -> Response {
+pub async fn api_key_middleware(request: Request<Body>, next: Next) -> Response {
     let path = request.uri().path();
-    
+
     // Skip for non-API routes
     if !path.starts_with("/api/") {
         return next.run(request).await;
     }
-    
+
     // All auth routes should be public (no API key required)
     if path.starts_with("/api/auth/") {
         return next.run(request).await;
     }
-    
+
     // Public routes don't need API key
     let public_routes = [
         // SSE stream endpoints (real-time data feeds)
@@ -466,23 +470,21 @@ pub async fn api_key_middleware(
         "/api/instances/stream",
         "/api/logs/stream",
     ];
-    
+
     if public_routes.iter().any(|r| path.starts_with(r)) {
         return next.run(request).await;
     }
-    
+
     // Check for X-API-Key header
     let api_key = request
         .headers()
         .get("X-API-Key")
         .and_then(|h| h.to_str().ok());
-    
+
     let expected_key = get_api_secret();
-    
+
     match api_key {
-        Some(key) if constant_time_compare(key, &expected_key) => {
-            next.run(request).await
-        }
+        Some(key) if constant_time_compare(key, &expected_key) => next.run(request).await,
         _ => {
             // Allow if API key checking is not strictly enforced
             if std::env::var("REQUIRE_API_KEY").unwrap_or_default() == "true" {
@@ -498,11 +500,11 @@ pub async fn api_key_middleware(
 fn constant_time_compare(a: &str, b: &str) -> bool {
     let a_bytes = a.as_bytes();
     let b_bytes = b.as_bytes();
-    
+
     if a_bytes.len() != b_bytes.len() {
         return false;
     }
-    
+
     let mut result = 0u8;
     for (x, y) in a_bytes.iter().zip(b_bytes.iter()) {
         result |= x ^ y;
@@ -525,11 +527,11 @@ pub fn create_auth_cookie(token: &str, is_production: bool) -> String {
         "whatsaly_token={}; Path=/; Max-Age={}; HttpOnly; SameSite=Strict",
         token, max_age
     );
-    
+
     if is_production {
         cookie.push_str("; Secure");
     }
-    
+
     cookie
 }
 

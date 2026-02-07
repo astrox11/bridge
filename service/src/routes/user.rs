@@ -1,9 +1,9 @@
-use crate::sql::{CreditTransaction, SupportRequest, UsageLog, User};
 use crate::AppState;
+use crate::sql::{CreditTransaction, SupportRequest, UsageLog, User};
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use chrono::Datelike;
 use serde::{Deserialize, Serialize};
@@ -59,11 +59,19 @@ pub async fn get_user_dashboard(
     };
 
     // Get user's instances
-    let instances: Vec<UserInstanceInfo> = sqlx::query_as::<_, (String, String, Option<String>, chrono::DateTime<chrono::Utc>)>(
+    let instances: Vec<UserInstanceInfo> = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            Option<String>,
+            chrono::DateTime<chrono::Utc>,
+        ),
+    >(
         "SELECT ui.sessionId, s.status, s.name, ui.createdAt 
          FROM user_instances ui 
          JOIN sessions s ON ui.sessionId = s.id 
-         WHERE ui.userId = ?"
+         WHERE ui.userId = ?",
     )
     .bind(&user.id)
     .fetch_all(&state.db)
@@ -81,7 +89,7 @@ pub async fn get_user_dashboard(
     // Calculate total usage (excluding downtime)
     let total_usage: i64 = sqlx::query_scalar(
         "SELECT COALESCE(SUM(durationMinutes), 0) FROM usage_logs 
-         WHERE userId = ? AND isDowntime = FALSE"
+         WHERE userId = ? AND isDowntime = FALSE",
     )
     .bind(&user.id)
     .fetch_one(&state.db)
@@ -95,10 +103,10 @@ pub async fn get_user_dashboard(
         .unwrap()
         .and_hms_opt(0, 0, 0)
         .unwrap();
-    
+
     let monthly_usage: i64 = sqlx::query_scalar(
         "SELECT COALESCE(SUM(durationMinutes), 0) FROM usage_logs 
-         WHERE userId = ? AND isDowntime = FALSE AND startTime >= ?"
+         WHERE userId = ? AND isDowntime = FALSE AND startTime >= ?",
     )
     .bind(&user.id)
     .bind(start_of_month)
@@ -149,11 +157,19 @@ pub async fn get_user_instances(
         }
     };
 
-    let instances: Vec<UserInstanceInfo> = sqlx::query_as::<_, (String, String, Option<String>, chrono::DateTime<chrono::Utc>)>(
+    let instances: Vec<UserInstanceInfo> = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            Option<String>,
+            chrono::DateTime<chrono::Utc>,
+        ),
+    >(
         "SELECT ui.sessionId, s.status, s.name, ui.createdAt 
          FROM user_instances ui 
          JOIN sessions s ON ui.sessionId = s.id 
-         WHERE ui.userId = ?"
+         WHERE ui.userId = ?",
     )
     .bind(&user.id)
     .fetch_all(&state.db)
@@ -202,7 +218,7 @@ pub async fn get_user_credits(
     };
 
     let transactions: Vec<CreditTransaction> = sqlx::query_as(
-        "SELECT * FROM credit_transactions WHERE userId = ? ORDER BY createdAt DESC LIMIT 50"
+        "SELECT * FROM credit_transactions WHERE userId = ? ORDER BY createdAt DESC LIMIT 50",
     )
     .bind(&user.id)
     .fetch_all(&state.db)
@@ -274,12 +290,16 @@ pub async fn add_credits(
     // Record transaction
     let _ = sqlx::query(
         "INSERT INTO credit_transactions (userId, amount, transactionType, description, createdAt) 
-         VALUES (?, ?, ?, ?, ?)"
+         VALUES (?, ?, ?, ?, ?)",
     )
     .bind(&user.id)
     .bind(payload.amount)
     .bind("credit")
-    .bind(payload.description.unwrap_or_else(|| "Credit added".to_string()))
+    .bind(
+        payload
+            .description
+            .unwrap_or_else(|| "Credit added".to_string()),
+    )
     .bind(now)
     .execute(&state.db)
     .await;
@@ -318,7 +338,7 @@ pub async fn get_usage_history(
     };
 
     let usage: Vec<UsageLog> = sqlx::query_as(
-        "SELECT * FROM usage_logs WHERE userId = ? ORDER BY startTime DESC LIMIT 100"
+        "SELECT * FROM usage_logs WHERE userId = ? ORDER BY startTime DESC LIMIT 100",
     )
     .bind(&user.id)
     .fetch_all(&state.db)
@@ -326,8 +346,16 @@ pub async fn get_usage_history(
     .unwrap_or_default();
 
     // Calculate summary
-    let total_active: i64 = usage.iter().filter(|u| !u.is_downtime).map(|u| u.duration_minutes as i64).sum();
-    let total_downtime: i64 = usage.iter().filter(|u| u.is_downtime).map(|u| u.duration_minutes as i64).sum();
+    let total_active: i64 = usage
+        .iter()
+        .filter(|u| !u.is_downtime)
+        .map(|u| u.duration_minutes as i64)
+        .sum();
+    let total_downtime: i64 = usage
+        .iter()
+        .filter(|u| u.is_downtime)
+        .map(|u| u.duration_minutes as i64)
+        .sum();
 
     (
         StatusCode::OK,
@@ -443,13 +471,12 @@ pub async fn get_support_requests(
         }
     };
 
-    let requests: Vec<SupportRequest> = sqlx::query_as(
-        "SELECT * FROM support_requests WHERE userId = ? ORDER BY createdAt DESC"
-    )
-    .bind(&user.id)
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let requests: Vec<SupportRequest> =
+        sqlx::query_as("SELECT * FROM support_requests WHERE userId = ? ORDER BY createdAt DESC")
+            .bind(&user.id)
+            .fetch_all(&state.db)
+            .await
+            .unwrap_or_default();
 
     (
         StatusCode::OK,
@@ -516,7 +543,8 @@ pub async fn create_user_instance(
     }
 
     // Clean phone number - remove + and non-digit characters
-    let clean_phone: String = payload.phone_number
+    let clean_phone: String = payload
+        .phone_number
         .chars()
         .filter(|c| c.is_ascii_digit())
         .collect();
@@ -535,7 +563,7 @@ pub async fn create_user_instance(
     let existing: Option<(String,)> = sqlx::query_as(
         "SELECT ui.sessionId FROM user_instances ui 
          JOIN sessions s ON ui.sessionId = s.id 
-         WHERE ui.userId = ? AND s.phoneNumber = ?"
+         WHERE ui.userId = ? AND s.phoneNumber = ?",
     )
     .bind(&user.id)
     .bind(&clean_phone)
@@ -554,13 +582,12 @@ pub async fn create_user_instance(
     }
 
     // Check total instance count against limit
-    let instance_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM user_instances WHERE userId = ?"
-    )
-    .bind(&user.id)
-    .fetch_one(&state.db)
-    .await
-    .unwrap_or(0);
+    let instance_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM user_instances WHERE userId = ?")
+            .bind(&user.id)
+            .fetch_one(&state.db)
+            .await
+            .unwrap_or(0);
 
     if instance_count >= user.instance_limit as i64 {
         return (
@@ -603,14 +630,13 @@ pub async fn create_user_instance(
     }
 
     // Link session to user
-    let link_result = sqlx::query(
-        "INSERT INTO user_instances (userId, sessionId, createdAt) VALUES (?, ?, ?)"
-    )
-    .bind(&user.id)
-    .bind(&session_id)
-    .bind(now)
-    .execute(&state.db)
-    .await;
+    let link_result =
+        sqlx::query("INSERT INTO user_instances (userId, sessionId, createdAt) VALUES (?, ?, ?)")
+            .bind(&user.id)
+            .bind(&session_id)
+            .bind(now)
+            .execute(&state.db)
+            .await;
 
     if let Err(e) = link_result {
         // Rollback session creation
@@ -618,7 +644,7 @@ pub async fn create_user_instance(
             .bind(&session_id)
             .execute(&state.db)
             .await;
-        
+
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({
@@ -668,14 +694,13 @@ pub async fn get_instance_pairing_code(
     };
 
     // Check if user owns this session
-    let owns_session: Option<(String,)> = sqlx::query_as(
-        "SELECT sessionId FROM user_instances WHERE userId = ? AND sessionId = ?"
-    )
-    .bind(&user.id)
-    .bind(&session_id)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
+    let owns_session: Option<(String,)> =
+        sqlx::query_as("SELECT sessionId FROM user_instances WHERE userId = ? AND sessionId = ?")
+            .bind(&user.id)
+            .bind(&session_id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
 
     if owns_session.is_none() {
         return (
@@ -703,13 +728,12 @@ pub async fn get_instance_pairing_code(
     }
 
     // No worker found, check database for status
-    let session: Option<(String, String)> = sqlx::query_as(
-        "SELECT id, status FROM sessions WHERE id = ?"
-    )
-    .bind(&session_id)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
+    let session: Option<(String, String)> =
+        sqlx::query_as("SELECT id, status FROM sessions WHERE id = ?")
+            .bind(&session_id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
 
     match session {
         Some((_, status)) => (

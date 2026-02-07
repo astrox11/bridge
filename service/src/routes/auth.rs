@@ -1,11 +1,19 @@
-use crate::sql::{LoginRequest, PasskeyCredential, PasskeyLoginRequest, PasskeyRegisterRequest, RegisterRequest, User, SecureAuthResponse, TokenResponse};
-use crate::security::{generate_token_pair, sign_response, response_codes, create_auth_cookie};
 use crate::AppState;
-use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-    Argon2,
+use crate::security::{create_auth_cookie, generate_token_pair, response_codes, sign_response};
+use crate::sql::{
+    LoginRequest, PasskeyCredential, PasskeyLoginRequest, PasskeyRegisterRequest, RegisterRequest,
+    SecureAuthResponse, TokenResponse, User,
 };
-use axum::{extract::State, http::{StatusCode, header}, response::IntoResponse, Json};
+use argon2::{
+    Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
+};
+use axum::{
+    Json,
+    extract::State,
+    http::{StatusCode, header},
+    response::IntoResponse,
+};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
@@ -24,8 +32,13 @@ fn generate_crypto_hash(phone_number: &str) -> String {
     let random_bytes: [u8; 32] = rand::random();
     let mut hasher = Sha256::new();
     hasher.update(phone_number.as_bytes());
-    hasher.update(&random_bytes);
-    hasher.update(chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0).to_le_bytes());
+    hasher.update(random_bytes);
+    hasher.update(
+        chrono::Utc::now()
+            .timestamp_nanos_opt()
+            .unwrap_or(0)
+            .to_le_bytes(),
+    );
     hex::encode(hasher.finalize())
 }
 
@@ -63,23 +76,23 @@ fn create_secure_auth_response(
     include_tokens: bool,
 ) -> SecureAuthResponse {
     let timestamp = chrono::Utc::now().timestamp();
-    
+
     // Generate tokens if needed
     let tokens = if include_tokens && success {
         user.and_then(|u| {
             let role = if u.is_admin { "admin" } else { "user" };
-            generate_token_pair(&u.crypto_hash, role).ok().map(|tp| {
-                TokenResponse {
+            generate_token_pair(&u.crypto_hash, role)
+                .ok()
+                .map(|tp| TokenResponse {
                     access_token: tp.access_token,
                     refresh_token: tp.refresh_token,
                     expires_in: tp.expires_in,
-                }
-            })
+                })
         })
     } else {
         None
     };
-    
+
     // Encode user data as base64
     let encoded_data = user.map(|u| {
         let user_data = serde_json::json!({
@@ -88,13 +101,22 @@ fn create_secure_auth_response(
             "h": crypto_hash.unwrap_or(&u.crypto_hash),
             "a": u.is_admin,
         });
-        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, user_data.to_string())
+        base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            user_data.to_string(),
+        )
     });
-    
+
     // Create signature
-    let sig_input = format!("{}{}{}{}", code, success as u8, encoded_data.as_deref().unwrap_or(""), timestamp);
+    let sig_input = format!(
+        "{}{}{}{}",
+        code,
+        success as u8,
+        encoded_data.as_deref().unwrap_or(""),
+        timestamp
+    );
     let signature = sign_response(&sig_input);
-    
+
     SecureAuthResponse {
         code,
         status: if success { 1 } else { 0 },
@@ -112,27 +134,28 @@ pub async fn register(
 ) -> impl IntoResponse {
     // Validate phone number
     if payload.phone_number.is_empty() || payload.phone_number.len() < 10 {
-        let response = create_secure_auth_response(response_codes::VALIDATION_ERROR, false, None, None, false);
+        let response =
+            create_secure_auth_response(response_codes::VALIDATION_ERROR, false, None, None, false);
         return (StatusCode::BAD_REQUEST, Json(response));
     }
 
     // Validate password
     if payload.password.len() < 6 {
-        let response = create_secure_auth_response(response_codes::VALIDATION_ERROR, false, None, None, false);
+        let response =
+            create_secure_auth_response(response_codes::VALIDATION_ERROR, false, None, None, false);
         return (StatusCode::BAD_REQUEST, Json(response));
     }
 
     // Check if user already exists
-    let existing: Option<User> = sqlx::query_as(
-        "SELECT * FROM users WHERE phoneNumber = ?"
-    )
-    .bind(&payload.phone_number)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
+    let existing: Option<User> = sqlx::query_as("SELECT * FROM users WHERE phoneNumber = ?")
+        .bind(&payload.phone_number)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None);
 
     if existing.is_some() {
-        let response = create_secure_auth_response(response_codes::USER_EXISTS, false, None, None, false);
+        let response =
+            create_secure_auth_response(response_codes::USER_EXISTS, false, None, None, false);
         return (StatusCode::CONFLICT, Json(response));
     }
 
@@ -143,7 +166,13 @@ pub async fn register(
     let (password_hash, password_salt) = match hash_password(&payload.password) {
         Ok(result) => result,
         Err(_) => {
-            let response = create_secure_auth_response(response_codes::INTERNAL_ERROR, false, None, None, false);
+            let response = create_secure_auth_response(
+                response_codes::INTERNAL_ERROR,
+                false,
+                None,
+                None,
+                false,
+            );
             return (StatusCode::INTERNAL_SERVER_ERROR, Json(response));
         }
     };
@@ -186,7 +215,13 @@ pub async fn register(
             (StatusCode::CREATED, Json(response))
         }
         Err(_) => {
-            let response = create_secure_auth_response(response_codes::INTERNAL_ERROR, false, None, None, false);
+            let response = create_secure_auth_response(
+                response_codes::INTERNAL_ERROR,
+                false,
+                None,
+                None,
+                false,
+            );
             (StatusCode::INTERNAL_SERVER_ERROR, Json(response))
         }
     }
@@ -198,42 +233,38 @@ pub async fn login(
     Json(payload): Json<LoginRequest>,
 ) -> axum::response::Response {
     // Find user by phone number
-    let user: Option<User> = sqlx::query_as(
-        "SELECT * FROM users WHERE phoneNumber = ?"
-    )
-    .bind(&payload.phone_number)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
+    let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE phoneNumber = ?")
+        .bind(&payload.phone_number)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None);
 
     let user = match user {
         Some(u) => u,
         None => {
-            let response = create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
+            let response =
+                create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
             return (StatusCode::UNAUTHORIZED, Json(response)).into_response();
         }
     };
 
     // Verify crypto hash matches
     if user.crypto_hash != payload.crypto_hash {
-        let response = create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
+        let response =
+            create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
         return (StatusCode::UNAUTHORIZED, Json(response)).into_response();
     }
 
     // Verify password
     if !verify_password(&payload.password, &user.password_hash) {
-        let response = create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
+        let response =
+            create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
         return (StatusCode::UNAUTHORIZED, Json(response)).into_response();
     }
 
     // Generate secure response with tokens
-    let response = create_secure_auth_response(
-        response_codes::AUTH_SUCCESS,
-        true,
-        Some(&user),
-        None,
-        true,
-    );
+    let response =
+        create_secure_auth_response(response_codes::AUTH_SUCCESS, true, Some(&user), None, true);
 
     // Create response with Set-Cookie header for the token
     let is_production = std::env::var("PRODUCTION").unwrap_or_default() == "true";
@@ -254,13 +285,11 @@ pub async fn get_crypto_hash(
     State(state): State<Arc<AppState>>,
     axum::extract::Path(phone): axum::extract::Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let user: Option<User> = sqlx::query_as(
-        "SELECT * FROM users WHERE phoneNumber = ?"
-    )
-    .bind(&phone)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
+    let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE phoneNumber = ?")
+        .bind(&phone)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None);
 
     match user {
         Some(u) => (
@@ -286,13 +315,11 @@ pub async fn verify_crypto_hash(
     State(state): State<Arc<AppState>>,
     axum::extract::Path(crypto_hash): axum::extract::Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let user: Option<User> = sqlx::query_as(
-        "SELECT * FROM users WHERE cryptoHash = ?"
-    )
-    .bind(&crypto_hash)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
+    let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE cryptoHash = ?")
+        .bind(&crypto_hash)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None);
 
     match user {
         Some(u) => (
@@ -344,7 +371,8 @@ pub async fn passkey_register_challenge(
 
     // Generate a random challenge
     let challenge: [u8; 32] = rand::random();
-    let challenge_b64 = base64::Engine::encode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, challenge);
+    let challenge_b64 =
+        base64::Engine::encode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, challenge);
 
     // Store challenge in Redis with 5 minute expiry
     if let Ok(mut conn) = state.redis.get_connection() {
@@ -409,13 +437,12 @@ pub async fn passkey_register(
     }
 
     // Check if credential already exists
-    let existing: Option<PasskeyCredential> = sqlx::query_as(
-        "SELECT * FROM passkey_credentials WHERE credentialId = ?"
-    )
-    .bind(&payload.credential_id)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
+    let existing: Option<PasskeyCredential> =
+        sqlx::query_as("SELECT * FROM passkey_credentials WHERE credentialId = ?")
+            .bind(&payload.credential_id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
 
     if existing.is_some() {
         return (
@@ -469,7 +496,8 @@ pub async fn passkey_login_challenge(
 ) -> (StatusCode, Json<serde_json::Value>) {
     // Generate a random challenge
     let challenge: [u8; 32] = rand::random();
-    let challenge_b64 = base64::Engine::encode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, challenge);
+    let challenge_b64 =
+        base64::Engine::encode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, challenge);
     let challenge_id: [u8; 16] = rand::random();
     let challenge_id_hex = hex::encode(challenge_id);
 
@@ -503,18 +531,18 @@ pub async fn passkey_login(
     Json(payload): Json<PasskeyLoginRequest>,
 ) -> axum::response::Response {
     // Find the credential
-    let credential: Option<PasskeyCredential> = sqlx::query_as(
-        "SELECT * FROM passkey_credentials WHERE credentialId = ?"
-    )
-    .bind(&payload.credential_id)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
+    let credential: Option<PasskeyCredential> =
+        sqlx::query_as("SELECT * FROM passkey_credentials WHERE credentialId = ?")
+            .bind(&payload.credential_id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
 
     let credential = match credential {
         Some(c) => c,
         None => {
-            let response = create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
+            let response =
+                create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
             return (StatusCode::UNAUTHORIZED, Json(response)).into_response();
         }
     };
@@ -526,7 +554,7 @@ pub async fn passkey_login(
     // Update last used time and counter
     let now = chrono::Utc::now();
     let _ = sqlx::query(
-        "UPDATE passkey_credentials SET lastUsedAt = ?, counter = counter + 1 WHERE id = ?"
+        "UPDATE passkey_credentials SET lastUsedAt = ?, counter = counter + 1 WHERE id = ?",
     )
     .bind(now)
     .bind(&credential.id)
@@ -549,7 +577,7 @@ pub async fn passkey_login(
                 Some(&u.crypto_hash),
                 true,
             );
-            
+
             // Set auth cookie
             let is_production = std::env::var("PRODUCTION").unwrap_or_default() == "true";
             if let Some(ref tokens) = response.tokens {
@@ -560,11 +588,12 @@ pub async fn passkey_login(
                 }
                 return (StatusCode::OK, headers, Json(response)).into_response();
             }
-            
+
             (StatusCode::OK, Json(response)).into_response()
         }
         None => {
-            let response = create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
+            let response =
+                create_secure_auth_response(response_codes::AUTH_FAILED, false, None, None, false);
             (StatusCode::UNAUTHORIZED, Json(response)).into_response()
         }
     }
@@ -576,7 +605,7 @@ pub async fn get_passkeys(
     axum::extract::Path(user_id): axum::extract::Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let passkeys: Vec<PasskeyCredential> = sqlx::query_as(
-        "SELECT * FROM passkey_credentials WHERE userId = ? ORDER BY createdAt DESC"
+        "SELECT * FROM passkey_credentials WHERE userId = ? ORDER BY createdAt DESC",
     )
     .bind(&user_id)
     .fetch_all(&state.db)
@@ -604,13 +633,11 @@ pub async fn delete_passkey(
     State(state): State<Arc<AppState>>,
     axum::extract::Path((user_id, passkey_id)): axum::extract::Path<(String, String)>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let result = sqlx::query(
-        "DELETE FROM passkey_credentials WHERE id = ? AND userId = ?"
-    )
-    .bind(&passkey_id)
-    .bind(&user_id)
-    .execute(&state.db)
-    .await;
+    let result = sqlx::query("DELETE FROM passkey_credentials WHERE id = ? AND userId = ?")
+        .bind(&passkey_id)
+        .bind(&user_id)
+        .execute(&state.db)
+        .await;
 
     match result {
         Ok(r) if r.rows_affected() > 0 => (
@@ -654,12 +681,12 @@ fn get_admin_password() -> String {
 fn constant_time_compare(a: &str, b: &str) -> bool {
     let a_bytes = a.as_bytes();
     let b_bytes = b.as_bytes();
-    
+
     // If lengths differ, still do comparison to maintain constant time
     if a_bytes.len() != b_bytes.len() {
         return false;
     }
-    
+
     // XOR all bytes and accumulate - result is 0 only if all bytes match
     let mut result = 0u8;
     for (x, y) in a_bytes.iter().zip(b_bytes.iter()) {
@@ -671,15 +698,15 @@ fn constant_time_compare(a: &str, b: &str) -> bool {
 /// Generate admin session token with 30 minute expiry
 fn generate_admin_session_token() -> (String, i64) {
     use sha2::{Digest, Sha256};
-    
+
     let expiry = chrono::Utc::now().timestamp() + (30 * 60); // 30 minutes
     let random_bytes: [u8; 32] = rand::random();
-    
+
     let mut hasher = Sha256::new();
-    hasher.update(&random_bytes);
+    hasher.update(random_bytes);
     hasher.update(expiry.to_le_bytes());
     hasher.update(get_admin_password().as_bytes());
-    
+
     let token = hex::encode(hasher.finalize());
     (format!("{}:{}", token, expiry), expiry)
 }
@@ -690,17 +717,17 @@ pub fn verify_admin_session_token(token: &str) -> bool {
     if parts.len() != 2 {
         return false;
     }
-    
+
     let expiry: i64 = match parts[1].parse() {
         Ok(e) => e,
         Err(_) => return false,
     };
-    
+
     // Check if token has expired
     if chrono::Utc::now().timestamp() > expiry {
         return false;
     }
-    
+
     true
 }
 
@@ -711,11 +738,11 @@ pub fn create_admin_session_cookie(token: &str, is_production: bool) -> String {
         "admin_session={}; Path=/; Max-Age={}; HttpOnly; SameSite=Strict",
         token, max_age
     );
-    
+
     if is_production {
         cookie.push_str("; Secure");
     }
-    
+
     cookie
 }
 
@@ -725,11 +752,11 @@ pub async fn admin_login(
 ) -> impl axum::response::IntoResponse {
     let admin_password = get_admin_password();
     let is_production = std::env::var("PRODUCTION").is_ok();
-    
+
     if constant_time_compare(&payload.password, &admin_password) {
         let (session_token, _expiry) = generate_admin_session_token();
         let cookie = create_admin_session_cookie(&session_token, is_production);
-        
+
         (
             StatusCode::OK,
             [(header::SET_COOKIE, cookie)],
@@ -768,25 +795,21 @@ pub async fn validate_admin_session(
                 }
             })
         });
-    
+
     match admin_token {
-        Some(token) if verify_admin_session_token(&token) => {
-            (
-                StatusCode::OK,
-                Json(serde_json::json!({
-                    "valid": true,
-                    "message": "Admin session is valid"
-                })),
-            )
-        }
-        _ => {
-            (
-                StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "valid": false,
-                    "message": "Admin session is invalid or expired"
-                })),
-            )
-        }
+        Some(token) if verify_admin_session_token(&token) => (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "valid": true,
+                "message": "Admin session is valid"
+            })),
+        ),
+        _ => (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "valid": false,
+                "message": "Admin session is invalid or expired"
+            })),
+        ),
     }
 }

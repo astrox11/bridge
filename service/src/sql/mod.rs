@@ -172,7 +172,7 @@ pub struct SecureAuthResponse {
     #[serde(rename = "tk", skip_serializing_if = "Option::is_none")]
     pub tokens: Option<TokenResponse>,
     #[serde(rename = "d", skip_serializing_if = "Option::is_none")]
-    pub data: Option<String>,  // Base64 encoded user data
+    pub data: Option<String>, // Base64 encoded user data
     #[serde(rename = "t")]
     pub timestamp: i64,
     #[serde(rename = "sig")]

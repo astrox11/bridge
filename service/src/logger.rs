@@ -14,7 +14,9 @@ pub fn init() {
         .unwrap_or(false);
 
     DEBUG_ENABLED.set(logs_enabled).ok();
-    LOG_HISTORY.set(RwLock::new(Vec::with_capacity(MAX_HISTORY))).ok();
+    LOG_HISTORY
+        .set(RwLock::new(Vec::with_capacity(MAX_HISTORY)))
+        .ok();
 
     if logs_enabled {
         debug("Logger", "Debug logging enabled");
@@ -36,18 +38,18 @@ pub fn get_history() -> Vec<String> {
 
 fn broadcast(level: &str, tag: &str, message: &str) {
     let log_line = format!("{}|{}|{}", level, tag, message);
-    
+
     // Add to history buffer
-    if let Some(history) = LOG_HISTORY.get() {
-        if let Ok(mut h) = history.write() {
-            h.push(log_line.clone());
-            // Keep only the last MAX_HISTORY entries
-            if h.len() > MAX_HISTORY {
-                h.remove(0);
-            }
+    if let Some(history) = LOG_HISTORY.get()
+        && let Ok(mut h) = history.write()
+    {
+        h.push(log_line.clone());
+        // Keep only the last MAX_HISTORY entries
+        if h.len() > MAX_HISTORY {
+            h.remove(0);
         }
     }
-    
+
     // Broadcast to live subscribers
     if let Some(tx) = LOG_TX.get() {
         let _ = tx.send(log_line);

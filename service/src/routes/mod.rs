@@ -53,7 +53,10 @@ pub fn create_routes() -> Router<Arc<AppState>> {
         .route("/api/auth/register", post(auth::register))
         .route("/api/auth/login", post(auth::login))
         .route("/api/auth/admin", post(auth::admin_login))
-        .route("/api/auth/admin/validate", get(auth::validate_admin_session))
+        .route(
+            "/api/auth/admin/validate",
+            get(auth::validate_admin_session),
+        )
         .route(
             "/api/dashboard/user/cryptooooooohash/:phone",
             get(auth::get_crypto_hash),
@@ -79,26 +82,68 @@ pub fn create_routes() -> Router<Arc<AppState>> {
             delete(auth::delete_passkey),
         )
         // User dashboard routes
-        .route("/api/user/:crypto_hash/dashboard", get(user::get_user_dashboard))
-        .route("/api/user/:crypto_hash/instances", get(user::get_user_instances))
-        .route("/api/user/:crypto_hash/instances", post(user::create_user_instance))
-        .route("/api/user/:crypto_hash/instances/:session_id/pairing", get(user::get_instance_pairing_code))
-        .route("/api/user/:crypto_hash/credits", get(user::get_user_credits))
-        .route("/api/user/:crypto_hash/credits/add", post(user::add_credits))
+        .route(
+            "/api/user/:crypto_hash/dashboard",
+            get(user::get_user_dashboard),
+        )
+        .route(
+            "/api/user/:crypto_hash/instances",
+            get(user::get_user_instances),
+        )
+        .route(
+            "/api/user/:crypto_hash/instances",
+            post(user::create_user_instance),
+        )
+        .route(
+            "/api/user/:crypto_hash/instances/:session_id/pairing",
+            get(user::get_instance_pairing_code),
+        )
+        .route(
+            "/api/user/:crypto_hash/credits",
+            get(user::get_user_credits),
+        )
+        .route(
+            "/api/user/:crypto_hash/credits/add",
+            post(user::add_credits),
+        )
         .route("/api/user/:crypto_hash/usage", get(user::get_usage_history))
-        .route("/api/user/:crypto_hash/support", get(user::get_support_requests))
-        .route("/api/user/:crypto_hash/support", post(user::submit_support_request))
+        .route(
+            "/api/user/:crypto_hash/support",
+            get(user::get_support_requests),
+        )
+        .route(
+            "/api/user/:crypto_hash/support",
+            post(user::submit_support_request),
+        )
         // User command tools (no text input required)
         .route("/api/tools", get(tools::get_available_tools))
         .route("/api/tools/quick-actions", get(tools::get_quick_actions))
-        .route("/api/user/:crypto_hash/tools/execute", post(tools::execute_tool))
+        .route(
+            "/api/user/:crypto_hash/tools/execute",
+            post(tools::execute_tool),
+        )
         // Admin management routes
         .route("/api/admin/users", get(admin::list_users))
-        .route("/api/admin/users/:user_id/billing", get(admin::get_user_billing))
-        .route("/api/admin/users/:user_id/suspend", post(admin::suspend_user))
-        .route("/api/admin/users/:user_id/limit", post(admin::set_user_limit))
+        .route(
+            "/api/admin/users/:user_id/billing",
+            get(admin::get_user_billing),
+        )
+        .route(
+            "/api/admin/users/:user_id/suspend",
+            post(admin::suspend_user),
+        )
+        .route(
+            "/api/admin/users/:user_id/limit",
+            post(admin::set_user_limit),
+        )
         .route("/api/admin/users/:user_id", delete(admin::delete_user))
-        .route("/api/admin/instances/grouped", get(admin::get_grouped_instances))
+        .route(
+            "/api/admin/instances/grouped",
+            get(admin::get_grouped_instances),
+        )
         .route("/api/admin/support", get(admin::list_support_requests))
-        .route("/api/admin/support/:request_id", patch(admin::update_support_request))
+        .route(
+            "/api/admin/support/:request_id",
+            patch(admin::update_support_request),
+        )
 }

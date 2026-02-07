@@ -1,9 +1,9 @@
-use crate::sql::User;
 use crate::AppState;
+use crate::sql::User;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -136,7 +136,7 @@ pub async fn execute_tool(
 
     // Verify user owns this session
     let owns_session: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM user_instances WHERE userId = ? AND sessionId = ?)"
+        "SELECT EXISTS(SELECT 1 FROM user_instances WHERE userId = ? AND sessionId = ?)",
     )
     .bind(&user.id)
     .bind(&payload.session_id)
@@ -176,11 +176,14 @@ pub async fn execute_tool(
     }
 }
 
-async fn execute_restart(state: &Arc<AppState>, session_id: &str) -> (StatusCode, Json<ToolResult>) {
+async fn execute_restart(
+    state: &Arc<AppState>,
+    session_id: &str,
+) -> (StatusCode, Json<ToolResult>) {
     // Stop and restart the instance
     state.sm.stop_instance(session_id).await;
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-    
+
     let state_clone = state.clone();
     state.sm.start_instance(session_id, state_clone).await;
 
@@ -196,7 +199,7 @@ async fn execute_restart(state: &Arc<AppState>, session_id: &str) -> (StatusCode
 
 async fn execute_pause(state: &Arc<AppState>, session_id: &str) -> (StatusCode, Json<ToolResult>) {
     state.sm.stop_instance(session_id).await;
-    
+
     let _ = sqlx::query("UPDATE sessions SET status = 'paused' WHERE id = ?")
         .bind(session_id)
         .execute(&state.db)
@@ -233,7 +236,10 @@ async fn execute_resume(state: &Arc<AppState>, session_id: &str) -> (StatusCode,
     )
 }
 
-async fn execute_clear_cache(state: &Arc<AppState>, session_id: &str) -> (StatusCode, Json<ToolResult>) {
+async fn execute_clear_cache(
+    state: &Arc<AppState>,
+    session_id: &str,
+) -> (StatusCode, Json<ToolResult>) {
     // Clear Redis cache for this session
     if let Ok(mut conn) = state.redis.get_connection() {
         let pattern = format!("session:{}:*", session_id);
@@ -241,7 +247,7 @@ async fn execute_clear_cache(state: &Arc<AppState>, session_id: &str) -> (Status
             .arg(&pattern)
             .query(&mut conn)
             .unwrap_or_default();
-        
+
         for key in keys {
             let _ = redis::cmd("DEL").arg(&key).query::<()>(&mut conn);
         }
@@ -257,7 +263,10 @@ async fn execute_clear_cache(state: &Arc<AppState>, session_id: &str) -> (Status
     )
 }
 
-async fn execute_sync_contacts(state: &Arc<AppState>, session_id: &str) -> (StatusCode, Json<ToolResult>) {
+async fn execute_sync_contacts(
+    state: &Arc<AppState>,
+    session_id: &str,
+) -> (StatusCode, Json<ToolResult>) {
     // Trigger contact sync through the session manager
     let workers = state.sm.workers.read().await;
     if let Some(worker) = workers.get(session_id) {
@@ -292,7 +301,8 @@ async fn execute_sync_contacts(state: &Arc<AppState>, session_id: &str) -> (Stat
         StatusCode::BAD_REQUEST,
         Json(ToolResult {
             success: false,
-            message: "Instance not found or not started. Please start the instance first.".to_string(),
+            message: "Instance not found or not started. Please start the instance first."
+                .to_string(),
             data: Some(serde_json::json!({
                 "hint": "restart"
             })),
@@ -300,23 +310,24 @@ async fn execute_sync_contacts(state: &Arc<AppState>, session_id: &str) -> (Stat
     )
 }
 
-async fn execute_export_data(state: &Arc<AppState>, session_id: &str) -> (StatusCode, Json<ToolResult>) {
+async fn execute_export_data(
+    state: &Arc<AppState>,
+    session_id: &str,
+) -> (StatusCode, Json<ToolResult>) {
     // Gather exportable data
-    let contacts: Vec<(String, String)> = sqlx::query_as(
-        "SELECT contactPn, contactLid FROM contacts WHERE sessionId = ?"
-    )
-    .bind(session_id)
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let contacts: Vec<(String, String)> =
+        sqlx::query_as("SELECT contactPn, contactLid FROM contacts WHERE sessionId = ?")
+            .bind(session_id)
+            .fetch_all(&state.db)
+            .await
+            .unwrap_or_default();
 
-    let groups: Vec<(String, Option<String>)> = sqlx::query_as(
-        "SELECT groupId, groupInfo FROM groups WHERE sessionId = ?"
-    )
-    .bind(session_id)
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let groups: Vec<(String, Option<String>)> =
+        sqlx::query_as("SELECT groupId, groupInfo FROM groups WHERE sessionId = ?")
+            .bind(session_id)
+            .fetch_all(&state.db)
+            .await
+            .unwrap_or_default();
 
     let export_data = serde_json::json!({
         "contacts": contacts.iter().map(|(pn, lid)| {
@@ -338,22 +349,27 @@ async fn execute_export_data(state: &Arc<AppState>, session_id: &str) -> (Status
     )
 }
 
-async fn execute_check_status(state: &Arc<AppState>, session_id: &str) -> (StatusCode, Json<ToolResult>) {
+async fn execute_check_status(
+    state: &Arc<AppState>,
+    session_id: &str,
+) -> (StatusCode, Json<ToolResult>) {
     // First check database for session info
-    let session_info: Option<(String, Option<String>)> = sqlx::query_as(
-        "SELECT status, phoneNumber FROM sessions WHERE id = ?"
-    )
-    .bind(session_id)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
-    
+    let session_info: Option<(String, Option<String>)> =
+        sqlx::query_as("SELECT status, phoneNumber FROM sessions WHERE id = ?")
+            .bind(session_id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
+
     let workers = state.sm.workers.read().await;
-    
+
     let status_data = if let Some(worker) = workers.get(session_id) {
-        let db_status = session_info.as_ref().map(|(s, _)| s.clone()).unwrap_or_default();
+        let db_status = session_info
+            .as_ref()
+            .map(|(s, _)| s.clone())
+            .unwrap_or_default();
         let phone_number = session_info.as_ref().and_then(|(_, p)| p.clone());
-        
+
         serde_json::json!({
             "isRunning": worker.is_running,
             "workerStatus": worker.status,
@@ -394,7 +410,10 @@ async fn execute_check_status(state: &Arc<AppState>, session_id: &str) -> (Statu
     )
 }
 
-async fn execute_reset_session(state: &Arc<AppState>, session_id: &str) -> (StatusCode, Json<ToolResult>) {
+async fn execute_reset_session(
+    state: &Arc<AppState>,
+    session_id: &str,
+) -> (StatusCode, Json<ToolResult>) {
     // Stop instance
     state.sm.stop_instance(session_id).await;
 
@@ -416,7 +435,7 @@ async fn execute_reset_session(state: &Arc<AppState>, session_id: &str) -> (Stat
             .arg(&pattern)
             .query(&mut conn)
             .unwrap_or_default();
-        
+
         for key in keys {
             let _ = redis::cmd("DEL").arg(&key).query::<()>(&mut conn);
         }

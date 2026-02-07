@@ -1,9 +1,9 @@
-use crate::sql::{User, SupportRequest};
 use crate::AppState;
+use crate::sql::{SupportRequest, User};
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -36,16 +36,15 @@ pub async fn list_users(
         .unwrap_or_default();
 
     let mut users_with_stats = Vec::new();
-    
+
     for user in users {
         // Get instance count
-        let instance_count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM user_instances WHERE userId = ?"
-        )
-        .bind(&user.id)
-        .fetch_one(&state.db)
-        .await
-        .unwrap_or(0);
+        let instance_count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM user_instances WHERE userId = ?")
+                .bind(&user.id)
+                .fetch_one(&state.db)
+                .await
+                .unwrap_or(0);
 
         // Get total usage
         let total_usage: i64 = sqlx::query_scalar(
@@ -102,11 +101,16 @@ pub async fn get_user_billing(
     };
 
     // Get instances
-    let instances: Vec<(String, String, Option<String>, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
+    let instances: Vec<(
+        String,
+        String,
+        Option<String>,
+        chrono::DateTime<chrono::Utc>,
+    )> = sqlx::query_as(
         "SELECT ui.sessionId, s.status, s.name, ui.createdAt 
          FROM user_instances ui 
          JOIN sessions s ON ui.sessionId = s.id 
-         WHERE ui.userId = ?"
+         WHERE ui.userId = ?",
     )
     .bind(&user.id)
     .fetch_all(&state.db)
@@ -118,7 +122,7 @@ pub async fn get_user_billing(
     for (session_id, status, name, created_at) in instances {
         let usage: i64 = sqlx::query_scalar(
             "SELECT COALESCE(SUM(durationMinutes), 0) FROM usage_logs 
-             WHERE sessionId = ? AND isDowntime = FALSE"
+             WHERE sessionId = ? AND isDowntime = FALSE",
         )
         .bind(&session_id)
         .fetch_one(&state.db)
@@ -136,23 +140,27 @@ pub async fn get_user_billing(
     }
 
     // Get credit transactions
-    let transactions: Vec<(f64, String, Option<String>, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
-        "SELECT amount, transactionType, description, createdAt 
-         FROM credit_transactions WHERE userId = ? ORDER BY createdAt DESC LIMIT 20"
-    )
-    .bind(&user.id)
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let transactions: Vec<(f64, String, Option<String>, chrono::DateTime<chrono::Utc>)> =
+        sqlx::query_as(
+            "SELECT amount, transactionType, description, createdAt 
+         FROM credit_transactions WHERE userId = ? ORDER BY createdAt DESC LIMIT 20",
+        )
+        .bind(&user.id)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default();
 
-    let transactions_json: Vec<serde_json::Value> = transactions.iter().map(|(amount, tx_type, desc, created_at)| {
-        serde_json::json!({
-            "amount": amount,
-            "type": tx_type,
-            "description": desc,
-            "createdAt": created_at
+    let transactions_json: Vec<serde_json::Value> = transactions
+        .iter()
+        .map(|(amount, tx_type, desc, created_at)| {
+            serde_json::json!({
+                "amount": amount,
+                "type": tx_type,
+                "description": desc,
+                "createdAt": created_at
+            })
         })
-    }).collect();
+        .collect();
 
     (
         StatusCode::OK,
@@ -265,7 +273,7 @@ pub async fn delete_user(
 ) -> (StatusCode, Json<serde_json::Value>) {
     // First delete user's instances
     let _ = sqlx::query(
-        "DELETE FROM sessions WHERE id IN (SELECT sessionId FROM user_instances WHERE userId = ?)"
+        "DELETE FROM sessions WHERE id IN (SELECT sessionId FROM user_instances WHERE userId = ?)",
     )
     .bind(&user_id)
     .execute(&state.db)
@@ -346,8 +354,10 @@ pub async fn get_grouped_instances(
     .unwrap_or_default();
 
     // Group by user
-    let mut user_groups: std::collections::HashMap<String, Vec<InstanceWithOwner>> = std::collections::HashMap::new();
-    let mut user_phones: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    let mut user_groups: std::collections::HashMap<String, Vec<InstanceWithOwner>> =
+        std::collections::HashMap::new();
+    let mut user_phones: std::collections::HashMap<String, String> =
+        std::collections::HashMap::new();
     let mut orphan_instances: Vec<InstanceWithOwner> = Vec::new();
 
     for (session_id, name, status, phone_number, created_at, user_id, user_phone) in instances {
@@ -362,7 +372,7 @@ pub async fn get_grouped_instances(
         };
 
         if let Some(uid) = user_id {
-            user_groups.entry(uid.clone()).or_insert_with(Vec::new).push(instance);
+            user_groups.entry(uid.clone()).or_default().push(instance);
             if let Some(phone) = user_phone {
                 user_phones.insert(uid, phone);
             }
@@ -372,13 +382,17 @@ pub async fn get_grouped_instances(
     }
 
     // Convert to groups
-    let groups: Vec<UserInstanceGroup> = user_groups.into_iter().map(|(user_id, instances)| {
-        UserInstanceGroup {
-            user_phone: user_phones.get(&user_id).cloned().unwrap_or_else(|| "Unknown".to_string()),
+    let groups: Vec<UserInstanceGroup> = user_groups
+        .into_iter()
+        .map(|(user_id, instances)| UserInstanceGroup {
+            user_phone: user_phones
+                .get(&user_id)
+                .cloned()
+                .unwrap_or_else(|| "Unknown".to_string()),
             user_id,
             instances,
-        }
-    }).collect();
+        })
+        .collect();
 
     (
         StatusCode::OK,
@@ -394,12 +408,11 @@ pub async fn get_grouped_instances(
 pub async fn list_support_requests(
     State(state): State<Arc<AppState>>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let requests: Vec<SupportRequest> = sqlx::query_as(
-        "SELECT * FROM support_requests ORDER BY createdAt DESC"
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let requests: Vec<SupportRequest> =
+        sqlx::query_as("SELECT * FROM support_requests ORDER BY createdAt DESC")
+            .fetch_all(&state.db)
+            .await
+            .unwrap_or_default();
 
     (
         StatusCode::OK,
