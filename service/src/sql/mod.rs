@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, sqlite::SqlitePool};
 
 #[derive(Debug, FromRow, Serialize, Clone)]
@@ -23,6 +23,131 @@ pub struct UserSettings {
     pub config_key: String,
     #[sqlx(rename = "configValue")]
     pub config_value: Option<String>,
+}
+
+#[derive(Debug, FromRow, Serialize, Clone)]
+pub struct User {
+    pub id: String,
+    #[sqlx(rename = "phoneNumber")]
+    #[serde(rename = "phoneNumber")]
+    pub phone_number: String,
+    #[sqlx(rename = "passwordHash")]
+    #[serde(skip_serializing)]
+    pub password_hash: String,
+    #[sqlx(rename = "passwordSalt")]
+    #[serde(skip_serializing)]
+    pub password_salt: String,
+    #[sqlx(rename = "cryptoHash")]
+    #[serde(rename = "cryptoHash")]
+    pub crypto_hash: String,
+    #[sqlx(rename = "isAdmin")]
+    #[serde(rename = "isAdmin")]
+    pub is_admin: bool,
+    pub credits: f64,
+    #[sqlx(rename = "createdAt")]
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+    #[sqlx(rename = "updatedAt")]
+    #[serde(rename = "updatedAt")]
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, FromRow, Serialize, Clone)]
+pub struct UserInstance {
+    #[sqlx(rename = "userId")]
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    #[sqlx(rename = "sessionId")]
+    #[serde(rename = "sessionId")]
+    pub session_id: String,
+    #[sqlx(rename = "createdAt")]
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, FromRow, Serialize, Clone)]
+pub struct UsageLog {
+    pub id: i64,
+    #[sqlx(rename = "userId")]
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    #[sqlx(rename = "sessionId")]
+    #[serde(rename = "sessionId")]
+    pub session_id: String,
+    #[sqlx(rename = "startTime")]
+    #[serde(rename = "startTime")]
+    pub start_time: DateTime<Utc>,
+    #[sqlx(rename = "endTime")]
+    #[serde(rename = "endTime")]
+    pub end_time: Option<DateTime<Utc>>,
+    #[sqlx(rename = "durationMinutes")]
+    #[serde(rename = "durationMinutes")]
+    pub duration_minutes: i32,
+    #[sqlx(rename = "isDowntime")]
+    #[serde(rename = "isDowntime")]
+    pub is_downtime: bool,
+    #[sqlx(rename = "createdAt")]
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, FromRow, Serialize, Clone)]
+pub struct CreditTransaction {
+    pub id: i64,
+    #[sqlx(rename = "userId")]
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    pub amount: f64,
+    #[sqlx(rename = "transactionType")]
+    #[serde(rename = "transactionType")]
+    pub transaction_type: String,
+    pub description: Option<String>,
+    #[sqlx(rename = "createdAt")]
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, FromRow, Serialize, Clone)]
+pub struct SupportRequest {
+    pub id: i64,
+    #[sqlx(rename = "userId")]
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    pub subject: String,
+    pub message: String,
+    pub status: String,
+    #[sqlx(rename = "createdAt")]
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+    #[sqlx(rename = "updatedAt")]
+    #[serde(rename = "updatedAt")]
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RegisterRequest {
+    #[serde(rename = "phoneNumber")]
+    pub phone_number: String,
+    pub password: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LoginRequest {
+    #[serde(rename = "phoneNumber")]
+    pub phone_number: String,
+    pub password: String,
+    #[serde(rename = "cryptoHash")]
+    pub crypto_hash: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AuthResponse {
+    pub success: bool,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user: Option<User>,
+    #[serde(rename = "cryptoHash", skip_serializing_if = "Option::is_none")]
+    pub crypto_hash: Option<String>,
 }
 
 use sqlx::sqlite::SqliteConnectOptions;
