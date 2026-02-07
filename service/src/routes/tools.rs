@@ -272,15 +272,30 @@ async fn execute_sync_contacts(state: &Arc<AppState>, session_id: &str) -> (Stat
                     data: None,
                 }),
             );
+        } else {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ToolResult {
+                    success: false,
+                    message: "Instance is paused or stopped. Please resume it first using the Resume tool.".to_string(),
+                    data: Some(serde_json::json!({
+                        "status": worker.status,
+                        "hint": "resume"
+                    })),
+                }),
+            );
         }
     }
 
+    // Instance not found - may need to start it first
     (
         StatusCode::BAD_REQUEST,
         Json(ToolResult {
             success: false,
-            message: "Instance is not running".to_string(),
-            data: None,
+            message: "Instance not found or not started. Please start the instance first.".to_string(),
+            data: Some(serde_json::json!({
+                "hint": "restart"
+            })),
         }),
     )
 }
@@ -324,19 +339,48 @@ async fn execute_export_data(state: &Arc<AppState>, session_id: &str) -> (Status
 }
 
 async fn execute_check_status(state: &Arc<AppState>, session_id: &str) -> (StatusCode, Json<ToolResult>) {
+    // First check database for session info
+    let session_info: Option<(String, Option<String>)> = sqlx::query_as(
+        "SELECT status, phoneNumber FROM sessions WHERE id = ?"
+    )
+    .bind(session_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
+    
     let workers = state.sm.workers.read().await;
     
     let status_data = if let Some(worker) = workers.get(session_id) {
+        let db_status = session_info.as_ref().map(|(s, _)| s.clone()).unwrap_or_default();
+        let phone_number = session_info.as_ref().and_then(|(_, p)| p.clone());
+        
         serde_json::json!({
             "isRunning": worker.is_running,
-            "status": worker.status,
+            "workerStatus": worker.status,
+            "dbStatus": db_status,
+            "phoneNumber": phone_number,
             "pid": worker.pid,
-            "hasPairingCode": worker.pairing_code.is_some()
+            "hasPairingCode": worker.pairing_code.is_some(),
+            "pairingCode": worker.pairing_code
+        })
+    } else if let Some((db_status, phone_number)) = session_info {
+        serde_json::json!({
+            "isRunning": false,
+            "workerStatus": "not_started",
+            "dbStatus": db_status,
+            "phoneNumber": phone_number,
+            "pid": null,
+            "hasPairingCode": false,
+            "hint": "Use the Restart tool to start this instance"
         })
     } else {
         serde_json::json!({
             "isRunning": false,
-            "status": "not_found"
+            "workerStatus": "not_found",
+            "dbStatus": "unknown",
+            "pid": null,
+            "hasPairingCode": false,
+            "error": "Session not found in database"
         })
     };
 
