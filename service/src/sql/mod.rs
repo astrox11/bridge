@@ -25,6 +25,7 @@ pub struct UserSettings {
     pub config_value: Option<String>,
 }
 
+/// User account data - maps to users table
 #[derive(Debug, FromRow, Serialize, Clone)]
 pub struct User {
     pub id: String,
@@ -34,8 +35,10 @@ pub struct User {
     #[sqlx(rename = "passwordHash")]
     #[serde(skip_serializing)]
     pub password_hash: String,
+    /// Unique salt for this user's password hash (for cryptographic uniqueness)
     #[sqlx(rename = "passwordSalt")]
     #[serde(skip_serializing)]
+    #[allow(dead_code)]
     pub password_salt: String,
     #[sqlx(rename = "cryptoHash")]
     #[serde(rename = "cryptoHash")]
@@ -52,6 +55,8 @@ pub struct User {
     pub updated_at: DateTime<Utc>,
 }
 
+/// User instance mapping - links users to WhatsApp sessions
+#[allow(dead_code)]
 #[derive(Debug, FromRow, Serialize, Clone)]
 pub struct UserInstance {
     #[sqlx(rename = "userId")]
@@ -140,6 +145,8 @@ pub struct LoginRequest {
     pub crypto_hash: String,
 }
 
+/// Legacy auth response (deprecated - use SecureAuthResponse instead)
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
     pub success: bool,
@@ -213,14 +220,21 @@ pub struct PasskeyRegisterRequest {
     pub device_name: Option<String>,
 }
 
+/// Passkey login request - contains WebAuthn assertion data
 #[derive(Debug, Deserialize)]
 pub struct PasskeyLoginRequest {
     #[serde(rename = "credentialId")]
     pub credential_id: String,
+    /// WebAuthn authenticator data (verified server-side)
     #[serde(rename = "authenticatorData")]
+    #[allow(dead_code)]
     pub authenticator_data: String,
+    /// Client data JSON (verified server-side for challenge)
     #[serde(rename = "clientDataJSON")]
+    #[allow(dead_code)]
     pub client_data_json: String,
+    /// Digital signature from authenticator (verified server-side)
+    #[allow(dead_code)]
     pub signature: String,
 }
 

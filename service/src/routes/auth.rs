@@ -1,4 +1,4 @@
-use crate::sql::{AuthResponse, LoginRequest, PasskeyCredential, PasskeyLoginRequest, PasskeyRegisterRequest, RegisterRequest, User, SecureAuthResponse, TokenResponse};
+use crate::sql::{LoginRequest, PasskeyCredential, PasskeyLoginRequest, PasskeyRegisterRequest, RegisterRequest, User, SecureAuthResponse, TokenResponse};
 use crate::security::{generate_token_pair, sign_response, response_codes, create_auth_cookie};
 use crate::AppState;
 use argon2::{

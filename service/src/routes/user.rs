@@ -9,6 +9,8 @@ use chrono::Datelike;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+/// User dashboard data response type (used in API responses)
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct UserDashboard {
     pub user: User,
