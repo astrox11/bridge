@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod auth;
 pub mod instance;
 pub mod logs;
@@ -12,7 +13,7 @@ pub mod util;
 use crate::AppState;
 use axum::{
     Router,
-    routing::{get, patch, post},
+    routing::{delete, get, patch, post},
 };
 use std::sync::Arc;
 
@@ -75,11 +76,12 @@ pub fn create_routes() -> Router<Arc<AppState>> {
         .route("/api/auth/passkey/:user_id", get(auth::get_passkeys))
         .route(
             "/api/auth/passkey/:user_id/:passkey_id",
-            axum::routing::delete(auth::delete_passkey),
+            delete(auth::delete_passkey),
         )
         // User dashboard routes
         .route("/api/user/:crypto_hash/dashboard", get(user::get_user_dashboard))
         .route("/api/user/:crypto_hash/instances", get(user::get_user_instances))
+        .route("/api/user/:crypto_hash/instances", post(user::create_user_instance))
         .route("/api/user/:crypto_hash/credits", get(user::get_user_credits))
         .route("/api/user/:crypto_hash/credits/add", post(user::add_credits))
         .route("/api/user/:crypto_hash/usage", get(user::get_usage_history))
@@ -89,4 +91,13 @@ pub fn create_routes() -> Router<Arc<AppState>> {
         .route("/api/tools", get(tools::get_available_tools))
         .route("/api/tools/quick-actions", get(tools::get_quick_actions))
         .route("/api/user/:crypto_hash/tools/execute", post(tools::execute_tool))
+        // Admin management routes
+        .route("/api/admin/users", get(admin::list_users))
+        .route("/api/admin/users/:user_id/billing", get(admin::get_user_billing))
+        .route("/api/admin/users/:user_id/suspend", post(admin::suspend_user))
+        .route("/api/admin/users/:user_id/limit", post(admin::set_user_limit))
+        .route("/api/admin/users/:user_id", delete(admin::delete_user))
+        .route("/api/admin/instances/grouped", get(admin::get_grouped_instances))
+        .route("/api/admin/support", get(admin::list_support_requests))
+        .route("/api/admin/support/:request_id", patch(admin::update_support_request))
 }

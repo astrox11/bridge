@@ -6,6 +6,7 @@
 	let loading = $state(true);
 	let error = $state(null);
 	let showForm = $state(false);
+	let email = $state('');
 	let subject = $state('');
 	let message = $state('');
 	let submitting = $state(false);
@@ -36,7 +37,7 @@
 	}
 
 	async function submitRequest() {
-		if (!subject.trim() || !message.trim()) {
+		if (!email.trim() || !subject.trim() || !message.trim()) {
 			alert('Please fill in all fields');
 			return;
 		}
@@ -46,11 +47,12 @@
 			const res = await fetch(`/api/user/${$page.params.hash}/support`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ subject, message })
+				body: JSON.stringify({ email, subject, message })
 			});
 			const data = await res.json();
 			
 			if (data.success) {
+				email = '';
 				subject = '';
 				message = '';
 				showForm = false;
@@ -108,6 +110,19 @@
 			</div>
 			<div class="p-4 space-y-4">
 				<div>
+					<label for="support-email" class="label">Your Email</label>
+					<input 
+						id="support-email"
+						type="email" 
+						bind:value={email}
+						class="input"
+						placeholder="your.email@example.com"
+					/>
+					<span class="text-xs mt-1 block" style="color: hsl(var(--text-muted));">
+						We'll use this to respond to your query
+					</span>
+				</div>
+				<div>
 					<label for="support-subject" class="label">Subject</label>
 					<input 
 						id="support-subject"
@@ -133,7 +148,7 @@
 					<button 
 						class="btn btn-primary"
 						onclick={submitRequest}
-						disabled={submitting || !subject.trim() || !message.trim()}>
+						disabled={submitting || !email.trim() || !subject.trim() || !message.trim()}>
 						{#if submitting}
 							<i class="fi fi-rr-spinner animate-spin"></i>
 						{:else}
@@ -158,7 +173,7 @@
 					<i class="fi fi-rr-envelope"></i>
 					<div>
 						<div class="font-medium">Email</div>
-						<div class="text-sm" style="color: hsl(var(--text-muted));">support@whatsaly.com</div>
+						<div class="text-sm" style="color: hsl(var(--text-muted));">devastrowork@gmail.com</div>
 					</div>
 				</div>
 				<div class="contact-item">

@@ -345,6 +345,7 @@ pub async fn get_usage_history(
 
 #[derive(Debug, Deserialize)]
 pub struct SupportRequestPayload {
+    pub email: String,
     pub subject: String,
     pub message: String,
 }
@@ -374,12 +375,12 @@ pub async fn submit_support_request(
         }
     };
 
-    if payload.subject.is_empty() || payload.message.is_empty() {
+    if payload.email.is_empty() || payload.subject.is_empty() || payload.message.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
                 "success": false,
-                "message": "Subject and message are required"
+                "message": "Email, subject and message are required"
             })),
         );
     }
@@ -387,10 +388,11 @@ pub async fn submit_support_request(
     let now = chrono::Utc::now();
 
     let result = sqlx::query(
-        "INSERT INTO support_requests (userId, subject, message, status, createdAt, updatedAt) 
-         VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO support_requests (userId, email, subject, message, status, createdAt, updatedAt) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(&user.id)
+    .bind(&payload.email)
     .bind(&payload.subject)
     .bind(&payload.message)
     .bind("open")
@@ -454,6 +456,166 @@ pub async fn get_support_requests(
         Json(serde_json::json!({
             "success": true,
             "requests": requests
+        })),
+    )
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateInstanceRequest {
+    #[serde(rename = "phoneNumber")]
+    pub phone_number: String,
+    pub name: Option<String>,
+}
+
+/// Create a new instance for user (max 1 per phone number)
+pub async fn create_user_instance(
+    State(state): State<Arc<AppState>>,
+    Path(crypto_hash): Path<String>,
+    Json(payload): Json<CreateInstanceRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    // Find user by crypto hash
+    let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE cryptoHash = ?")
+        .bind(&crypto_hash)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None);
+
+    let user = match user {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({
+                    "success": false,
+                    "message": "Invalid crypto hash"
+                })),
+            );
+        }
+    };
+
+    // Check if user is limited from creating instances
+    if user.instance_limit == 0 {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "You are not allowed to create instances. Contact support."
+            })),
+        );
+    }
+
+    // Check if user is suspended
+    if user.suspended {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "Your account is suspended. Contact support."
+            })),
+        );
+    }
+
+    // Check if user already has an instance for this phone number
+    let existing: Option<(String,)> = sqlx::query_as(
+        "SELECT ui.sessionId FROM user_instances ui 
+         JOIN sessions s ON ui.sessionId = s.id 
+         WHERE ui.userId = ? AND s.phoneNumber = ?"
+    )
+    .bind(&user.id)
+    .bind(&payload.phone_number)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
+
+    if existing.is_some() {
+        return (
+            StatusCode::CONFLICT,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "You already have an instance for this phone number"
+            })),
+        );
+    }
+
+    // Check total instance count against limit
+    let instance_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM user_instances WHERE userId = ?"
+    )
+    .bind(&user.id)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(0);
+
+    if instance_count >= user.instance_limit as i64 {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "success": false,
+                "message": format!("You have reached your instance limit of {}", user.instance_limit)
+            })),
+        );
+    }
+
+    // Create session ID
+    let session_id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now();
+
+    // Create session in sessions table
+    let session_result = sqlx::query(
+        "INSERT INTO sessions (id, name, status, phoneNumber, createdAt, updatedAt) 
+         VALUES (?, ?, ?, ?, ?, ?)"
+    )
+    .bind(&session_id)
+    .bind(payload.name.as_deref().unwrap_or("New Instance"))
+    .bind("paused")
+    .bind(&payload.phone_number)
+    .bind(now)
+    .bind(now)
+    .execute(&state.db)
+    .await;
+
+    if let Err(e) = session_result {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "success": false,
+                "message": format!("Failed to create session: {}", e)
+            })),
+        );
+    }
+
+    // Link session to user
+    let link_result = sqlx::query(
+        "INSERT INTO user_instances (userId, sessionId, createdAt) VALUES (?, ?, ?)"
+    )
+    .bind(&user.id)
+    .bind(&session_id)
+    .bind(now)
+    .execute(&state.db)
+    .await;
+
+    if let Err(e) = link_result {
+        // Rollback session creation
+        let _ = sqlx::query("DELETE FROM sessions WHERE id = ?")
+            .bind(&session_id)
+            .execute(&state.db)
+            .await;
+        
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "success": false,
+                "message": format!("Failed to link instance: {}", e)
+            })),
+        );
+    }
+
+    (
+        StatusCode::CREATED,
+        Json(serde_json::json!({
+            "success": true,
+            "message": "Instance created successfully",
+            "sessionId": session_id
         })),
     )
 }
