@@ -238,6 +238,7 @@ pub async fn jwt_auth_middleware(
         "/api/auth/login",
         "/api/auth/register",
         "/api/auth/admin",
+        "/api/auth/admin/validate", // Admin session validation
         "/api/auth/passkey/login/challenge",
         "/api/auth/passkey/login",
         "/api/auth/passkey/register/challenge",
