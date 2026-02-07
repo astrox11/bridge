@@ -110,7 +110,7 @@
 		return colorMap[color] || 'hsla(var(--primary) / 0.1)';
 	}
 
-	const toolsByCategory = $derived(() => {
+	function getToolsByCategory() {
 		const grouped = {};
 		for (const tool of tools) {
 			if (!grouped[tool.category]) {
@@ -119,7 +119,7 @@
 			grouped[tool.category].push(tool);
 		}
 		return grouped;
-	});
+	}
 </script>
 
 <svelte:head>
@@ -197,7 +197,7 @@
 	{/if}
 
 	<!-- All Tools -->
-	{#each Object.entries(toolsByCategory()) as [category, categoryTools]}
+	{#each Object.entries(getToolsByCategory()) as [category, categoryTools]}
 		<div class="card">
 			<div class="card-header flex items-center gap-2">
 				<i class="fi fi-rr-apps text-sm" style="color: hsl(var(--primary));"></i>
