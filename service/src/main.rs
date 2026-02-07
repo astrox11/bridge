@@ -1,9 +1,11 @@
 mod logger;
 mod manager;
 mod routes;
+mod security;
 mod sql;
 
 use crate::sql::Session;
+use axum::middleware;
 use dotenv::dotenv;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
@@ -152,6 +154,9 @@ async fn main() {
 
     let static_service = ServeDir::new("ui/build");
     let app = routes::create_routes()
+        .layer(middleware::from_fn(security::jwt_auth_middleware))
+        .layer(middleware::from_fn(security::origin_validation_middleware))
+        .layer(middleware::from_fn(security::api_key_middleware))
         .layer(CorsLayer::permissive())
         .with_state(state)
         .fallback_service(static_service);

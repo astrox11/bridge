@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { base64UrlToArrayBuffer, arrayBufferToBase64Url, isPasskeySupported, getDeviceName } from '$lib/webauthn';
+	import { parseSecureResponse, storeAuthTokens, ResponseCodes } from '$lib/api';
 
 	let phoneNumber = $state('');
 	let password = $state('');
@@ -44,19 +45,24 @@
 			const res = await fetch('/api/auth/register', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
 				body: JSON.stringify({
 					phoneNumber,
 					password
 				})
 			});
-			const data = await res.json();
+			const rawData = await res.json();
+			const data = parseSecureResponse(rawData);
 
 			if (data.success) {
 				success = true;
-				cryptoHash = data.cryptoHash;
-				userId = data.user?.id || '';
+				// Extract crypto hash and user ID from decoded data
+				cryptoHash = data.data?.h || '';
+				userId = data.data?.i || '';
+				// Store tokens
+				storeAuthTokens(data.tokens);
 			} else {
-				error = data.message;
+				error = data.error || 'Registration failed';
 			}
 		} catch (e) {
 			error = 'Registration failed. Please try again.';
