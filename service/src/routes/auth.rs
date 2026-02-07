@@ -8,6 +8,16 @@ use axum::{extract::State, http::StatusCode, Json};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
+/// Get the WebAuthn relying party ID from environment or use default
+fn get_rp_id() -> String {
+    std::env::var("WEBAUTHN_RP_ID").unwrap_or_else(|_| "localhost".to_string())
+}
+
+/// Get the WebAuthn relying party name from environment or use default
+fn get_rp_name() -> String {
+    std::env::var("WEBAUTHN_RP_NAME").unwrap_or_else(|_| "Whatsaly".to_string())
+}
+
 /// Generate a unique crypto hash for each user based on their phone number and a random component
 fn generate_crypto_hash(phone_number: &str) -> String {
     let random_bytes: [u8; 32] = rand::random();
@@ -344,8 +354,8 @@ pub async fn passkey_register_challenge(
             "success": true,
             "challenge": challenge_b64,
             "rp": {
-                "name": "Whatsaly",
-                "id": "localhost"
+                "name": get_rp_name(),
+                "id": get_rp_id()
             },
             "user": {
                 "id": user.id,
@@ -471,7 +481,7 @@ pub async fn passkey_login_challenge(
             "success": true,
             "challengeId": challenge_id_hex,
             "challenge": challenge_b64,
-            "rpId": "localhost",
+            "rpId": get_rp_id(),
             "timeout": 300000,
             "userVerification": "preferred"
         })),
